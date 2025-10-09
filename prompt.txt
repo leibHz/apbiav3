@@ -1,21 +1,19 @@
-ola claude, boa tarde, preciso de sua ajuda pra fazer um site de chatbot de ia, é bastante coisa entao vamos la
+ola gemini, boa tarde, preciso de sua ajuda pra fazer um site de chatbot de ia, é bastante coisa entao vamos la
 
 É o seguinte, o nome do projeto é apbia (assistente de projetos pra bragantec baseado em IA)
 
 O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados
 
 A API Key do Google ai studio é: AIzaSyBhxdu9iXVPLZpQhen32l74nP2L_gm9evI
-A API Key da supabase anon key é: 
-a api key da supabse secret key é: 
-A URL da supabase é: 
+A API Key da supabase anon key é: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3htZ294aXJ4bXV2b2t6Zmt6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAwMDU5NTgsImV4cCI6MjA3NTU4MTk1OH0.i-obWMeuJ8hFDFZGiH6xEW-nVAwhSA7depCCKCbKdQ0
+a api key da supabse secret key é: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJxZ3htZ294aXJ4bXV2b2t6Zmt6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2MDAwNTk1OCwiZXhwIjoyMDc1NTgxOTU4fQ.BxyoJiplK8I6v-t2NdfLtWC9-iaNYPXGU5sjqq_4udY
+A URL da supabase é: https://bqgxmgoxirxmuvokzfkz.supabase.co
 a senha do banco de dados do supabase é: gaf11052009**
 estou compartilhando apenas com vc isso, confio na sua segurança então estão seguradas, é pra usar elas no codigo caso nessesario
-usaremos o supabase secrets pra armazernar essas variaveis
 
 Para os ícones, usaremos o fonte awesome, com sua linha JS sendo: <script src="https://kit.fontawesome.com/cc533e21e1.js" crossorigin="anonymous"></script>
 
 Aí vc escolhe os ícones no modo SVG e somente GRÁTIS, com algumas animações caso queira
-
 
 a ia pro participante da bragantec é acessada pelo prontuario (o BP) da escola e uma senha, caso nn tenha uma senha, é nessesario criar uma, o banco de dados deve verificar se a pessoa é participante e se não for, deve bloquear o acesso, ela ajuda a definir projetos e planejar eles, alem de ter acesso a algumas ferramentas.
 
@@ -37,7 +35,7 @@ https://ai.google.dev/gemini-api/docs/thinking?hl=pt-br
 
 O objetivo principal é ajudar os estudantes que vão participar da bragantec, auxiliando, planejando e dando ideias.
 
-sera feito usando php, JS, html, tailwindCSS e python pro backend do banco de dados
+sera feito usando php, JS, html, boostrap e python pro backend do banco de dados
 
 no caso do python, devera ser usado o modelo MVC com controller, model, view e dao
 
@@ -122,12 +120,10 @@ CREATE TABLE public.usuarios (
 );
 
 usaremos classes no python para melhor organização junto com POO e MVC
+pesquise sobre poo e mvc com dao pra atualizar suas informações
 
 separe os arquivos pra melhor organização os arquivos dao serão todos juntos em um arquivo unico, assim como o model, o view e o controller
 
-planeje uma apresentação de 15 minutos desse projeto, citando fontes, com clareza, organização, etc... de ate 15 minutos
-coloque comentarios no codigo
-
-em caso de duvida em algukma coisa, SEMPRE PESQUISE e não invente informações
+em caso de duvida em alguma coisa, SEMPRE PESQUISE e não invente informações
 
 Oq vc acha, consegue fazer tudo isso
