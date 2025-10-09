@@ -36,10 +36,11 @@ https://ai.google.dev/gemini-api/docs/thinking?hl=pt-br
 O objetivo principal é ajudar os estudantes que vão participar da bragantec, auxiliando, planejando e dando ideias.
 
 sera feito usando php, JS, html, boostrap e python pro backend do banco de dados
+pesquise sobre boostrap para atualizar suas informações
 
 no caso do python, devera ser usado o modelo MVC com controller, model, view e dao
 
-o banco de dados esta pronto no supabase, enviarei o sql dele, precisamos adaptar esse script pro sql editor da supabase que nn usa o mysql normal, pesquise sobre como fazer essa adaptação
+o banco de dados esta pronto, enviarei o sql dele, precisamos adaptar esse script pro sql editor da supabase que nn usa o mysql normal, pesquise sobre como fazer essa adaptação
 
 CREATE TABLE public.arquivos_chat (
   id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
