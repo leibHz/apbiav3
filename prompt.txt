@@ -42,88 +42,92 @@ no caso do python, devera ser usado o modelo MVC com controller, model, view e d
 
 o banco de dados esta pronto, enviarei o sql dele, precisamos adaptar esse script pro sql editor da supabase que nn usa o mysql normal, pesquise sobre como fazer essa adaptação
 
-CREATE TABLE public.arquivos_chat (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  mensagem_id bigint NOT NULL,
-  nome_arquivo character varying NOT NULL,
-  url_arquivo character varying NOT NULL,
-  tipo_arquivo character varying,
-  tamanho_bytes bigint,
-  data_upload timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT arquivos_chat_pkey PRIMARY KEY (id),
-  CONSTRAINT arquivos_chat_mensagem_id_fkey FOREIGN KEY (mensagem_id) REFERENCES public.mensagens(id)
+drop database if exists apbia;
+create database apbia;
+use apbia;
+CREATE TABLE IF NOT EXISTS tipos_usuario ( -- se é orientador, estudante e etc...
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL UNIQUE
 );
-CREATE TABLE public.chats (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  projeto_id bigint NOT NULL,
-  tipo_ia_id bigint NOT NULL,
-  titulo character varying NOT NULL,
-  data_criacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT chats_pkey PRIMARY KEY (id),
-  CONSTRAINT chats_projeto_id_fkey FOREIGN KEY (projeto_id) REFERENCES public.projetos(id),
-  CONSTRAINT chats_tipo_ia_id_fkey FOREIGN KEY (tipo_ia_id) REFERENCES public.tipos_ia(id)
+
+CREATE TABLE IF NOT EXISTS tipos_ia ( 
+    id INT AUTO_INCREMENT PRIMARY KEY, -- personalização basica de personalidade da IA pra agradar melhor cada tipo de usuario
+    nome VARCHAR(100) NOT NULL UNIQUE
 );
-CREATE TABLE public.mensagens (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  chat_id bigint NOT NULL,
-  usuario_id bigint,
-  conteudo text NOT NULL,
-  e_nota_orientador boolean DEFAULT false,
-  data_envio timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT mensagens_pkey PRIMARY KEY (id),
-  CONSTRAINT mensagens_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id),
-  CONSTRAINT mensagens_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id)
+
+CREATE TABLE IF NOT EXISTS usuarios (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome_completo VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    senha_hash VARCHAR(255), -- vazio se for visitante
+    tipo_usuario_id INT NOT NULL,
+    numero_inscricao INT UNIQUE, -- se for participante da bragantec
+    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP, -- pega a data atual
+    data_atualizacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (tipo_usuario_id) REFERENCES tipos_usuario(id)
 );
-CREATE TABLE public.orientadores_projetos (
-  orientador_id bigint NOT NULL,
-  projeto_id bigint NOT NULL,
-  CONSTRAINT orientadores_projetos_pkey PRIMARY KEY (orientador_id, projeto_id),
-  CONSTRAINT orientadores_projetos_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id),
-  CONSTRAINT orientadores_projetos_projeto_id_fkey FOREIGN KEY (projeto_id) REFERENCES public.projetos(id)
+
+CREATE TABLE IF NOT EXISTS projetos ( -- projeto se for participante da bragantec
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    descricao TEXT, -- text pois pode ser uma descrição muito grande
+    area_projeto VARCHAR(100) NOT NULL,
+    ano_edicao INT NOT NULL, -- se for participar mais de um ano, vai saber
+    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-CREATE TABLE public.participantes_projetos (
-  participante_id bigint NOT NULL,
-  projeto_id bigint NOT NULL,
-  CONSTRAINT participantes_projetos_pkey PRIMARY KEY (participante_id, projeto_id),
-  CONSTRAINT participantes_projetos_participante_id_fkey FOREIGN KEY (participante_id) REFERENCES public.usuarios(id),
-  CONSTRAINT participantes_projetos_projeto_id_fkey FOREIGN KEY (projeto_id) REFERENCES public.projetos(id)
+
+CREATE TABLE IF NOT EXISTS chats ( -- historico de chats, ultil se o usuario quiser voltar algo
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NOT NULL,
+    tipo_ia_id INT NOT NULL,
+    titulo VARCHAR(255) NOT NULL,
+    data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (tipo_ia_id) REFERENCES tipos_ia(id)
 );
-CREATE TABLE public.projetos (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  nome character varying NOT NULL,
-  descricao text,
-  area_projeto character varying NOT NULL,
-  ano_edicao integer NOT NULL,
-  data_criacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT projetos_pkey PRIMARY KEY (id)
+
+CREATE TABLE IF NOT EXISTS participantes_projetos ( -- tabela de junção pra assosiar projetos  e participantes
+    participante_id INT NOT NULL,
+    projeto_id INT NOT NULL,
+    PRIMARY KEY (participante_id, projeto_id),
+    FOREIGN KEY (participante_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (projeto_id) REFERENCES projetos(id) ON DELETE CASCADE
 );
-CREATE TABLE public.tipos_ia (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  nome character varying NOT NULL UNIQUE,
-  CONSTRAINT tipos_ia_pkey PRIMARY KEY (id)
+
+CREATE TABLE IF NOT EXISTS orientadores_projetos ( -- mesma coisa, assosica os projetos a seus orientadores, não ao participante, pois o participante se participar mais de um ano pode mudar o orientador
+    orientador_id INT NOT NULL,
+    projeto_id INT NOT NULL,
+    PRIMARY KEY (orientador_id, projeto_id),
+    FOREIGN KEY (orientador_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (projeto_id) REFERENCES projetos(id) ON DELETE CASCADE
 );
-CREATE TABLE public.tipos_usuario (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  nome character varying NOT NULL UNIQUE,
-  CONSTRAINT tipos_usuario_pkey PRIMARY KEY (id)
+
+CREATE TABLE IF NOT EXISTS arquivos_chat ( -- é nessesario para o historico de chats, caso o usuario envie arquivos pra ia analisar
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_id INT NOT NULL,
+    nome_arquivo VARCHAR(255) NOT NULL,
+    url_arquivo VARCHAR(1024) NOT NULL,
+    tipo_arquivo VARCHAR(100),
+    tamanho_bytes BIGINT,
+    data_upload TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
 );
-CREATE TABLE public.usuarios (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  nome_completo character varying NOT NULL,
-  email character varying NOT NULL UNIQUE,
-  senha_hash character varying,
-  tipo_usuario_id bigint NOT NULL,
-  bp character varying UNIQUE,
-  data_criacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  data_atualizacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT usuarios_pkey PRIMARY KEY (id),
-  CONSTRAINT usuarios_tipo_usuario_id_fkey FOREIGN KEY (tipo_usuario_id) REFERENCES public.tipos_usuario(id)
+CREATE TABLE IF NOT EXISTS ferramentas_chat ( -- ferramentas igual o chatgpt e gemini tem, nn é dificil fazer pois a google documenta tudo
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    chat_id INT NOT NULL,
+    nome_ferramenta VARCHAR(100) NOT NULL,
+    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE,
+    UNIQUE (chat_id, nome_ferramenta)
 );
+
+o banco de dados tem mais coisa do que o projeto nessesita, isso é pro futuro, ignore os extras no banco de dados e foque no que pedi
 
 usaremos classes no python para melhor organização junto com POO e MVC
 pesquise sobre poo e mvc com dao pra atualizar suas informações
 
 separe os arquivos pra melhor organização os arquivos dao serão todos juntos em um arquivo unico, assim como o model, o view e o controller
+
+faça de forma simples, pra poupar seus recursos e não exceder seu limite de mensagens, mas mantenha aqualidade de sempre
 
 em caso de duvida em alguma coisa, SEMPRE PESQUISE e não invente informações
 
