@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Erro no servidor - APBIA{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+        <div class="col-md-6 text-center">
+            <i class="fas fa-exclamation-triangle fa-5x text-danger mb-4"></i>
+            <h1 class="display-1 fw-bold text-danger">500</h1>
+            <h3 class="mb-4">Erro no Servidor</h3>
+            <p class="lead text-muted mb-4">
+                Algo deu errado no servidor. Nossa equipe já foi notificada e está trabalhando para resolver o problema.
+            </p>
+            
+            <div class="alert alert-info text-start">
+                <i class="fas fa-lightbulb"></i>
+                <strong>Sugestões:</strong>
+                <ul class="mb-0 mt-2">
+                    <li>Tente recarregar a página</li>
+                    <li>Limpe o cache do navegador</li>
+                    <li>Aguarde alguns minutos e tente novamente</li>
+                </ul>
+            </div>
+            
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <button onclick="location.reload()" class="btn btn-primary">
+                    <i class="fas fa-sync"></i> Recarregar Página
+                </button>
+                
+                <a href="{{ url_for('index') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-home"></i> Página Inicial
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

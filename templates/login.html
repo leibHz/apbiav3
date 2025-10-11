@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+
+{% block title %}Login - APBIA{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center align-items-center min-vh-100">
+        <div class="col-md-5">
+            <div class="card shadow-lg">
+                <div class="card-body p-5">
+                    <!-- Logo/Header -->
+                    <div class="text-center mb-4">
+                        <i class="fas fa-robot fa-4x text-primary mb-3"></i>
+                        <h2 class="fw-bold">APBIA</h2>
+                        <p class="text-muted">Assistente de Projetos para Bragantec</p>
+                    </div>
+                    
+                    <!-- Formulário de Login -->
+                    <form method="POST" action="{{ url_for('auth.login') }}" id="loginForm">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope"></i> Email
+                            </label>
+                            <input type="email" 
+                                   class="form-control" 
+                                   id="email" 
+                                   name="email" 
+                                   placeholder="seu.email@exemplo.com"
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="senha" class="form-label">
+                                <i class="fas fa-lock"></i> Senha
+                            </label>
+                            <input type="password" 
+                                   class="form-control" 
+                                   id="senha" 
+                                   name="senha" 
+                                   placeholder="••••••••"
+                                   required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="bp" class="form-label">
+                                <i class="fas fa-id-card"></i> BP (Número de Inscrição)
+                                <span class="text-danger" id="bpRequiredIndicator" style="display:none;">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="bp" 
+                                   name="bp" 
+                                   placeholder="BP12345678X"
+                                   maxlength="12"
+                                   style="text-transform: uppercase;">
+                            <small class="form-text text-muted" id="bpHelpText">
+                                Opcional para administradores, obrigatório para participantes e orientadores
+                            </small>
+                            <small class="form-text text-success" id="bpValidIndicator" style="display:none;">
+                                <i class="fas fa-check-circle"></i> BP válido
+                            </small>
+                            <small class="form-text text-danger" id="bpInvalidIndicator" style="display:none;">
+                                <i class="fas fa-times-circle"></i> Formato inválido. Use: BP12345678X
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt"></i> Entrar
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Info adicional -->
+                    <div class="text-center mt-4">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i>
+                            Apenas usuários cadastrados podem acessar o sistema.
+                            <br>
+                            Contate o administrador para criar sua conta.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Link para página inicial -->
+            <div class="text-center mt-3">
+                <a href="{{ url_for('index') }}" class="text-decoration-none">
+                    <i class="fas fa-arrow-left"></i> Voltar para página inicial
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Validação em tempo real do BP
+document.getElementById('bp').addEventListener('input', function(e) {
+    const bp = e.target.value.toUpperCase();
+    e.target.value = bp;
+    
+    const validIndicator = document.getElementById('bpValidIndicator');
+    const invalidIndicator = document.getElementById('bpInvalidIndicator');
+    const helpText = document.getElementById('bpHelpText');
+    
+    if (bp.length === 0) {
+        validIndicator.style.display = 'none';
+        invalidIndicator.style.display = 'none';
+        helpText.style.display = 'block';
+        return;
+    }
+    
+    // Regex: BP + 1-8 dígitos + letra opcional
+    const regex = /^BP\d{1,8}[A-Z]?$/;
+    
+    if (regex.test(bp)) {
+        validIndicator.style.display = 'block';
+        invalidIndicator.style.display = 'none';
+        helpText.style.display = 'none';
+    } else {
+        validIndicator.style.display = 'none';
+        invalidIndicator.style.display = 'block';
+        helpText.style.display = 'none';
+    }
+});
+
+// Validação do formulário
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value;
+    const senha = document.getElementById('senha').value;
+    const bp = document.getElementById('bp').value;
+    
+    if (!email || !senha) {
+        e.preventDefault();
+        alert('Por favor, preencha email e senha.');
+        return false;
+    }
+    
+    // Se BP foi preenchido, valida formato
+    if (bp && bp.length > 0) {
+        const regex = /^BP\d{1,8}[A-Z]?$/;
+        if (!regex.test(bp)) {
+            e.preventDefault();
+            alert('Formato de BP inválido. Use: BP12345678X\nExemplos: BP123456, BP12345678A');
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}

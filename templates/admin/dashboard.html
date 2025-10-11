@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+
+{% block title %}Painel Administrativo - APBIA{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="fas fa-tachometer-alt"></i> Painel Administrativo
+            </h2>
+            <p class="text-muted">Visão geral e gerenciamento do sistema</p>
+        </div>
+    </div>
+    
+    <!-- Estatísticas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Total de Usuários</h6>
+                            <h2 class="mb-0">{{ stats.total_usuarios }}</h2>
+                        </div>
+                        <i class="fas fa-users fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Participantes</h6>
+                            <h2 class="mb-0">{{ stats.participantes }}</h2>
+                        </div>
+                        <i class="fas fa-user-graduate fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Orientadores</h6>
+                            <h2 class="mb-0">{{ stats.orientadores }}</h2>
+                        </div>
+                        <i class="fas fa-chalkboard-teacher fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card {% if stats.ia_status %}bg-success{% else %}bg-danger{% endif %} text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase mb-1">Status da IA</h6>
+                            <h2 class="mb-0">{{ 'ATIVA' if stats.ia_status else 'OFFLINE' }}</h2>
+                        </div>
+                        <i class="fas fa-robot fa-3x opacity-50"></i>
+                    </div>
+                    <button class="btn btn-light btn-sm mt-2" id="toggleIABtn">
+                        <i class="fas fa-power-off"></i> {{ 'Desativar' if stats.ia_status else 'Ativar' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ações Rápidas -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-bolt"></i> Ações Rápidas
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ url_for('admin.usuarios') }}" class="btn btn-primary">
+                            <i class="fas fa-users"></i> Gerenciar Usuários
+                        </a>
+                        <a href="{{ url_for('admin.configuracoes') }}" class="btn btn-secondary">
+                            <i class="fas fa-cog"></i> Configurações
+                        </a>
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fas fa-user-plus"></i> Adicionar Usuário
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Usuários Recentes -->
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-user-friends"></i> Usuários Recentes
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th>Tipo</th>
+                                    <th>BP</th>
+                                    <th>Data Criação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for usuario in usuarios[:10] %}
+                                <tr>
+                                    <td>{{ usuario.id }}</td>
+                                    <td>{{ usuario.nome_completo }}</td>
+                                    <td>{{ usuario.email }}</td>
+                                    <td>
+                                        {% if usuario.tipo_usuario_id == 1 %}
+                                        <span class="badge bg-danger">Admin</span>
+                                        {% elif usuario.tipo_usuario_id == 2 %}
+                                        <span class="badge bg-success">Participante</span>
+                                        {% elif usuario.tipo_usuario_id == 3 %}
+                                        <span class="badge bg-info">Orientador</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">Visitante</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ usuario.numero_inscricao or '-' }}</td>
+                                    <td>{{ usuario.data_criacao.strftime('%d/%m/%Y') if usuario.data_criacao else '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Adicionar Usuário -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus"></i> Adicionar Novo Usuário
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addUserForm">
+                    <div class="mb-3">
+                        <label class="form-label">Nome Completo</label>
+                        <input type="text" class="form-control" name="nome_completo" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Senha</label>
+                        <input type="password" class="form-control" name="senha" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Usuário</label>
+                        <select class="form-select" name="tipo_usuario_id" required>
+                            {% for tipo in tipos_usuario %}
+                            <option value="{{ tipo.id }}">{{ tipo.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">BP (Número de Inscrição)</label>
+                        <input type="text" 
+                               class="form-control" 
+                               name="numero_inscricao"
+                               maxlength="12"
+                               placeholder="BP12345678X"
+                               style="text-transform: uppercase;">
+                        <small class="text-muted">Obrigatório para participantes e orientadores</small>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="saveUserBtn">
+                    <i class="fas fa-save"></i> Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle IA Status
+document.getElementById('toggleIABtn').addEventListener('click', async function() {
+    if (!confirm('Deseja alterar o status da IA?')) return;
+    
+    try {
+        const response = await fetch('/admin/toggle-ia', { method: 'POST' });
+        const data = await response.json();
+        
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erro: ' + data.message);
+        }
+    } catch (error) {
+        alert('Erro ao alterar status da IA');
+    }
+});
+
+// Adicionar usuário
+document.getElementById('saveUserBtn').addEventListener('click', async function() {
+    const form = document.getElementById('addUserForm');
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData);
+    
+    // Validação de BP
+    const tipoId = parseInt(data.tipo_usuario_id);
+    if ([2, 3].includes(tipoId) && !data.numero_inscricao) {
+        alert('BP é obrigatório para participantes e orientadores');
+        return;
+    }
+    
+    if (data.numero_inscricao) {
+        const bpRegex = /^BP\d{1,8}[A-Z]?$/;
+        if (!bpRegex.test(data.numero_inscricao.toUpperCase())) {
+            alert('BP inválido. Use o formato: BP12345678X\nExemplos: BP123456, BP12345678A');
+            return;
+        }
+    }
+    
+    try {
+        const response = await fetch('/admin/adicionar-usuario', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Usuário criado com sucesso!');
+            location.reload();
+        } else {
+            alert('Erro: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erro ao criar usuário');
+    }
+});
+</script>
+{% endblock %}
