@@ -1,4 +1,4 @@
-ola gemini, boa tarde, preciso de sua ajuda pra fazer um site de chatbot de ia, é bastante coisa entao vamos la
+ola claude, boa tarde, preciso de sua ajuda pra fazer um site de chatbot de ia, é bastante coisa entao vamos la
 
 É o seguinte, o nome do projeto é apbia (assistente de projetos pra bragantec baseado em IA)
 
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS ferramentas_chat ( -- ferramentas igual o chatgpt e g
     UNIQUE (chat_id, nome_ferramenta)
 );
 
-o banco de dados tem mais coisa do que o projeto nessesita, isso é pro futuro, ignore os extras no banco de dados e foque no que pedi
+o banco de dados tem mais coisa do que o projeto nessesita, isso é pro futuro, não esqueça de por eles no supabase tbm
 
 usaremos classes no python para melhor organização junto com POO e MVC
 pesquise sobre poo e mvc com dao pra atualizar suas informações
