@@ -3,9 +3,14 @@ Flask-Login==0.6.3
 Flask-CORS==4.0.0
 python-dotenv==1.0.0
 bcrypt==4.1.2
-psycopg2-binary==2.9.9
-supabase==2.3.4
-google-generativeai==0.3.2
-Werkzeug==3.0.1
-Jinja2==3.1.3
-gunicorn==21.2.0
+werkzeug==3.0.1
+jinja2==3.1.3
+
+# Supabase (sem especificar dependências - pip resolve sozinho)
+supabase==2.9.0
+
+# Google Gemini
+google-generativeai==0.8.3
+
+# Servidor (não funciona no Windows, comentado)
+# gunicorn==21.2.0

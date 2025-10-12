@@ -1,4 +1,4 @@
-from supabase import create_client
+from supabase import create_client, Client
 from config import Config
 from models.models import Usuario, Projeto, Chat, ArquivoChat, FerramentaChat, TipoUsuario, TipoIA
 import bcrypt
@@ -7,7 +7,20 @@ class SupabaseDAO:
     """Data Access Object para Supabase"""
     
     def __init__(self):
-        self.supabase = create_client(Config.SUPABASE_URL, Config.SUPABASE_KEY)
+        try:
+            # Tenta criar client com argumentos mínimos
+            self.supabase: Client = create_client(
+                Config.SUPABASE_URL, 
+                Config.SUPABASE_KEY
+            )
+        except TypeError:
+            # Fallback para versões mais antigas
+            from supabase.client import ClientOptions
+            self.supabase = create_client(
+                Config.SUPABASE_URL,
+                Config.SUPABASE_KEY,
+                options=ClientOptions()
+            )
     
     # ============ USUÁRIOS ============
     
