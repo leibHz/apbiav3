@@ -90,36 +90,68 @@ class SupabaseDAO:
     
     # ============ PROJETOS ============
     
-    def criar_projeto(self, nome, descricao, area_projeto, ano_edicao):
-        """Cria um novo projeto"""
+    def criar_projeto_completo(self, nome, categoria, **kwargs):
+        """Cria um projeto completo com todos os campos"""
+        from datetime import datetime
+        
         data = {
             'nome': nome,
-            'descricao': descricao,
-            'area_projeto': area_projeto,
-            'ano_edicao': ano_edicao
+            'categoria': categoria,
+            'resumo': kwargs.get('resumo'),
+            'palavras_chave': kwargs.get('palavras_chave'),
+            'introducao': kwargs.get('introducao'),
+            'objetivo_geral': kwargs.get('objetivo_geral'),
+            'objetivos_especificos': kwargs.get('objetivos_especificos', []),
+            'metodologia': kwargs.get('metodologia'),
+            'cronograma': kwargs.get('cronograma'),
+            'resultados_esperados': kwargs.get('resultados_esperados'),
+            'referencias_bibliograficas': kwargs.get('referencias_bibliograficas'),
+            'eh_continuacao': kwargs.get('eh_continuacao', False),
+            'projeto_anterior_titulo': kwargs.get('projeto_anterior_titulo'),
+            'projeto_anterior_resumo': kwargs.get('projeto_anterior_resumo'),
+            'projeto_anterior_inicio': kwargs.get('projeto_anterior_inicio'),
+            'projeto_anterior_termino': kwargs.get('projeto_anterior_termino'),
+            'status': kwargs.get('status', 'rascunho'),
+            'ano_edicao': kwargs.get('ano_edicao', datetime.now().year),
+            'gerado_por_ia': kwargs.get('gerado_por_ia', False),
+            'prompt_ia_usado': kwargs.get('prompt_ia_usado')
         }
+        
         result = self.supabase.table('projetos').insert(data).execute()
         return self._row_to_projeto(result.data[0]) if result.data else None
     
-    def buscar_projeto_por_id(self, projeto_id):
-        """Busca projeto por ID"""
-        result = self.supabase.table('projetos').select('*').eq('id', projeto_id).execute()
-        return self._row_to_projeto(result.data[0]) if result.data else None
+    def atualizar_projeto(self, projeto_id, **kwargs):
+        """Atualiza campos de um projeto"""
+        # Remove campos None para não sobrescrever
+        data = {k: v for k, v in kwargs.items() if v is not None}
+        
+        if data:
+            result = self.supabase.table('projetos').update(data).eq('id', projeto_id).execute()
+            return self._row_to_projeto(result.data[0]) if result.data else None
+        return None
     
-    def listar_projetos_por_usuario(self, usuario_id):
-        """Lista projetos de um usuário"""
-        result = self.supabase.table('participantes_projetos').select('projeto_id').eq('participante_id', usuario_id).execute()
-        projeto_ids = [row['projeto_id'] for row in result.data] if result.data else []
-        
-        if not projeto_ids:
-            return []
-        
-        projetos = []
-        for pid in projeto_ids:
-            projeto = self.buscar_projeto_por_id(pid)
-            if projeto:
-                projetos.append(projeto)
-        return projetos
+    def deletar_projeto(self, projeto_id):
+        """Deleta um projeto"""
+        result = self.supabase.table('projetos').delete().eq('id', projeto_id).execute()
+        return bool(result.data)
+    
+    def associar_participante_projeto(self, participante_id, projeto_id):
+        """Associa participante a projeto"""
+        data = {
+            'participante_id': participante_id,
+            'projeto_id': projeto_id
+        }
+        result = self.supabase.table('participantes_projetos').insert(data).execute()
+        return bool(result.data)
+    
+    def associar_orientador_projeto(self, orientador_id, projeto_id):
+        """Associa orientador a projeto"""
+        data = {
+            'orientador_id': orientador_id,
+            'projeto_id': projeto_id
+        }
+        result = self.supabase.table('orientadores_projetos').insert(data).execute()
+        return bool(result.data)
     
     # ============ CHATS ============
     
@@ -164,6 +196,29 @@ class SupabaseDAO:
     
     def _row_to_usuario(self, row):
         """Converte linha do banco para objeto Usuario"""
+        from datetime import datetime
+        
+        # Converte strings de data para datetime
+        data_criacao = None
+        if row.get('data_criacao'):
+            if isinstance(row['data_criacao'], str):
+                try:
+                    data_criacao = datetime.fromisoformat(row['data_criacao'].replace('Z', '+00:00'))
+                except:
+                    data_criacao = None
+            else:
+                data_criacao = row['data_criacao']
+        
+        data_atualizacao = None
+        if row.get('data_atualizacao'):
+            if isinstance(row['data_atualizacao'], str):
+                try:
+                    data_atualizacao = datetime.fromisoformat(row['data_atualizacao'].replace('Z', '+00:00'))
+                except:
+                    data_atualizacao = None
+            else:
+                data_atualizacao = row['data_atualizacao']
+        
         return Usuario(
             id=row['id'],
             nome_completo=row['nome_completo'],
@@ -171,27 +226,51 @@ class SupabaseDAO:
             senha_hash=row.get('senha_hash'),
             tipo_usuario_id=row['tipo_usuario_id'],
             numero_inscricao=row.get('numero_inscricao'),
-            data_criacao=row.get('data_criacao'),
-            data_atualizacao=row.get('data_atualizacao')
+            data_criacao=data_criacao,
+            data_atualizacao=data_atualizacao
         )
     
     def _row_to_projeto(self, row):
         """Converte linha do banco para objeto Projeto"""
+        from datetime import datetime
+        
+        data_criacao = None
+        if row.get('data_criacao'):
+            if isinstance(row['data_criacao'], str):
+                try:
+                    data_criacao = datetime.fromisoformat(row['data_criacao'].replace('Z', '+00:00'))
+                except:
+                    data_criacao = None
+            else:
+                data_criacao = row['data_criacao']
+        
         return Projeto(
             id=row['id'],
             nome=row['nome'],
             descricao=row.get('descricao'),
             area_projeto=row['area_projeto'],
             ano_edicao=row['ano_edicao'],
-            data_criacao=row.get('data_criacao')
+            data_criacao=data_criacao
         )
     
     def _row_to_chat(self, row):
         """Converte linha do banco para objeto Chat"""
+        from datetime import datetime
+        
+        data_criacao = None
+        if row.get('data_criacao'):
+            if isinstance(row['data_criacao'], str):
+                try:
+                    data_criacao = datetime.fromisoformat(row['data_criacao'].replace('Z', '+00:00'))
+                except:
+                    data_criacao = None
+            else:
+                data_criacao = row['data_criacao']
+        
         return Chat(
             id=row['id'],
             usuario_id=row['usuario_id'],
             tipo_ia_id=row['tipo_ia_id'],
             titulo=row['titulo'],
-            data_criacao=row.get('data_criacao')
+            data_criacao=data_criacao
         )

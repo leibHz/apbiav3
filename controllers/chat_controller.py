@@ -59,11 +59,30 @@ def send_message():
         else:
             tipo_usuario = 'visitante'
         
+        # NOVO: Busca projetos do usuário para contexto
+        projetos = dao.listar_projetos_por_usuario(current_user.id)
+        contexto_projetos = ""
+        
+        if projetos:
+            contexto_projetos = "\n\n=== PROJETOS DO USUÁRIO ===\n"
+            for projeto in projetos:
+                contexto_projetos += f"""
+                Projeto: {projeto.nome}
+                Categoria: {projeto.categoria}
+                Status: {projeto.status}
+                Resumo: {projeto.resumo or 'Não informado'}
+                Objetivo Geral: {projeto.objetivo_geral or 'Não informado'}
+                ---
+                """
+        
+        # Adiciona contexto dos projetos à mensagem
+        message_com_contexto = f"{contexto_projetos}\n\nMENSAGEM DO USUÁRIO: {message}"
+        
         # Recupera histórico se existir
         history = chat_histories.get(f"{current_user.id}_{chat_id}", []) if chat_id else []
         
         # Envia para Gemini
-        response = gemini.chat(message, tipo_usuario=tipo_usuario, history=history)
+        response = gemini.chat(message_com_contexto, tipo_usuario=tipo_usuario, history=history)
         
         # Atualiza histórico
         if chat_id:

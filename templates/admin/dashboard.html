@@ -137,7 +137,7 @@
                                         {% endif %}
                                     </td>
                                     <td>{{ usuario.numero_inscricao or '-' }}</td>
-                                    <td>{{ usuario.data_criacao.strftime('%d/%m/%Y') if usuario.data_criacao else '-' }}</td>
+                                    <td>{{ usuario.data_criacao|format_date }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

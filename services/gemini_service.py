@@ -95,13 +95,12 @@ class GeminiService:
             {message}
             """
             
-            # Configura generation config com thinking mode
+            # Configura generation config (SEM thinking_budget que não é suportado)
             generation_config = {
                 "temperature": 0.7,
                 "top_p": 0.95,
                 "top_k": 40,
                 "max_output_tokens": 8192,
-                "thinking_budget": -1  # Deixa o modelo decidir quanto pensar
             }
             
             # Cria chat com histórico se fornecido
@@ -112,7 +111,7 @@ class GeminiService:
                     generation_config=generation_config
                 )
             else:
-                # Primeira mensagem
+                # Primeira mensagem com system instruction
                 chat = self.model.start_chat()
                 system_msg = self._get_system_instruction(tipo_usuario)
                 response = chat.send_message(
@@ -120,13 +119,13 @@ class GeminiService:
                     generation_config=generation_config
                 )
             
-            # Extrai resposta e thinking process
+            # Extrai resposta
             result = {
                 'response': response.text,
                 'thinking_process': None
             }
             
-            # Tenta extrair thinking process se disponível
+            # Tenta extrair thinking process se disponível (futuro)
             if hasattr(response, 'candidates') and response.candidates:
                 candidate = response.candidates[0]
                 if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
@@ -139,7 +138,7 @@ class GeminiService:
             
         except Exception as e:
             return {
-                'response': f"Erro ao processar mensagem: {str(e)}",
+                'response': f"Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente. Detalhes: {str(e)}",
                 'thinking_process': None,
                 'error': True
             }
@@ -185,7 +184,6 @@ class GeminiService:
                 "temperature": 0.7,
                 "top_p": 0.95,
                 "max_output_tokens": 8192,
-                "thinking_budget": -1
             }
             
             response = self.model.generate_content(

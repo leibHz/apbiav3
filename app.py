@@ -7,6 +7,7 @@ from dao.dao import SupabaseDAO
 from controllers.auth_controller import auth_bp
 from controllers.chat_controller import chat_bp
 from controllers.admin_controller import admin_bp
+from controllers.project_controller import project_bp
 
 # Inicializa aplicação
 app = Flask(__name__)
@@ -60,6 +61,49 @@ def inject_globals():
         'app_version': '1.0.0',
         'ia_status': Config.IA_STATUS
     }
+
+# Filtro customizado para formatar datas
+@app.template_filter('format_date')
+def format_date_filter(date_value):
+    """Formata data para exibição"""
+    if not date_value:
+        return '-'
+    
+    from datetime import datetime
+    
+    # Se já for datetime, formata direto
+    if isinstance(date_value, datetime):
+        return date_value.strftime('%d/%m/%Y')
+    
+    # Se for string, converte primeiro
+    if isinstance(date_value, str):
+        try:
+            dt = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+            return dt.strftime('%d/%m/%Y')
+        except:
+            return date_value  # Retorna string original se não conseguir converter
+    
+    return '-'
+
+@app.template_filter('format_datetime')
+def format_datetime_filter(date_value):
+    """Formata data e hora para exibição"""
+    if not date_value:
+        return '-'
+    
+    from datetime import datetime
+    
+    if isinstance(date_value, datetime):
+        return date_value.strftime('%d/%m/%Y %H:%M')
+    
+    if isinstance(date_value, str):
+        try:
+            dt = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
+            return dt.strftime('%d/%m/%Y %H:%M')
+        except:
+            return date_value
+    
+    return '-'
 
 if __name__ == '__main__':
     app.run(debug=Config.DEBUG, host='0.0.0.0', port=5000)

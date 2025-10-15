@@ -69,22 +69,63 @@ class Usuario(UserMixin):
 
 class Projeto:
     """Modelo para projetos"""
-    def __init__(self, id, nome, descricao, area_projeto, ano_edicao, data_criacao=None):
+    def __init__(self, id, nome, categoria, resumo=None, palavras_chave=None,
+                 introducao=None, objetivo_geral=None, objetivos_especificos=None,
+                 metodologia=None, cronograma=None, resultados_esperados=None,
+                 referencias_bibliograficas=None, eh_continuacao=False,
+                 projeto_anterior_titulo=None, projeto_anterior_resumo=None,
+                 projeto_anterior_inicio=None, projeto_anterior_termino=None,
+                 status='rascunho', ano_edicao=None, data_criacao=None,
+                 data_atualizacao=None, gerado_por_ia=False, prompt_ia_usado=None):
         self.id = id
         self.nome = nome
-        self.descricao = descricao
-        self.area_projeto = area_projeto
-        self.ano_edicao = ano_edicao
+        self.categoria = categoria
+        self.resumo = resumo
+        self.palavras_chave = palavras_chave
+        self.introducao = introducao
+        self.objetivo_geral = objetivo_geral
+        self.objetivos_especificos = objetivos_especificos or []
+        self.metodologia = metodologia
+        self.cronograma = cronograma
+        self.resultados_esperados = resultados_esperados
+        self.referencias_bibliograficas = referencias_bibliograficas
+        self.eh_continuacao = eh_continuacao
+        self.projeto_anterior_titulo = projeto_anterior_titulo
+        self.projeto_anterior_resumo = projeto_anterior_resumo
+        self.projeto_anterior_inicio = projeto_anterior_inicio
+        self.projeto_anterior_termino = projeto_anterior_termino
+        self.status = status
+        self.ano_edicao = ano_edicao or datetime.now().year
         self.data_criacao = data_criacao or datetime.now()
+        self.data_atualizacao = data_atualizacao or datetime.now()
+        self.gerado_por_ia = gerado_por_ia
+        self.prompt_ia_usado = prompt_ia_usado
     
     def to_dict(self):
         return {
             'id': self.id,
             'nome': self.nome,
-            'descricao': self.descricao,
-            'area_projeto': self.area_projeto,
+            'categoria': self.categoria,
+            'resumo': self.resumo,
+            'palavras_chave': self.palavras_chave,
+            'introducao': self.introducao,
+            'objetivo_geral': self.objetivo_geral,
+            'objetivos_especificos': self.objetivos_especificos,
+            'metodologia': self.metodologia,
+            'cronograma': self.cronograma,
+            'resultados_esperados': self.resultados_esperados,
+            'referencias_bibliograficas': self.referencias_bibliograficas,
+            'eh_continuacao': self.eh_continuacao,
+            'projeto_anterior_titulo': self.projeto_anterior_titulo,
+            'projeto_anterior_resumo': self.projeto_anterior_resumo,
+            'projeto_anterior_inicio': self.projeto_anterior_inicio.isoformat() if self.projeto_anterior_inicio else None,
+            'projeto_anterior_termino': self.projeto_anterior_termino.isoformat() if self.projeto_anterior_termino else None,
+            'status': self.status,
             'ano_edicao': self.ano_edicao,
-            'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None
+            'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
+            'data_atualizacao': self.data_atualizacao.isoformat() if self.data_atualizacao else None,
+            'gerado_por_ia': self.gerado_por_ia,
+            'prompt_ia_usado': self.prompt_ia_usado
         }
 
 

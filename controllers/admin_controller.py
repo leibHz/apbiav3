@@ -217,5 +217,22 @@ def toggle_ia():
 @admin_required
 def configuracoes():
     """Página de configurações"""
+    import os
+    
+    # Lista arquivos de contexto
+    context_files = []
+    context_path = Config.CONTEXT_FILES_PATH
+    
+    if os.path.exists(context_path):
+        for filename in os.listdir(context_path):
+            if filename.endswith('.txt'):
+                filepath = os.path.join(context_path, filename)
+                size = os.path.getsize(filepath)
+                context_files.append({
+                    'name': filename,
+                    'size': f"{size / 1024:.2f} KB"
+                })
+    
     return render_template('admin/configuracoes.html', 
-                         ia_status=Config.IA_STATUS)
+                         ia_status=Config.IA_STATUS,
+                         context_files=context_files)
