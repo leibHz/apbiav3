@@ -1,0 +1,278 @@
+Olá! Estou continuando o desenvolvimento do **APBIA** (Assistente de Projetos para Bragantec Baseado em IA), um sistema completo desenvolvido em Python Flask + Google Gemini 2.5 Flash + Supabase (PostgreSQL).
+
+## 📊 O QUE JÁ ESTÁ IMPLEMENTADO
+
+### ✅ Sistema Completo Funcionando
+1. **Autenticação**
+   - Login com email, senha e BP (formato BP12345678X)
+   - BP obrigatório para participantes/orientadores
+   - Flask-Login + bcrypt
+   - Sessões persistentes
+
+2. **Banco de Dados (Supabase/PostgreSQL)**
+   - 9 tabelas relacionais completas
+   - Schema adaptado para PostgreSQL
+   - DAO completo com POO + MVC
+   - Todas as tabelas: usuarios, projetos, chats, arquivos_chat, etc
+
+3. **Chat com IA (Gemini 2.5 Flash)**
+   - Interface completa
+   - Personalidade adaptada por tipo de usuário
+   - Upload e análise de arquivos
+   - Contexto dos projetos do usuário integrado
+   - **PROBLEMA**: Histórico não persiste no BD (só em memória)
+
+4. **Sistema de Projetos**
+   - CRUD completo
+   - Formulário baseado no documento oficial da Bragantec
+   - IA gera 4 ideias (uma por categoria)
+   - Autocompletar campos com IA
+   - Geração de PDF profissional (ReportLab) com logo SVG
+   - Integração com chat (IA conhece os projetos)
+
+5. **Painel Admin**
+   - Dashboard com estatísticas
+   - Gerenciar usuários (CRUD)
+   - Toggle IA on/off
+   - Visualização de arquivos de contexto
+
+6. **Frontend**
+   - Bootstrap 5.3.3
+   - Font Awesome 6
+   - Design responsivo
+   - Páginas de erro
+
+## 🚨 O QUE PRECISA SER IMPLEMENTADO AGORA
+
+### 1️⃣ **SALVAR HISTÓRICO DE MENSAGENS NO BANCO**
+**Problema atual**: Mensagens ficam apenas em memória (variável Python `chat_histories`)
+
+**O que fazer**:
+- Criar tabela `mensagens` no Supabase:
+```sql
+CREATE TABLE mensagens (
+    id SERIAL PRIMARY KEY,
+    chat_id INT NOT NULL,
+    role VARCHAR(20) NOT NULL, -- 'user' ou 'model'
+    conteudo TEXT NOT NULL,
+    data_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (chat_id) REFERENCES chats(id) ON DELETE CASCADE
+);
+```
+
+- Atualizar `chat_controller.py`:
+  - Salvar cada mensagem enviada/recebida no banco
+  - Carregar histórico ao abrir chat existente
+  - Passar histórico correto para o Gemini (verificar continuidade da conversa)
+
+### 2️⃣ **IMPLEMENTAR GOOGLE SEARCH (Ferramenta da IA)**
+**Documentação**: https://ai.google.dev/gemini-api/docs/google-search?hl=pt-br
+
+**O que fazer**:
+- Adicionar toggle "Modo Pesquisar" na interface do chat (ativado por padrão)
+- Integrar Google Search com Gemini usando a documentação
+- Combinar com contexto de URL: https://ai.google.dev/gemini-api/docs/url-context?hl=pt-br
+- Salvar preferência do usuário (pesquisa on/off) no banco
+
+**Exemplo de implementação**:
+```python
+# No gemini_service.py
+tools = ["google_search_retrieval"] if usar_pesquisa else []
+
+response = self.model.generate_content(
+    message,
+    generation_config=generation_config,
+    tools=tools  # Adicionar aqui
+)
+```
+
+### 3️⃣ **FUNCTION CALLING (Opcional)**
+**Documentação**: https://ai.google.dev/gemini-api/docs/function-calling?hl=pt-br
+
+**Ferramentas úteis**:
+- Calculadora
+- Busca de informações
+- Geração de gráficos
+- Análise de dados
+
+Avaliar se vale a pena implementar agora ou deixar para o futuro.
+
+### 4️⃣ **LOGO SVG NO PDF**
+**Logo da Bragantec**: (imagem fornecida)
+
+**O que fazer**:
+- Salvar logo como `static/img/logo_bragantec.svg`
+- Instalar: `pip install svglib==1.5.1`
+- O código já está atualizado em `pdf_service.py`
+
+## 📁 ESTRUTURA DO PROJETO
+```
+apbia/
+├── app.py
+├── config.py
+├── requirements.txt
+├── .env
+│
+├── models/
+│   └── models.py
+├── dao/
+│   └── dao.py
+├── controllers/
+│   ├── auth_controller.py
+│   ├── chat_controller.py
+│   ├── admin_controller.py
+│   └── project_controller.py
+├── services/
+│   ├── gemini_service.py
+│   └── pdf_service.py
+├── utils/
+│   ├── decorators.py
+│   └── helpers.py
+├── static/
+│   ├── css/style.css
+│   ├── js/
+│   │   ├── main.js
+│   │   ├── chat.js
+│   │   └── projeto.js
+│   └── img/
+├── templates/
+│   ├── base.html
+│   ├── index.html
+│   ├── login.html
+│   ├── chat.html
+│   ├── admin/
+│   └── projetos/
+└── context_files/
+```
+
+## 🔑 INFORMAÇÕES IMPORTANTES
+
+- **Python**: 3.11+ (3.13 tem incompatibilidades)
+- **Supabase URL**: https://bqgxmgoxirxmuvokzfkz.supabase.co
+- **Gemini Model**: gemini-2.5-flash
+- **Formato BP**: BP12345678X (1-8 dígitos + letra opcional)
+
+## 🎯 PRIORIDADE DE IMPLEMENTAÇÃO
+
+1. **ALTA**: Salvar mensagens no banco (essencial)
+2. **ALTA**: Google Search integration
+3. **MÉDIA**: Verificar continuidade de conversa
+4. **BAIXA**: Function calling
+
+## 📝 ARQUIVOS QUE PRECISAM SER EDITADOS
+
+1. **Criar**: `migrations/create_mensagens_table.sql`
+2. **Editar**: `dao/dao.py` (adicionar métodos de mensagens)
+3. **Editar**: `controllers/chat_controller.py` (salvar/carregar histórico)
+4. **Editar**: `services/gemini_service.py` (adicionar Google Search)
+5. **Editar**: `templates/chat.html` (toggle de pesquisa)
+6. **Editar**: `static/js/chat.js` (preferência de pesquisa)
+
+## ❓ DÚVIDAS A RESOLVER
+
+1. Como o histórico deve ser carregado? Todas as mensagens ou últimas N?
+2. Limit de mensagens por chat?
+3. Google Search deve ter custo/limite de uso?
+4. Function calling: quais funções implementar primeiro?
+
+---
+
+**IMPORTANTE**: O sistema já está 90% pronto e funcionando! Só falta persistência de mensagens e as ferramentas de IA. Priorize o histórico de mensagens, pois é crítico para a experiência do usuário.
+
+**TECNOLOGIAS**: Python Flask, Google Gemini 2.5 Flash, Supabase (PostgreSQL), Bootstrap 5.3, ReportLab
+
+**POR FAVOR**: Comece implementando o sistema de histórico de mensagens no banco de dados e depois a integração com Google Search. Use as documentações fornecidas!
+
+o banco de dados completo caso precise
+
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.arquivos_chat (
+  id integer NOT NULL DEFAULT nextval('arquivos_chat_id_seq'::regclass),
+  chat_id integer NOT NULL,
+  nome_arquivo character varying NOT NULL,
+  url_arquivo character varying NOT NULL,
+  tipo_arquivo character varying,
+  tamanho_bytes bigint,
+  data_upload timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT arquivos_chat_pkey PRIMARY KEY (id),
+  CONSTRAINT arquivos_chat_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
+);
+CREATE TABLE public.chats (
+  id integer NOT NULL DEFAULT nextval('chats_id_seq'::regclass),
+  usuario_id integer NOT NULL,
+  tipo_ia_id integer NOT NULL,
+  titulo character varying NOT NULL,
+  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chats_pkey PRIMARY KEY (id),
+  CONSTRAINT chats_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id),
+  CONSTRAINT chats_tipo_ia_id_fkey FOREIGN KEY (tipo_ia_id) REFERENCES public.tipos_ia(id)
+);
+CREATE TABLE public.ferramentas_chat (
+  id integer NOT NULL DEFAULT nextval('ferramentas_chat_id_seq'::regclass),
+  chat_id integer NOT NULL,
+  nome_ferramenta character varying NOT NULL,
+  CONSTRAINT ferramentas_chat_pkey PRIMARY KEY (id),
+  CONSTRAINT ferramentas_chat_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
+);
+CREATE TABLE public.orientadores_projetos (
+  orientador_id integer NOT NULL,
+  projeto_id integer NOT NULL,
+  CONSTRAINT orientadores_projetos_pkey PRIMARY KEY (orientador_id, projeto_id),
+  CONSTRAINT orientadores_projetos_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id)
+);
+CREATE TABLE public.participantes_projetos (
+  participante_id integer NOT NULL,
+  projeto_id integer NOT NULL,
+  CONSTRAINT participantes_projetos_pkey PRIMARY KEY (participante_id, projeto_id),
+  CONSTRAINT participantes_projetos_participante_id_fkey FOREIGN KEY (participante_id) REFERENCES public.usuarios(id)
+);
+CREATE TABLE public.projetos (
+  id integer NOT NULL DEFAULT nextval('projetos_id_seq'::regclass),
+  nome character varying NOT NULL,
+  categoria character varying NOT NULL,
+  resumo text,
+  palavras_chave text,
+  introducao text,
+  objetivo_geral text,
+  objetivos_especificos ARRAY,
+  metodologia text,
+  cronograma jsonb,
+  resultados_esperados text,
+  referencias_bibliograficas text,
+  eh_continuacao boolean DEFAULT false,
+  projeto_anterior_titulo character varying,
+  projeto_anterior_resumo text,
+  projeto_anterior_inicio date,
+  projeto_anterior_termino date,
+  status character varying DEFAULT 'rascunho'::character varying,
+  ano_edicao integer NOT NULL DEFAULT 2025,
+  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  data_atualizacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  gerado_por_ia boolean DEFAULT false,
+  prompt_ia_usado text,
+  CONSTRAINT projetos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.tipos_ia (
+  id integer NOT NULL DEFAULT nextval('tipos_ia_id_seq'::regclass),
+  nome character varying NOT NULL UNIQUE,
+  CONSTRAINT tipos_ia_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.tipos_usuario (
+  id integer NOT NULL DEFAULT nextval('tipos_usuario_id_seq'::regclass),
+  nome character varying NOT NULL UNIQUE,
+  CONSTRAINT tipos_usuario_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.usuarios (
+  id integer NOT NULL DEFAULT nextval('usuarios_id_seq'::regclass),
+  nome_completo character varying NOT NULL,
+  email character varying NOT NULL UNIQUE,
+  senha_hash character varying,
+  tipo_usuario_id integer NOT NULL,
+  numero_inscricao character varying UNIQUE,
+  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  data_atualizacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT usuarios_pkey PRIMARY KEY (id),
+  CONSTRAINT usuarios_tipo_usuario_id_fkey FOREIGN KEY (tipo_usuario_id) REFERENCES public.tipos_usuario(id)
+);
