@@ -186,19 +186,32 @@ class BragantecPDFGenerator:
         )
     
     def _add_header(self, canvas, doc):
-        """Adiciona cabeçalho vermelho em todas as páginas"""
+        """Adiciona cabeçalho vermelho com logo em todas as páginas"""
         canvas.saveState()
         
         # Retângulo vermelho no topo
         canvas.setFillColor(self.cor_cabecalho)
         canvas.rect(0, self.height - 2*cm, self.width, 2*cm, fill=1, stroke=0)
         
-        # Texto "BRAGANTEC" em branco
-        canvas.setFillColor(colors.white)
-        canvas.setFont('Helvetica-Bold', 18)
-        canvas.drawCentredString(self.width/2, self.height - 1.3*cm, "BRAGANTEC 2025")
+        # Logo da Bragantec (se existir)
+        try:
+            from reportlab.graphics import renderPDF
+            from svglib.svglib import svg2rlg
+            
+            logo = svg2rlg('static/img/logo_bragantec.svg')
+            if logo:
+                logo.width = 4*cm
+                logo.height = 1.5*cm
+                logo.scale(0.8, 0.8)
+                renderPDF.draw(logo, canvas, 1.5*cm, self.height - 1.8*cm)
+        except:
+            # Fallback: texto se logo não disponível
+            canvas.setFillColor(colors.white)
+            canvas.setFont('Helvetica-Bold', 18)
+            canvas.drawString(2*cm, self.height - 1.3*cm, "BRAGANTEC")
         
         # Subtítulo
+        canvas.setFillColor(colors.white)
         canvas.setFont('Helvetica', 10)
         canvas.drawCentredString(self.width/2, self.height - 1.7*cm, 
                                 "13ª Feira de Ciências - IFSP Bragança Paulista")
