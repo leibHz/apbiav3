@@ -1,9 +1,11 @@
-// Chat JavaScript - APBIA
+// Chat JavaScript - APBIA com Histórico Persistente e Google Search
 let currentChatId = null;
+let usarPesquisaGoogle = true; // Google Search ativado por padrão
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     initializeChatHandlers();
+    loadSearchPreference();
 });
 
 function initializeChatHandlers() {
@@ -33,6 +35,21 @@ function initializeChatHandlers() {
         fileInput.addEventListener('change', handleFileUpload);
     }
     
+    // Toggle Google Search
+    const searchToggle = document.getElementById('searchToggle');
+    if (searchToggle) {
+        searchToggle.checked = usarPesquisaGoogle;
+        searchToggle.addEventListener('change', function() {
+            usarPesquisaGoogle = this.checked;
+            localStorage.setItem('apbia_usar_pesquisa', usarPesquisaGoogle);
+            
+            const msg = usarPesquisaGoogle ? 
+                'Google Search ativado - IA pode buscar informações atualizadas' : 
+                'Google Search desativado - IA usará apenas conhecimento base';
+            APBIA.showNotification(msg, 'info');
+        });
+    }
+    
     // Itens do histórico
     document.querySelectorAll('.chat-item').forEach(item => {
         item.addEventListener('click', function(e) {
@@ -49,6 +66,18 @@ function initializeChatHandlers() {
             deleteChat(this.dataset.chatId);
         });
     });
+}
+
+function loadSearchPreference() {
+    // Carrega preferência de pesquisa do localStorage
+    const saved = localStorage.getItem('apbia_usar_pesquisa');
+    if (saved !== null) {
+        usarPesquisaGoogle = saved === 'true';
+        const toggle = document.getElementById('searchToggle');
+        if (toggle) {
+            toggle.checked = usarPesquisaGoogle;
+        }
+    }
 }
 
 async function handleSendMessage(e) {
@@ -76,7 +105,8 @@ async function handleSendMessage(e) {
             },
             body: JSON.stringify({
                 message: message,
-                chat_id: currentChatId
+                chat_id: currentChatId,
+                usar_pesquisa: usarPesquisaGoogle
             })
         });
         
@@ -86,11 +116,16 @@ async function handleSendMessage(e) {
         
         if (data.success) {
             // Adiciona resposta da IA
-            addMessageToChat('assistant', data.response, data.thinking_process);
+            addMessageToChat('assistant', data.response, data.thinking_process, data.search_used);
             
             // Atualiza ID do chat se for novo
             if (data.chat_id && !currentChatId) {
                 currentChatId = data.chat_id;
+                
+                // Recarrega página para atualizar lista de chats
+                setTimeout(() => {
+                    location.reload();
+                }, 1000);
             }
         } else {
             showError(data.message || 'Erro ao processar mensagem');
@@ -103,7 +138,7 @@ async function handleSendMessage(e) {
     }
 }
 
-function addMessageToChat(role, content, thinking = null) {
+function addMessageToChat(role, content, thinking = null, searchUsed = false) {
     const messagesContainer = document.getElementById('chatMessages');
     
     // Remove mensagem de boas-vindas
@@ -114,18 +149,29 @@ function addMessageToChat(role, content, thinking = null) {
     
     // Cria elemento da mensagem
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${role}`;
+    messageDiv.className = `message ${role} fade-in`;
     
     // Conteúdo
     const contentDiv = document.createElement('div');
-    contentDiv.textContent = content;
+    contentDiv.className = 'message-content';
+    
+    // Formata o texto (mantém quebras de linha)
+    contentDiv.innerHTML = formatMessageContent(content);
     messageDiv.appendChild(contentDiv);
+    
+    // Badge de Google Search usado
+    if (role === 'assistant' && searchUsed) {
+        const searchBadge = document.createElement('div');
+        searchBadge.className = 'mt-2';
+        searchBadge.innerHTML = '<small class="badge bg-info"><i class="fas fa-search"></i> Consultou Google Search</small>';
+        messageDiv.appendChild(searchBadge);
+    }
     
     // Se houver thinking process, adiciona
     if (thinking) {
         const thinkingDiv = document.createElement('div');
-        thinkingDiv.className = 'alert alert-info mt-2';
-        thinkingDiv.innerHTML = `<small><strong>Processo de Pensamento:</strong><br>${thinking}</small>`;
+        thinkingDiv.className = 'alert alert-info mt-2 mb-0';
+        thinkingDiv.innerHTML = `<small><strong><i class="fas fa-brain"></i> Processo de Pensamento:</strong><br>${thinking}</small>`;
         messageDiv.appendChild(thinkingDiv);
     }
     
@@ -142,6 +188,22 @@ function addMessageToChat(role, content, thinking = null) {
     
     // Scroll para o fim
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+function formatMessageContent(content) {
+    // Escapa HTML mas mantém formatação
+    const div = document.createElement('div');
+    div.textContent = content;
+    let html = div.innerHTML;
+    
+    // Converte quebras de linha em <br>
+    html = html.replace(/\n/g, '<br>');
+    
+    // Detecta e formata listas
+    html = html.replace(/^- (.+)$/gm, '• $1');
+    html = html.replace(/^\d+\. (.+)$/gm, '<strong>$&</strong>');
+    
+    return html;
 }
 
 function showThinking(show) {
@@ -170,7 +232,10 @@ async function createNewChat() {
         if (data.success) {
             currentChatId = data.chat.id;
             clearChatMessages();
-            location.reload(); // Recarrega para atualizar histórico
+            APBIA.showNotification('Nova conversa criada!', 'success');
+            
+            // Recarrega para atualizar histórico
+            setTimeout(() => location.reload(), 1000);
         } else {
             showError(data.message || 'Erro ao criar chat');
         }
@@ -182,7 +247,7 @@ async function createNewChat() {
 }
 
 async function deleteChat(chatId) {
-    if (!confirm('Deseja realmente deletar esta conversa?')) return;
+    if (!confirm('Deseja realmente deletar esta conversa? O histórico será perdido permanentemente.')) return;
     
     try {
         const response = await fetch(`/chat/delete-chat/${chatId}`, {
@@ -192,7 +257,15 @@ async function deleteChat(chatId) {
         const data = await response.json();
         
         if (data.success) {
-            location.reload();
+            APBIA.showNotification('Conversa deletada', 'success');
+            
+            // Se era o chat atual, limpa
+            if (currentChatId === parseInt(chatId)) {
+                currentChatId = null;
+                clearChatMessages();
+            }
+            
+            setTimeout(() => location.reload(), 1000);
         } else {
             showError(data.message || 'Erro ao deletar chat');
         }
@@ -203,14 +276,42 @@ async function deleteChat(chatId) {
     }
 }
 
-function loadChat(chatId) {
-    currentChatId = chatId;
-    clearChatMessages();
+async function loadChat(chatId) {
+    currentChatId = parseInt(chatId);
     
-    // TODO: Carregar mensagens do chat do banco de dados
-    // Por enquanto apenas limpa e define o ID
+    APBIA.showLoadingOverlay('Carregando histórico...');
     
-    showInfo('Chat carregado. Continue sua conversa!');
+    try {
+        const response = await fetch(`/chat/load-history/${chatId}`);
+        const data = await response.json();
+        
+        APBIA.hideLoadingOverlay();
+        
+        if (data.success) {
+            // Limpa mensagens atuais
+            clearChatMessages();
+            
+            // Adiciona mensagens do histórico
+            data.mensagens.forEach(msg => {
+                addMessageToChat(msg.role, msg.conteudo);
+            });
+            
+            // Marca chat como ativo na sidebar
+            document.querySelectorAll('.chat-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-chat-id="${chatId}"]`)?.classList.add('active');
+            
+            APBIA.showNotification('Histórico carregado!', 'success');
+        } else {
+            showError(data.message || 'Erro ao carregar histórico');
+        }
+        
+    } catch (error) {
+        APBIA.hideLoadingOverlay();
+        showError('Erro ao carregar histórico');
+        console.error('Erro:', error);
+    }
 }
 
 async function handleFileUpload(e) {
@@ -219,7 +320,8 @@ async function handleFileUpload(e) {
     
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('message', `Analise este arquivo: ${file.name}`);
+    formData.append('message', `Analise este arquivo`);
+    formData.append('chat_id', currentChatId || '');
     
     showThinking(true);
     
@@ -262,27 +364,16 @@ function clearChatMessages() {
 }
 
 function showError(message) {
-    const alert = document.createElement('div');
-    alert.className = 'alert alert-danger alert-dismissible fade show';
-    alert.innerHTML = `
-        <i class="fas fa-exclamation-circle"></i> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.querySelector('main').insertBefore(alert, document.querySelector('main').firstChild);
-    
-    setTimeout(() => alert.remove(), 5000);
+    APBIA.showNotification(message, 'error');
 }
 
 function showInfo(message) {
-    const alert = document.createElement('div');
-    alert.className = 'alert alert-info alert-dismissible fade show';
-    alert.innerHTML = `
-        <i class="fas fa-info-circle"></i> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    
-    document.querySelector('main').insertBefore(alert, document.querySelector('main').firstChild);
-    
-    setTimeout(() => alert.remove(), 3000);
+    APBIA.showNotification(message, 'info');
 }
+
+// Atalho de teclado - Ctrl+Enter para enviar
+document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+        document.getElementById('chatForm').dispatchEvent(new Event('submit'));
+    }
+});

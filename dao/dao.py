@@ -234,6 +234,7 @@ class SupabaseDAO:
         """Converte linha do banco para objeto Projeto"""
         from datetime import datetime
         
+        # Converte datas
         data_criacao = None
         if row.get('data_criacao'):
             if isinstance(row['data_criacao'], str):
@@ -244,13 +245,57 @@ class SupabaseDAO:
             else:
                 data_criacao = row['data_criacao']
         
+        data_atualizacao = None
+        if row.get('data_atualizacao'):
+            if isinstance(row['data_atualizacao'], str):
+                try:
+                    data_atualizacao = datetime.fromisoformat(row['data_atualizacao'].replace('Z', '+00:00'))
+                except:
+                    data_atualizacao = None
+            else:
+                data_atualizacao = row['data_atualizacao']
+        
+        # Converte datas de projeto anterior
+        projeto_anterior_inicio = None
+        if row.get('projeto_anterior_inicio'):
+            if isinstance(row['projeto_anterior_inicio'], str):
+                try:
+                    projeto_anterior_inicio = datetime.fromisoformat(row['projeto_anterior_inicio']).date()
+                except:
+                    projeto_anterior_inicio = None
+        
+        projeto_anterior_termino = None
+        if row.get('projeto_anterior_termino'):
+            if isinstance(row['projeto_anterior_termino'], str):
+                try:
+                    projeto_anterior_termino = datetime.fromisoformat(row['projeto_anterior_termino']).date()
+                except:
+                    projeto_anterior_termino = None
+        
         return Projeto(
             id=row['id'],
             nome=row['nome'],
-            descricao=row.get('descricao'),
-            area_projeto=row['area_projeto'],
-            ano_edicao=row['ano_edicao'],
-            data_criacao=data_criacao
+            categoria=row['categoria'],
+            resumo=row.get('resumo'),
+            palavras_chave=row.get('palavras_chave'),
+            introducao=row.get('introducao'),
+            objetivo_geral=row.get('objetivo_geral'),
+            objetivos_especificos=row.get('objetivos_especificos', []),
+            metodologia=row.get('metodologia'),
+            cronograma=row.get('cronograma'),
+            resultados_esperados=row.get('resultados_esperados'),
+            referencias_bibliograficas=row.get('referencias_bibliograficas'),
+            eh_continuacao=row.get('eh_continuacao', False),
+            projeto_anterior_titulo=row.get('projeto_anterior_titulo'),
+            projeto_anterior_resumo=row.get('projeto_anterior_resumo'),
+            projeto_anterior_inicio=projeto_anterior_inicio,
+            projeto_anterior_termino=projeto_anterior_termino,
+            status=row.get('status', 'rascunho'),
+            ano_edicao=row.get('ano_edicao'),
+            data_criacao=data_criacao,
+            data_atualizacao=data_atualizacao,
+            gerado_por_ia=row.get('gerado_por_ia', False),
+            prompt_ia_usado=row.get('prompt_ia_usado')
         )
     
     def _row_to_chat(self, row):
@@ -274,3 +319,148 @@ class SupabaseDAO:
             titulo=row['titulo'],
             data_criacao=data_criacao
         )
+    
+    # ============ MENSAGENS ============
+
+    def criar_mensagem(self, chat_id, role, conteudo):
+        """
+        Cria uma nova mensagem no histórico do chat
+        
+        Args:
+            chat_id: ID do chat
+            role: 'user' ou 'model'
+            conteudo: Conteúdo da mensagem
+        
+        Returns:
+            dict: Dados da mensagem criada
+        """
+        data = {
+            'chat_id': chat_id,
+            'role': role,
+            'conteudo': conteudo
+        }
+        
+        result = self.supabase.table('mensagens').insert(data).execute()
+        return result.data[0] if result.data else None
+
+    def listar_mensagens_por_chat(self, chat_id, limit=100):
+        """
+        Lista mensagens de um chat (ordenadas por data)
+        
+        Args:
+            chat_id: ID do chat
+            limit: Número máximo de mensagens a retornar
+        
+        Returns:
+            list: Lista de mensagens
+        """
+        result = self.supabase.table('mensagens')\
+            .select('*')\
+            .eq('chat_id', chat_id)\
+            .order('data_envio', desc=False)\
+            .limit(limit)\
+            .execute()
+        
+        return result.data if result.data else []
+
+    def contar_mensagens_por_chat(self, chat_id):
+        """
+        Conta quantas mensagens existem em um chat
+        
+        Args:
+            chat_id: ID do chat
+        
+        Returns:
+            int: Número de mensagens
+        """
+        result = self.supabase.table('mensagens')\
+            .select('id', count='exact')\
+            .eq('chat_id', chat_id)\
+            .execute()
+        
+        return result.count if hasattr(result, 'count') else 0
+
+    def deletar_mensagens_por_chat(self, chat_id):
+        """
+        Deleta todas as mensagens de um chat (chamado automaticamente por CASCADE)
+        
+        Args:
+            chat_id: ID do chat
+        
+        Returns:
+            bool: True se sucesso
+        """
+        result = self.supabase.table('mensagens')\
+            .delete()\
+            .eq('chat_id', chat_id)\
+            .execute()
+        
+        return bool(result.data)
+
+    def obter_ultimas_n_mensagens(self, chat_id, n=10):
+        """
+        Obtém as últimas N mensagens de um chat
+        Útil para contexto limitado
+        
+        Args:
+            chat_id: ID do chat
+            n: Número de mensagens
+        
+        Returns:
+            list: Lista de mensagens
+        """
+        result = self.supabase.table('mensagens')\
+            .select('*')\
+            .eq('chat_id', chat_id)\
+            .order('data_envio', desc=True)\
+            .limit(n)\
+            .execute()
+        
+        # Inverte para ordem cronológica correta
+        return list(reversed(result.data)) if result.data else []
+
+    def listar_projetos_por_usuario(self, usuario_id):
+        """
+        Lista projetos de um usuário (via tabela de associação)
+        
+        Args:
+            usuario_id: ID do usuário
+        
+        Returns:
+            list: Lista de projetos
+        """
+        # Busca IDs dos projetos do usuário
+        result = self.supabase.table('participantes_projetos')\
+            .select('projeto_id')\
+            .eq('participante_id', usuario_id)\
+            .execute()
+        
+        if not result.data:
+            return []
+        
+        projeto_ids = [row['projeto_id'] for row in result.data]
+        
+        # Busca os projetos completos
+        projetos_result = self.supabase.table('projetos')\
+            .select('*')\
+            .in_('id', projeto_ids)\
+            .execute()
+        
+        return [self._row_to_projeto(row) for row in projetos_result.data] if projetos_result.data else []
+
+    def buscar_projeto_por_id(self, projeto_id):
+        """
+        Busca projeto por ID
+        
+        Args:
+            projeto_id: ID do projeto
+        
+        Returns:
+            Projeto: Objeto Projeto ou None
+        """
+        result = self.supabase.table('projetos')\
+            .select('*')\
+            .eq('id', projeto_id)\
+            .execute()
+        
+        return self._row_to_projeto(result.data[0]) if result.data else None

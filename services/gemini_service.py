@@ -47,7 +47,8 @@ class GeminiService:
             "- Sugerir ideias inovadoras e viáveis\n"
             "- Ajudar no planejamento e organização de projetos\n"
             "- Esclarecer dúvidas sobre a Bragantec\n"
-            "- Fornecer orientação metodológica\n\n"
+            "- Fornecer orientação metodológica\n"
+            "- Usar Google Search quando precisar de informações atualizadas\n\n"
             
             "Importante:\n"
             "- Use uma linguagem acessível, mas técnica quando necessário\n"
@@ -55,6 +56,7 @@ class GeminiService:
             "- Incentive o pensamento crítico\n"
             "- Faça perguntas que estimulem a reflexão\n"
             "- Use exemplos práticos sempre que possível\n"
+            "- Quando usar Google Search, mencione que consultou fontes atualizadas\n"
         )
         
         if tipo_usuario == 'participante':
@@ -72,7 +74,7 @@ class GeminiService:
         else:
             return base_instruction
     
-    def chat(self, message, tipo_usuario='participante', history=None):
+    def chat(self, message, tipo_usuario='participante', history=None, usar_pesquisa=True):
         """
         Envia mensagem para o Gemini e retorna resposta
         
@@ -80,9 +82,10 @@ class GeminiService:
             message: Mensagem do usuário
             tipo_usuario: Tipo do usuário (participante, orientador, etc)
             history: Histórico de conversas (lista de dicts com 'role' e 'parts')
+            usar_pesquisa: Se True, habilita Google Search
         
         Returns:
-            dict com 'response' e 'thinking_process' (se disponível)
+            dict com 'response', 'thinking_process' e 'search_used'
         """
         try:
             # Prepara o contexto completo
@@ -95,7 +98,7 @@ class GeminiService:
             {message}
             """
             
-            # Configura generation config (SEM thinking_budget que não é suportado)
+            # Configura generation config
             generation_config = {
                 "temperature": 0.7,
                 "top_p": 0.95,
@@ -103,12 +106,19 @@ class GeminiService:
                 "max_output_tokens": 8192,
             }
             
+            # Configura ferramentas (Google Search)
+            tools = None
+            if usar_pesquisa:
+                # Habilita Google Search conforme documentação
+                tools = ["google_search_retrieval"]
+            
             # Cria chat com histórico se fornecido
             if history:
                 chat = self.model.start_chat(history=history)
                 response = chat.send_message(
                     full_message,
-                    generation_config=generation_config
+                    generation_config=generation_config,
+                    tools=tools
                 )
             else:
                 # Primeira mensagem com system instruction
@@ -116,16 +126,18 @@ class GeminiService:
                 system_msg = self._get_system_instruction(tipo_usuario)
                 response = chat.send_message(
                     f"{system_msg}\n\n{full_message}",
-                    generation_config=generation_config
+                    generation_config=generation_config,
+                    tools=tools
                 )
             
             # Extrai resposta
             result = {
                 'response': response.text,
-                'thinking_process': None
+                'thinking_process': None,
+                'search_used': usar_pesquisa
             }
             
-            # Tenta extrair thinking process se disponível (futuro)
+            # Tenta extrair thinking process se disponível
             if hasattr(response, 'candidates') and response.candidates:
                 candidate = response.candidates[0]
                 if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
@@ -140,7 +152,8 @@ class GeminiService:
             return {
                 'response': f"Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente. Detalhes: {str(e)}",
                 'thinking_process': None,
-                'error': True
+                'error': True,
+                'search_used': False
             }
     
     def upload_file(self, file_path):

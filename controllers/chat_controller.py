@@ -3,27 +3,22 @@ from flask_login import login_required, current_user
 from dao.dao import SupabaseDAO
 from services.gemini_service import GeminiService
 from config import Config
+from werkzeug.utils import secure_filename
 import os
 
 chat_bp = Blueprint('chat', __name__)
 dao = SupabaseDAO()
 gemini = GeminiService()
 
-# Armazena histórico de chats em sessão (em produção, usar banco de dados)
-chat_histories = {}
-
 @chat_bp.route('/')
 @login_required
 def index():
     """Página principal do chat"""
-    # Verifica se IA está ativa
     if not Config.IA_STATUS:
         return render_template('chat.html', ia_offline=True)
     
-    # Busca chats anteriores do usuário
     chats = dao.listar_chats_por_usuario(current_user.id)
     
-    # Determina tipo de usuário para personalizar IA
     tipo_usuario = 'participante' if current_user.is_participante() else \
                    'orientador' if current_user.is_orientador() else 'visitante'
     
@@ -46,6 +41,7 @@ def send_message():
     data = request.json
     message = data.get('message', '')
     chat_id = data.get('chat_id')
+    usar_pesquisa = data.get('usar_pesquisa', True)  # Google Search ativado por padrão
     
     if not message:
         return jsonify({'error': True, 'message': 'Mensagem vazia'}), 400
@@ -59,7 +55,19 @@ def send_message():
         else:
             tipo_usuario = 'visitante'
         
-        # NOVO: Busca projetos do usuário para contexto
+        # Se não houver chat_id, cria novo chat
+        if not chat_id:
+            tipo_ia_id = 2 if current_user.is_participante() else \
+                        3 if current_user.is_orientador() else 1
+            
+            # Gera título baseado na primeira mensagem
+            from utils.helpers import generate_chat_title
+            titulo = generate_chat_title(message)
+            
+            chat = dao.criar_chat(current_user.id, tipo_ia_id, titulo)
+            chat_id = chat.id
+        
+        # Busca contexto de projetos do usuário
         projetos = dao.listar_projetos_por_usuario(current_user.id)
         contexto_projetos = ""
         
@@ -75,37 +83,77 @@ def send_message():
                 ---
                 """
         
-        # Adiciona contexto dos projetos à mensagem
+        # Carrega histórico do banco de dados (últimas 20 mensagens)
+        mensagens_db = dao.obter_ultimas_n_mensagens(chat_id, n=20)
+        
+        # Converte para formato do Gemini
+        history = []
+        for msg in mensagens_db:
+            history.append({
+                'role': msg['role'],
+                'parts': [msg['conteudo']]
+            })
+        
+        # Monta mensagem com contexto
         message_com_contexto = f"{contexto_projetos}\n\nMENSAGEM DO USUÁRIO: {message}"
         
-        # Recupera histórico se existir
-        history = chat_histories.get(f"{current_user.id}_{chat_id}", []) if chat_id else []
+        # Envia para Gemini com Google Search
+        response = gemini.chat(
+            message_com_contexto, 
+            tipo_usuario=tipo_usuario, 
+            history=history,
+            usar_pesquisa=usar_pesquisa
+        )
         
-        # Envia para Gemini
-        response = gemini.chat(message_com_contexto, tipo_usuario=tipo_usuario, history=history)
+        if response.get('error'):
+            return jsonify({
+                'error': True,
+                'message': response['response']
+            }), 500
         
-        # Atualiza histórico
-        if chat_id:
-            history_key = f"{current_user.id}_{chat_id}"
-            if history_key not in chat_histories:
-                chat_histories[history_key] = []
-            
-            chat_histories[history_key].extend([
-                {'role': 'user', 'parts': [message]},
-                {'role': 'model', 'parts': [response['response']]}
-            ])
+        # Salva mensagem do usuário no banco
+        dao.criar_mensagem(chat_id, 'user', message)
+        
+        # Salva resposta da IA no banco
+        dao.criar_mensagem(chat_id, 'model', response['response'])
         
         return jsonify({
             'success': True,
             'response': response['response'],
             'thinking_process': response.get('thinking_process'),
-            'chat_id': chat_id
+            'chat_id': chat_id,
+            'search_used': usar_pesquisa
         })
         
     except Exception as e:
         return jsonify({
             'error': True,
             'message': f'Erro ao processar mensagem: {str(e)}'
+        }), 500
+
+
+@chat_bp.route('/load-history/<int:chat_id>', methods=['GET'])
+@login_required
+def load_history(chat_id):
+    """Carrega histórico de mensagens de um chat"""
+    try:
+        chat = dao.buscar_chat_por_id(chat_id)
+        
+        if not chat or chat.usuario_id != current_user.id:
+            return jsonify({'error': True, 'message': 'Chat não encontrado'}), 404
+        
+        mensagens = dao.listar_mensagens_por_chat(chat_id)
+        
+        return jsonify({
+            'success': True,
+            'mensagens': mensagens,
+            'chat': chat.to_dict()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Erro ao carregar histórico: {str(e)}'
         }), 500
 
 
@@ -117,7 +165,6 @@ def new_chat():
     titulo = data.get('titulo', 'Nova conversa')
     
     try:
-        # Define tipo de IA baseado no usuário
         tipo_ia_id = 2 if current_user.is_participante() else \
                      3 if current_user.is_orientador() else 1
         
@@ -138,20 +185,14 @@ def new_chat():
 @chat_bp.route('/delete-chat/<int:chat_id>', methods=['DELETE'])
 @login_required
 def delete_chat(chat_id):
-    """Deleta um chat"""
+    """Deleta um chat (mensagens são deletadas automaticamente por CASCADE)"""
     try:
         chat = dao.buscar_chat_por_id(chat_id)
         
-        # Verifica se chat pertence ao usuário
         if not chat or chat.usuario_id != current_user.id:
             return jsonify({'error': True, 'message': 'Chat não encontrado'}), 404
         
         dao.deletar_chat(chat_id)
-        
-        # Remove do histórico em memória
-        history_key = f"{current_user.id}_{chat_id}"
-        if history_key in chat_histories:
-            del chat_histories[history_key]
         
         return jsonify({'success': True})
         
@@ -174,25 +215,29 @@ def upload_file():
     
     file = request.files['file']
     message = request.form.get('message', 'Analise este arquivo')
+    chat_id = request.form.get('chat_id')
     
     if file.filename == '':
         return jsonify({'error': True, 'message': 'Arquivo inválido'}), 400
     
     try:
-        # Salva arquivo temporariamente
+        from werkzeug.utils import secure_filename
+        
         filename = secure_filename(file.filename)
         filepath = os.path.join(Config.UPLOAD_FOLDER, filename)
         file.save(filepath)
         
-        # Determina tipo de usuário
         tipo_usuario = 'participante' if current_user.is_participante() else \
                        'orientador' if current_user.is_orientador() else 'visitante'
         
-        # Envia para Gemini
         response = gemini.chat_with_file(message, filepath, tipo_usuario)
         
-        # Remove arquivo temporário
         os.remove(filepath)
+        
+        # Se houver chat_id, salva no histórico
+        if chat_id:
+            dao.criar_mensagem(chat_id, 'user', f'📎 {message} (arquivo: {filename})')
+            dao.criar_mensagem(chat_id, 'model', response['response'])
         
         return jsonify({
             'success': True,
@@ -204,6 +249,3 @@ def upload_file():
             'error': True,
             'message': f'Erro ao processar arquivo: {str(e)}'
         }), 500
-
-
-from werkzeug.utils import secure_filename
