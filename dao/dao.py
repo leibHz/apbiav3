@@ -322,14 +322,16 @@ class SupabaseDAO:
     
     # ============ MENSAGENS ============
 
-    def criar_mensagem(self, chat_id, role, conteudo):
+    def criar_mensagem(self, chat_id, role, conteudo, thinking_process=None):
         """
         Cria uma nova mensagem no histórico do chat
+        ✅ CORRIGIDO: Agora salva thinking_process
         
         Args:
             chat_id: ID do chat
             role: 'user' ou 'model'
             conteudo: Conteúdo da mensagem
+            thinking_process: Processo de pensamento da IA (opcional)
         
         Returns:
             dict: Dados da mensagem criada
@@ -339,6 +341,10 @@ class SupabaseDAO:
             'role': role,
             'conteudo': conteudo
         }
+        
+        # Adiciona thinking_process se fornecido
+        if thinking_process:
+            data['thinking_process'] = thinking_process
         
         result = self.supabase.table('mensagens').insert(data).execute()
         return result.data[0] if result.data else None

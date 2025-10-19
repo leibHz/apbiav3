@@ -28,10 +28,18 @@ def index():
                          ia_offline=False)
 
 
+"""
+Chat Controller Corrigido - Rota send_message
+SUBSTITUA a rota /send no seu chat_controller.py
+"""
+
 @chat_bp.route('/send', methods=['POST'])
 @login_required
 def send_message():
-    """Endpoint para enviar mensagens para a IA"""
+    """
+    Endpoint para enviar mensagens para a IA
+    ✅ CORRIGIDO: Salva thinking_process no banco
+    """
     if not Config.IA_STATUS:
         return jsonify({
             'error': True,
@@ -41,7 +49,7 @@ def send_message():
     data = request.json
     message = data.get('message', '')
     chat_id = data.get('chat_id')
-    usar_pesquisa = data.get('usar_pesquisa', True)  # Google Search ativado por padrão
+    usar_pesquisa = data.get('usar_pesquisa', True)
     
     if not message:
         return jsonify({'error': True, 'message': 'Mensagem vazia'}), 400
@@ -60,7 +68,6 @@ def send_message():
             tipo_ia_id = 2 if current_user.is_participante() else \
                         3 if current_user.is_orientador() else 1
             
-            # Gera título baseado na primeira mensagem
             from utils.helpers import generate_chat_title
             titulo = generate_chat_title(message)
             
@@ -75,15 +82,15 @@ def send_message():
             contexto_projetos = "\n\n=== PROJETOS DO USUÁRIO ===\n"
             for projeto in projetos:
                 contexto_projetos += f"""
-                Projeto: {projeto.nome}
-                Categoria: {projeto.categoria}
-                Status: {projeto.status}
-                Resumo: {projeto.resumo or 'Não informado'}
-                Objetivo Geral: {projeto.objetivo_geral or 'Não informado'}
-                ---
-                """
+Projeto: {projeto.nome}
+Categoria: {projeto.categoria}
+Status: {projeto.status}
+Resumo: {projeto.resumo or 'Não informado'}
+Objetivo Geral: {projeto.objetivo_geral or 'Não informado'}
+---
+"""
         
-        # Carrega histórico do banco de dados (últimas 20 mensagens)
+        # ✅ CORREÇÃO: Carrega histórico do banco (últimas 20 mensagens)
         mensagens_db = dao.obter_ultimas_n_mensagens(chat_id, n=20)
         
         # Converte para formato do Gemini
@@ -95,9 +102,9 @@ def send_message():
             })
         
         # Monta mensagem com contexto
-        message_com_contexto = f"{contexto_projetos}\n\nMENSAGEM DO USUÁRIO: {message}"
+        message_com_contexto = f"{contexto_projetos}\n\n{message}"
         
-        # Envia para Gemini com Google Search
+        # ✅ CORREÇÃO: Chama Gemini com Google Search
         response = gemini.chat(
             message_com_contexto, 
             tipo_usuario=tipo_usuario, 
@@ -111,26 +118,32 @@ def send_message():
                 'message': response['response']
             }), 500
         
-        # Salva mensagem do usuário no banco
+        # ✅ CORREÇÃO: Salva mensagem do usuário no banco
         dao.criar_mensagem(chat_id, 'user', message)
         
-        # Salva resposta da IA no banco
-        dao.criar_mensagem(chat_id, 'model', response['response'])
+        # ✅ CORREÇÃO: Salva resposta da IA com thinking_process
+        dao.criar_mensagem(
+            chat_id, 
+            'model', 
+            response['response'],
+            thinking_process=response.get('thinking_process')  # ← NOVO!
+        )
         
         return jsonify({
             'success': True,
             'response': response['response'],
-            'thinking_process': response.get('thinking_process'),
+            'thinking_process': response.get('thinking_process'),  # ← NOVO!
             'chat_id': chat_id,
-            'search_used': usar_pesquisa
+            'search_used': response.get('search_used', False)
         })
         
     except Exception as e:
+        import traceback
+        print(f"❌ Erro completo: {traceback.format_exc()}")
         return jsonify({
             'error': True,
             'message': f'Erro ao processar mensagem: {str(e)}'
         }), 500
-
 
 @chat_bp.route('/load-history/<int:chat_id>', methods=['GET'])
 @login_required

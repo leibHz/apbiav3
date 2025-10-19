@@ -377,3 +377,157 @@ document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
         document.getElementById('chatForm').dispatchEvent(new Event('submit'));
     }
 });
+
+// ✅ CORREÇÃO: Adicione esta função no seu chat.js
+
+function addMessageToChat(role, content, thinking = null, searchUsed = false) {
+    const messagesContainer = document.getElementById('chatMessages');
+    
+    // Remove mensagem de boas-vindas
+    const welcome = document.getElementById('welcomeMessage');
+    if (welcome) {
+        welcome.remove();
+    }
+    
+    // Cria elemento da mensagem
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `message ${role} fade-in`;
+    
+    // ✅ NOVO: Badge de thinking process
+    if (role === 'assistant' && thinking) {
+        const thinkingBadge = document.createElement('div');
+        thinkingBadge.className = 'alert alert-light border mb-2';
+        thinkingBadge.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-brain text-primary me-2"></i>
+                <strong>Processo de Pensamento da IA:</strong>
+                <button class="btn btn-sm btn-outline-primary ms-auto toggle-thinking">
+                    <i class="fas fa-chevron-down"></i> Ver
+                </button>
+            </div>
+            <div class="thinking-content" style="display: none; font-size: 0.9em; color: #666;">
+                ${formatMessageContent(thinking)}
+            </div>
+        `;
+        
+        messageDiv.appendChild(thinkingBadge);
+        
+        // Toggle para mostrar/ocultar
+        thinkingBadge.querySelector('.toggle-thinking').addEventListener('click', function() {
+            const content = thinkingBadge.querySelector('.thinking-content');
+            const icon = this.querySelector('i');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.className = 'fas fa-chevron-up';
+                this.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar';
+            } else {
+                content.style.display = 'none';
+                icon.className = 'fas fa-chevron-down';
+                this.innerHTML = '<i class="fas fa-chevron-down"></i> Ver';
+            }
+        });
+    }
+    
+    // Conteúdo principal
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    contentDiv.innerHTML = formatMessageContent(content);
+    messageDiv.appendChild(contentDiv);
+    
+    // ✅ Badge de Google Search
+    if (role === 'assistant' && searchUsed) {
+        const searchBadge = document.createElement('div');
+        searchBadge.className = 'mt-2';
+        searchBadge.innerHTML = `
+            <small class="badge bg-success">
+                <i class="fas fa-search"></i> Consultou Google Search
+            </small>
+        `;
+        messageDiv.appendChild(searchBadge);
+    }
+    
+    // Timestamp
+    const timestamp = document.createElement('div');
+    timestamp.className = 'timestamp';
+    timestamp.textContent = new Date().toLocaleTimeString('pt-BR', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+    messageDiv.appendChild(timestamp);
+    
+    messagesContainer.appendChild(messageDiv);
+    
+    // Scroll para o fim
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
+
+// ✅ Função auxiliar para formatar markdown/listas
+function formatMessageContent(content) {
+    const div = document.createElement('div');
+    div.textContent = content;
+    let html = div.innerHTML;
+    
+    // Converte quebras de linha
+    html = html.replace(/\n/g, '<br>');
+    
+    // Detecta e formata listas
+    html = html.replace(/^- (.+)$/gm, '• $1');
+    html = html.replace(/^\d+\. (.+)$/gm, '<strong>$&</strong>');
+    
+    // Formata código inline (entre ``)
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    return html;
+}
+
+// ✅ CORREÇÃO na função handleSendMessage (apenas a parte da resposta)
+async function handleSendMessage(e) {
+    e.preventDefault();
+    
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    addMessageToChat('user', message);
+    input.value = '';
+    showThinking(true);
+    
+    try {
+        const response = await fetch('/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: message,
+                chat_id: currentChatId,
+                usar_pesquisa: usarPesquisaGoogle
+            })
+        });
+        
+        const data = await response.json();
+        showThinking(false);
+        
+        if (data.success) {
+            // ✅ CORREÇÃO: Passa thinking_process e search_used
+            addMessageToChat(
+                'assistant', 
+                data.response, 
+                data.thinking_process,  // ← NOVO!
+                data.search_used        // ← NOVO!
+            );
+            
+            if (data.chat_id && !currentChatId) {
+                currentChatId = data.chat_id;
+                setTimeout(() => location.reload(), 1000);
+            }
+        } else {
+            showError(data.message || 'Erro ao processar mensagem');
+        }
+        
+    } catch (error) {
+        showThinking(false);
+        showError('Erro de conexão. Tente novamente.');
+        console.error('Erro:', error);
+    }
+}

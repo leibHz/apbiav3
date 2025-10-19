@@ -7,7 +7,7 @@ from dao.dao import SupabaseDAO
 from controllers.auth_controller import auth_bp
 from controllers.chat_controller import chat_bp
 from controllers.admin_controller import admin_bp
-from controllers.project_controller import project_bp
+from controllers.project_controller import project_bp  # ← JÁ ESTAVA IMPORTANDO
 
 # Inicializa aplicação
 app = Flask(__name__)
@@ -29,10 +29,11 @@ def load_user(user_id):
     """Carrega usuário para Flask-Login"""
     return dao.buscar_usuario_por_id(int(user_id))
 
-# Registra blueprints
+# ✅ CORREÇÃO: REGISTRA TODOS os blueprints (FALTAVA project_bp!)
 app.register_blueprint(auth_bp)
 app.register_blueprint(chat_bp, url_prefix='/chat')
 app.register_blueprint(admin_bp)
+app.register_blueprint(project_bp, url_prefix='/projetos')  # ← ESTAVA FALTANDO!
 
 # Rota principal
 @app.route('/')
@@ -81,7 +82,7 @@ def format_date_filter(date_value):
             dt = datetime.fromisoformat(date_value.replace('Z', '+00:00'))
             return dt.strftime('%d/%m/%Y')
         except:
-            return date_value  # Retorna string original se não conseguir converter
+            return date_value
     
     return '-'
 
@@ -106,4 +107,12 @@ def format_datetime_filter(date_value):
     return '-'
 
 if __name__ == '__main__':
+    print("="*60)
+    print("🤖 APBIA - Assistente de Projetos para Bragantec")
+    print("="*60)
+    print(f"✅ Blueprint de Projetos registrado em: /projetos")
+    print(f"✅ IA Status: {'ATIVA' if Config.IA_STATUS else 'OFFLINE'}")
+    print(f"✅ Modelo: {Config.GEMINI_MODEL}")
+    print("="*60)
+    
     app.run(debug=Config.DEBUG, host='0.0.0.0', port=5000)

@@ -6,11 +6,12 @@ bcrypt==4.1.2
 werkzeug==3.0.1
 jinja2==3.1.3
 
-# Supabase (sem especificar dependências - pip resolve sozinho)
+# Supabase
 supabase==2.9.0
 
-# Google Gemini
+# ✅ CORREÇÃO: Google Gemini SDK ATUALIZADO
 google-generativeai==0.8.3
+google-genai==1.0.0  # ← NOVO! SDK oficial atualizado
 
 # Geração de PDF
 reportlab==4.0.7
