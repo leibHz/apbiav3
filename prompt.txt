@@ -213,7 +213,6 @@ o pdf pra vc ter uma ideia:
 ao inscrever o projeto concordamos com o regulamento da 13Âª bragantec e declaramos que as informaÃ§Ãµes acima estÃ£o corretas e o resumo e pÃ´ster refletem apenas o trabalho realizado ao longo dos Ãºltimos 12 (doze) meses. Estamos cientes de que a nÃ£o veracidade das informaÃ§Ãµes fornecidas poderÃ¡ implicar na desclassificaÃ§Ã£o do projeto."
 fim do pdf
 esse é o pdf, ele é bem auto explicativo então acho que nn preciso falar muita coisa, pode começar a desenvolver,coloca um template rapido pra IA poder gerar a ideia do projeto tbm, o prompt sera o seguinte
-
 "crie um projeto que possa ganhar a bragantec com base no que os juizes avaliaram nas ultimas 5 ediçoes e nas ideias de projetos que ja ganharam e crie uma ideia com potencial de ganhar para cada area sendo as areas
 ( ) Ciencias da Natureza e Exatas ( ) Informatica ( ) Ciencias Humanas e Linguagens ( ) Engenharias"
 
