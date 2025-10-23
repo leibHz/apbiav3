@@ -222,4 +222,4 @@ faça de forma simples, pra poupar seus recursos e não exceder seu limite de me
 
 em caso de duvida em alguma coisa, SEMPRE PESQUISE e não invente informações
 
-Oq vc acha, consegue fazer tudo isso? grande parte do projeto ja esta feito como pode ver,seu objetivo é terminar oq foi começado e implementar oq falta
+Oq vc acha, consegue fazer tudo isso? grande parte do projeto ja esta feito como pode ver, seu objetivo é revisar o projeto e corrigir bugs
