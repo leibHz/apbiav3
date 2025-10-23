@@ -17,7 +17,7 @@ class GeminiService:
         genai.configure(api_key=Config.GEMINI_API_KEY)
         
         # Usa a nova API do Gemini
-        self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
+        self.client = genai.configure(api_key=Config.GEMINI_API_KEY)
         
         self.model_name = Config.GEMINI_MODEL
         self.context_files = self._load_context_files()
