@@ -28,6 +28,12 @@ class Config:
     # Contexto da IA
     CONTEXT_FILES_PATH = 'context_files'
     
+    # Limites de uso da API Gemini
+    GEMINI_RPM_LIMIT = 10        # Requests per minute
+    GEMINI_TPM_LIMIT = 250000    # Tokens per minute
+    GEMINI_RPD_LIMIT = 250       # Requests per day
+    GEMINI_SEARCH_RPD = 500      # Google Search per day
+    
     # Sistema
     IA_STATUS = True  # IA ativa por padrão
     

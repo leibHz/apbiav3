@@ -1,18 +1,39 @@
+# ===================================
+# FLASK & WEB
+# ===================================
 Flask==3.0.0
 Flask-Login==0.6.3
 Flask-CORS==4.0.0
+Werkzeug==3.0.1
+Jinja2==3.1.3
+
+# ===================================
+# AMBIENTE & SEGURANÇA
+# ===================================
 python-dotenv==1.0.0
 bcrypt==4.1.2
-werkzeug==3.0.1
-jinja2==3.1.3
 
-# Supabase
+# ===================================
+# BANCO DE DADOS
+# ===================================
 supabase==2.9.0
 
-google-generativeai==0.8.3
-google-genai==1.0.0 
+# ===================================
+# GOOGLE GEMINI - BIBLIOTECA CORRETA
+# ===================================
+# ✅ NOVA biblioteca (GA desde maio 2025)
+google-genai==1.11.0
 
-# Geração de PDF
+# ❌ REMOVER: google-generativeai (antiga, será descontinuada em 30/11/2025)
+
+# ===================================
+# PDF
+# ===================================
 reportlab==4.0.7
 Pillow==10.1.0
 svglib==1.5.1
+
+# ===================================
+# UTILITÁRIOS
+# ===================================
+requests==2.31.0
