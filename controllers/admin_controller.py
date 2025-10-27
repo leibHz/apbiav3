@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from functools import wraps
 from dao.dao import SupabaseDAO
 from config import Config
-from services.gemini_service import gemini_stats
+from services.gemini_stats import gemini_stats  # ✅ CORREÇÃO
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 dao = SupabaseDAO()
