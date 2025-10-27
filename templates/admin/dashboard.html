@@ -75,7 +75,7 @@
         </div>
     </div>
     
-    <!-- Ações Rápidas -->
+    <!-- ✅ NOVO: Ações Rápidas com Link para Estatísticas -->
     <div class="row mb-4">
         <div class="col">
             <div class="card">
@@ -89,6 +89,10 @@
                         </a>
                         <a href="{{ url_for('admin.configuracoes') }}" class="btn btn-secondary">
                             <i class="fas fa-cog"></i> Configurações
+                        </a>
+                        <!-- ✅ NOVO: Botão para Estatísticas Gemini -->
+                        <a href="{{ url_for('admin.gemini_stats_page') }}" class="btn btn-info">
+                            <i class="fas fa-chart-line"></i> Estatísticas Gemini
                         </a>
                         <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
                             <i class="fas fa-user-plus"></i> Adicionar Usuário

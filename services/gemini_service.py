@@ -1,15 +1,7 @@
 """
-Serviço COMPLETO E CORRETO para integração com Google Gemini 2.5 Flash
-Baseado na documentação oficial consultada em 26/10/2025
-Implementa TODOS os recursos da API Gemini CORRETAMENTE:
-- ✅ Thinking Mode (include_thoughts)
-- ✅ Google Search (google_search)
-- ✅ Code Execution (code_execution)
-- ✅ Context Caching IMPLÍCITO (automático, FREE tier)
-- ✅ Multimodal (Imagem, Vídeo, Documentos, Áudio)
-- ✅ Safety Settings (DESABILITADO - BLOCK_NONE)
-- ✅ Structured Output (types.Schema)
-- ✅ File API NOVA (client.files.upload)
+Serviço COMPLETO para Google Gemini 2.5 Flash
+Baseado na documentação oficial (Outubro 2025)
+Implementa TODOS os recursos com estatísticas integradas
 """
 
 from google import genai
@@ -17,28 +9,380 @@ from google.genai import types
 import os
 import time
 from config import Config
-# ✅ NOVO: Importa logger e função de log de uso da IA
 from utils.advanced_logger import logger, log_ai_usage
-from services.gemini_stats import gemini_stats
+from collections import defaultdict
+from datetime import datetime, timedelta
 
-class GeminiService:
+"""
+Módulo de Estatísticas do Gemini API
+Rastreia uso de RPM, TPM, RPD e Google Search
+Baseado nos limites FREE tier do Gemini 2.5 Flash
+"""
+
+from collections import defaultdict
+from datetime import datetime, date
+import time
+from utils.advanced_logger import logger
+
+
+class GeminiStats:
     """
-    Serviço Gemini usando google-genai (biblioteca nova, GA maio 2025)
-    TODAS as funcionalidades baseadas na documentação oficial
+    Rastreador de estatísticas do Gemini API
+    
+    Limites FREE tier (Gemini 2.5 Flash):
+    - 10 RPM (requests per minute)
+    - 250k TPM (tokens per minute)  
+    - 250 RPD (requests per day)
+    - 500 Google Search per day (grátis)
+    
+    Ref: https://ai.google.dev/gemini-api/docs/rate-limits
     """
     
     def __init__(self):
-        """Inicializa o cliente Gemini com todas as configurações corretas"""
+        # Limites FREE tier
+        self.RPM_LIMIT = 10          
+        self.TPM_LIMIT = 250000      
+        self.RPD_LIMIT = 250         
+        self.SEARCH_RPD_LIMIT = 500  
+        
+        # Contadores globais
+        self.requests_minute = defaultdict(list)  # {timestamp_minute: [request_times]}
+        self.tokens_minute = defaultdict(int)     # {timestamp_minute: token_count}
+        self.requests_day = defaultdict(int)      # {date: request_count}
+        self.search_day = defaultdict(int)        # {date: search_count}
+        
+        # Estatísticas por usuário
+        self.user_stats = defaultdict(lambda: {
+            'requests_today': 0,
+            'tokens_today': 0,
+            'searches_today': 0,
+            'total_requests': 0,
+            'total_tokens_input': 0,
+            'total_tokens_output': 0,
+            'last_reset': datetime.now().date(),
+            'first_request': None,
+            'last_request': None
+        })
+        
+        logger.info("📊 GeminiStats inicializado")
+    
+    def _reset_if_needed(self, user_id):
+        """Reset diário de estatísticas do usuário"""
+        today = datetime.now().date()
+        user_stat = self.user_stats[user_id]
+        
+        if user_stat['last_reset'] != today:
+            logger.debug(f"🔄 Reset diário para usuário {user_id}")
+            user_stat['requests_today'] = 0
+            user_stat['tokens_today'] = 0
+            user_stat['searches_today'] = 0
+            user_stat['last_reset'] = today
+    
+    def _clean_old_data(self):
+        """Remove dados antigos dos contadores"""
+        now = time.time()
+        current_minute = int(now / 60)
+        
+        # Remove requests de mais de 1 minuto atrás
+        old_minutes = [
+            minute for minute in self.requests_minute.keys()
+            if minute < current_minute - 1
+        ]
+        for minute in old_minutes:
+            del self.requests_minute[minute]
+            if minute in self.tokens_minute:
+                del self.tokens_minute[minute]
+        
+        # Limpa requests_day de mais de 7 dias atrás
+        week_ago = datetime.now().date() - datetime.timedelta(days=7)
+        old_days = [
+            day for day in self.requests_day.keys()
+            if day < week_ago
+        ]
+        for day in old_days:
+            if day in self.requests_day:
+                del self.requests_day[day]
+            if day in self.search_day:
+                del self.search_day[day]
+    
+    def check_limits(self, user_id=None):
+        """
+        Verifica se pode fazer uma requisição
+        
+        Args:
+            user_id: ID do usuário (opcional)
+        
+        Returns:
+            tuple: (bool, str) - (pode_fazer, mensagem_erro)
+        """
+        self._clean_old_data()
+        
+        now = time.time()
+        current_minute = int(now / 60)
+        today = datetime.now().date()
+        
+        # Verifica RPM (requests per minute)
+        requests_last_minute = sum(
+            len(reqs) for minute, reqs in self.requests_minute.items()
+            if minute >= current_minute - 1
+        )
+        
+        if requests_last_minute >= self.RPM_LIMIT:
+            logger.warning(f"⚠️ RPM excedido: {requests_last_minute}/{self.RPM_LIMIT}")
+            return False, f"Limite de {self.RPM_LIMIT} requests/minuto excedido. Aguarde 60 segundos."
+        
+        # Verifica RPD (requests per day)
+        requests_today = self.requests_day.get(today, 0)
+        
+        if requests_today >= self.RPD_LIMIT:
+            logger.warning(f"⚠️ RPD excedido: {requests_today}/{self.RPD_LIMIT}")
+            return False, f"Limite diário de {self.RPD_LIMIT} requests excedido. Volte amanhã às 00:00 PT (Pacific Time)."
+        
+        # Verifica TPM (tokens per minute)
+        tokens_last_minute = sum(
+            tokens for minute, tokens in self.tokens_minute.items()
+            if minute >= current_minute - 1
+        )
+        
+        if tokens_last_minute >= self.TPM_LIMIT:
+            logger.warning(f"⚠️ TPM excedido: {tokens_last_minute}/{self.TPM_LIMIT}")
+            return False, f"Limite de {self.TPM_LIMIT} tokens/minuto excedido. Aguarde 60 segundos."
+        
+        # Verifica limites por usuário
+        if user_id:
+            self._reset_if_needed(user_id)
+            user_stat = self.user_stats[user_id]
+            
+            if user_stat['requests_today'] >= self.RPD_LIMIT:
+                logger.warning(f"⚠️ Usuário {user_id} excedeu RPD pessoal")
+                return False, f"Você excedeu seu limite diário de {self.RPD_LIMIT} requests. Volte amanhã."
+        
+        return True, ""
+    
+    def record_request(self, user_id=None, tokens_input=0, tokens_output=0):
+        """
+        Registra uma requisição
+        
+        Args:
+            user_id: ID do usuário
+            tokens_input: Tokens de entrada
+            tokens_output: Tokens de saída
+        """
+        now = time.time()
+        current_minute = int(now / 60)
+        today = datetime.now().date()
+        
+        # Registra request global
+        self.requests_minute[current_minute].append(now)
+        self.requests_day[today] = self.requests_day.get(today, 0) + 1
+        
+        # Registra tokens globais
+        total_tokens = tokens_input + tokens_output
+        self.tokens_minute[current_minute] = self.tokens_minute.get(current_minute, 0) + total_tokens
+        
+        # Registra por usuário
+        if user_id:
+            self._reset_if_needed(user_id)
+            user_stat = self.user_stats[user_id]
+            
+            user_stat['requests_today'] += 1
+            user_stat['tokens_today'] += total_tokens
+            user_stat['total_requests'] += 1
+            user_stat['total_tokens_input'] += tokens_input
+            user_stat['total_tokens_output'] += tokens_output
+            
+            if user_stat['first_request'] is None:
+                user_stat['first_request'] = datetime.now()
+            user_stat['last_request'] = datetime.now()
+        
+        # Log de estatísticas
+        requests_now = len(self.requests_minute[current_minute])
+        logger.info(
+            f"📊 Request registrada | "
+            f"RPM: {requests_now}/{self.RPM_LIMIT} | "
+            f"RPD: {self.requests_day[today]}/{self.RPD_LIMIT} | "
+            f"Tokens: {tokens_input}+{tokens_output}={total_tokens}"
+        )
+    
+    def record_search(self, user_id=None):
+        """
+        Registra uso do Google Search
+        
+        Args:
+            user_id: ID do usuário
+        """
+        today = datetime.now().date()
+        self.search_day[today] = self.search_day.get(today, 0) + 1
+        
+        if user_id:
+            self._reset_if_needed(user_id)
+            self.user_stats[user_id]['searches_today'] += 1
+        
+        searches_today = self.search_day[today]
+        logger.info(
+            f"🔍 Google Search usado | "
+            f"Total hoje: {searches_today}/{self.SEARCH_RPD_LIMIT}"
+        )
+        
+        # Aviso se próximo do limite
+        if searches_today >= self.SEARCH_RPD_LIMIT * 0.9:
+            logger.warning(
+                f"⚠️ Próximo do limite de Google Search: "
+                f"{searches_today}/{self.SEARCH_RPD_LIMIT}"
+            )
+    
+    def get_stats(self, user_id=None):
+        """
+        Retorna estatísticas atuais
+        
+        Args:
+            user_id: ID do usuário (opcional)
+        
+        Returns:
+            dict: Estatísticas
+        """
+        now = time.time()
+        current_minute = int(now / 60)
+        today = datetime.now().date()
+        
+        # Stats globais
+        requests_last_minute = sum(
+            len(reqs) for minute, reqs in self.requests_minute.items()
+            if minute >= current_minute - 1
+        )
+        
+        tokens_last_minute = sum(
+            tokens for minute, tokens in self.tokens_minute.items()
+            if minute >= current_minute - 1
+        )
+        
+        stats = {
+            'global': {
+                'requests_minute': requests_last_minute,
+                'rpm_limit': self.RPM_LIMIT,
+                'rpm_remaining': max(0, self.RPM_LIMIT - requests_last_minute),
+                
+                'requests_today': self.requests_day.get(today, 0),
+                'rpd_limit': self.RPD_LIMIT,
+                'rpd_remaining': max(0, self.RPD_LIMIT - self.requests_day.get(today, 0)),
+                
+                'tokens_minute': tokens_last_minute,
+                'tpm_limit': self.TPM_LIMIT,
+                'tpm_remaining': max(0, self.TPM_LIMIT - tokens_last_minute),
+                
+                'searches_today': self.search_day.get(today, 0),
+                'search_limit': self.SEARCH_RPD_LIMIT,
+                'search_remaining': max(0, self.SEARCH_RPD_LIMIT - self.search_day.get(today, 0)),
+            }
+        }
+        
+        # Stats por usuário
+        if user_id and user_id in self.user_stats:
+            self._reset_if_needed(user_id)
+            user_stat = self.user_stats[user_id]
+            
+            stats['user'] = {
+                'requests_today': user_stat['requests_today'],
+                'tokens_today': user_stat['tokens_today'],
+                'searches_today': user_stat['searches_today'],
+                
+                'total_requests': user_stat['total_requests'],
+                'total_tokens_input': user_stat['total_tokens_input'],
+                'total_tokens_output': user_stat['total_tokens_output'],
+                'total_tokens': user_stat['total_tokens_input'] + user_stat['total_tokens_output'],
+                
+                'first_request': user_stat['first_request'].isoformat() if user_stat['first_request'] else None,
+                'last_request': user_stat['last_request'].isoformat() if user_stat['last_request'] else None,
+                
+                'avg_tokens_per_request': (
+                    (user_stat['total_tokens_input'] + user_stat['total_tokens_output']) / user_stat['total_requests']
+                    if user_stat['total_requests'] > 0 else 0
+                ),
+            }
+        
+        return stats
+    
+    def get_user_stats(self, user_id):
+        """
+        Retorna estatísticas de um usuário específico
+        
+        Args:
+            user_id: ID do usuário
+        
+        Returns:
+            dict: Estatísticas do usuário
+        """
+        if user_id not in self.user_stats:
+            return None
+        
+        self._reset_if_needed(user_id)
+        return self.get_stats(user_id).get('user')
+    
+    def get_all_users_stats(self):
+        """
+        Retorna estatísticas de todos os usuários
+        
+        Returns:
+            dict: {user_id: stats}
+        """
+        all_stats = {}
+        
+        for user_id in self.user_stats.keys():
+            all_stats[user_id] = self.get_user_stats(user_id)
+        
+        return all_stats
+    
+    def reset_user(self, user_id):
+        """
+        Reseta estatísticas de um usuário
+        
+        Args:
+            user_id: ID do usuário
+        """
+        if user_id in self.user_stats:
+            del self.user_stats[user_id]
+            logger.info(f"🔄 Estatísticas do usuário {user_id} resetadas")
+    
+    def export_stats(self):
+        """
+        Exporta estatísticas completas
+        
+        Returns:
+            dict: Estatísticas completas
+        """
+        return {
+            'timestamp': datetime.now().isoformat(),
+            'global': self.get_stats()['global'],
+            'users': self.get_all_users_stats()
+        }
+
+
+# Instância global
+gemini_stats = GeminiStats()
+
+
+class GeminiService:
+    """
+    Serviço Gemini 2.5 Flash com TODOS os recursos
+    Documentação: https://ai.google.dev/gemini-api/docs
+    """
+    
+    def __init__(self):
+        """Inicializa cliente Gemini com configurações oficiais"""
         logger.info("🤖 Inicializando GeminiService...")
+        
         try:
-            # Cliente usando biblioteca NOVA
+            # Cliente oficial google-genai
             self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
             
+            # Modelo: gemini-2.5-flash (FREE tier)
             self.model_name = 'gemini-2.5-flash'
+            
+            # Carrega contexto da Bragantec
             self.context_files = self._load_context_files()
             
-            # Safety Settings DESABILITADOS (BLOCK_NONE em todas as categorias)
-            # Documentação: https://ai.google.dev/gemini-api/docs/safety-settings
+            # Safety Settings: DESABILITADO (BLOCK_NONE)
+            # Ref: https://ai.google.dev/gemini-api/docs/safety-settings
             self.safety_settings = [
                 types.SafetySetting(
                     category='HARM_CATEGORY_HATE_SPEECH',
@@ -60,27 +404,22 @@ class GeminiService:
             
             logger.info("✅ GeminiService inicializado")
             logger.info(f"   Modelo: {self.model_name}")
-            logger.info(f"   Output limit: 65.536 tokens")
-            logger.info(f"   Input limit: 1.048.576 tokens")
+            logger.info(f"   Context window: 1.048.576 tokens (1M)")
+            logger.info(f"   Max output: 65.536 tokens")
             logger.info(f"   Safety: DESABILITADO (BLOCK_NONE)")
-            logger.info(f"✅ Rate Limits FREE:")
-            logger.info(f"   - 10 RPM (requests/minuto)")
-            logger.info(f"   - 250k TPM (tokens/minuto)")
-            logger.info(f"   - 250 RPD (requests/dia)")
-            logger.info(f"✅ Google Search: 500 RPD (grátis)")
-            logger.info(f"✅ Context Caching: IMPLÍCITO (automático, FREE)")
+            logger.info(f"   FREE tier limits:")
+            logger.info(f"     - 10 RPM (requests/minuto)")
+            logger.info(f"     - 250k TPM (tokens/minuto)")
+            logger.info(f"     - 250 RPD (requests/dia)")
+            logger.info(f"     - 500 Google Search/dia (grátis)")
             logger.info("="*60)
+            
         except Exception as e:
             logger.critical(f"💥 ERRO ao inicializar Gemini: {e}")
             raise
-
+    
     def _load_context_files(self):
-        """
-        Carrega arquivos de contexto da Bragantec
-        
-        OTIMIZAÇÃO: Coloca contexto grande no INÍCIO para aproveitar
-        cache implícito automático (Gemini 2.5 feature)
-        """
+        """Carrega arquivos de contexto da Bragantec"""
         logger.debug("📂 Carregando arquivos de contexto...")
         context_content = []
         context_path = Config.CONTEXT_FILES_PATH
@@ -90,10 +429,10 @@ class GeminiService:
             os.makedirs(context_path, exist_ok=True)
             return ""
         
-        files_found = False
+        files_found = 0
         for filename in os.listdir(context_path):
             if filename.endswith('.txt'):
-                files_found = True
+                files_found += 1
                 filepath = os.path.join(context_path, filename)
                 try:
                     with open(filepath, 'r', encoding='utf-8') as f:
@@ -103,7 +442,7 @@ class GeminiService:
                 except Exception as e:
                     logger.error(f"❌ Erro ao carregar {filename}: {e}")
         
-        if not files_found:
+        if files_found == 0:
             logger.warning("⚠️ Nenhum arquivo .txt encontrado em context_files/")
         else:
             logger.info(f"✅ {files_found} arquivos de contexto carregados")
@@ -111,26 +450,26 @@ class GeminiService:
         return "\n".join(context_content) if context_content else ""
     
     def _get_system_instruction(self, tipo_usuario):
-        """Retorna instruções do sistema baseado no tipo de usuário"""
-        base_instruction = (
+        """Instruções do sistema por tipo de usuário"""
+        base = (
             "Você é o APBIA (Assistente de Projetos para Bragantec Baseado em IA), "
-            "um assistente virtual criado para ajudar estudantes e orientadores na Bragantec, "
-            "uma feira de ciências do IFSP de Bragança Paulista.\n\n"
+            "um assistente virtual especializado em ajudar estudantes e orientadores "
+            "na Bragantec, feira de ciências do IFSP Bragança Paulista.\n\n"
             
             "🎯 SUAS CAPACIDADES:\n"
-            "- Buscar informações no Google (até 500 vezes por dia)\n"
+            "- Buscar informações atualizadas no Google\n"
             "- Executar código Python para validar soluções\n"
             "- Analisar imagens, vídeos, documentos e áudio\n"
             "- Pensar profundamente sobre problemas complexos\n"
             "- Gerar saídas estruturadas em JSON\n\n"
             
-            "Sua personalidade:\n"
+            "💡 SUA PERSONALIDADE:\n"
             "- Amigável e acessível\n"
             "- Encorajadora e positiva\n"
             "- Paciente e didática\n"
             "- Entusiasta por ciência\n\n"
             
-            "Suas funções:\n"
+            "📚 SUAS FUNÇÕES:\n"
             "- Auxiliar no desenvolvimento de projetos científicos\n"
             "- Sugerir ideias inovadoras\n"
             "- Ajudar no planejamento de projetos\n"
@@ -138,34 +477,40 @@ class GeminiService:
         )
         
         if tipo_usuario == 'participante':
-            return base_instruction + (
-                "\n✨ PARTICIPANTE: Foque em ajudá-lo a desenvolver seu projeto "
-                "e preparar sua apresentação. Seja encorajador!"
+            return base + (
+                "\n✨ MODO PARTICIPANTE:\n"
+                "Foque em ajudá-lo a desenvolver seu projeto e preparar sua apresentação. "
+                "Seja encorajador e explique conceitos de forma clara."
             )
         elif tipo_usuario == 'orientador':
-            return base_instruction + (
-                "\n👨‍🏫 ORIENTADOR: Forneça insights pedagógicos e estratégias "
-                "para guiar múltiplos projetos."
+            return base + (
+                "\n👨‍🏫 MODO ORIENTADOR:\n"
+                "Forneça insights pedagógicos e estratégias para guiar múltiplos projetos. "
+                "Ajude na orientação de estudantes."
             )
         else:
-            return base_instruction
+            return base
     
     def chat(self, message, tipo_usuario='participante', history=None, 
-             usar_pesquisa=True, usar_code_execution=True, analyze_url=None):
+             usar_pesquisa=True, usar_code_execution=True, analyze_url=None, 
+             user_id=None):
         """
         Chat com TODOS os recursos do Gemini 2.5 Flash
         
-        Documentação:
+        Refs:
         - Thinking: https://ai.google.dev/gemini-api/docs/thinking
         - Google Search: https://ai.google.dev/gemini-api/docs/google-search
         - Code Execution: https://ai.google.dev/gemini-api/docs/code-execution
+        - URL Context: https://ai.google.dev/gemini-api/docs/url-context
         
         Args:
             message: Mensagem do usuário
-            tipo_usuario: Tipo (participante, orientador, visitante)
-            history: Histórico de conversas (list de dicts com 'role' e 'parts')
-            usar_pesquisa: Habilita Google Search (FREE: 500 RPD)
+            tipo_usuario: 'participante', 'orientador' ou 'visitante'
+            history: Histórico de conversas
+            usar_pesquisa: Habilita Google Search (500 RPD grátis)
             usar_code_execution: Habilita execução de código Python
+            analyze_url: URL para análise de contexto
+            user_id: ID do usuário (para estatísticas)
         
         Returns:
             dict: {
@@ -180,52 +525,60 @@ class GeminiService:
         logger.debug(f"   Google Search: {usar_pesquisa}")
         logger.debug(f"   Code Execution: {usar_code_execution}")
         logger.debug(f"   Histórico: {len(history) if history else 0} mensagens")
-        logger.debug(f"   Mensagem: {message[:100]}...")
         
-        # Registra requisição
-        gemini_stats.record_request(user_id=None)  # ou current_user.id se disponível
+        # Verifica limites ANTES de fazer request
+        can_proceed, error_msg = gemini_stats.check_limits(user_id)
+        if not can_proceed:
+            logger.warning(f"⚠️ Rate limit excedido: {error_msg}")
+            return {
+                'response': f"⚠️ {error_msg}",
+                'thinking_process': None,
+                'error': True,
+                'search_used': False,
+                'code_executed': False
+            }
         
         start_time = time.time()
+        
         try:
-            # System instruction + contexto da Bragantec
+            # System instruction + contexto
             system_instruction = self._get_system_instruction(tipo_usuario)
-            
-            # ✅ OTIMIZAÇÃO: Coloca conteúdo grande no INÍCIO
-            # Isso aumenta chance de cache implícito (FREE tier)
-            # Ref: https://ai.google.dev/gemini-api/docs/caching
             full_context = f"{system_instruction}\n\n{self.context_files}"
             full_message = f"{full_context}\n\n=== MENSAGEM DO USUÁRIO ===\n{message}"
             
-            # Configuração de ferramentas
+            # Ferramentas
             tools = []
             
             if usar_pesquisa:
-                # Documentação: https://ai.google.dev/gemini-api/docs/google-search
+                # Google Search (500 RPD grátis)
+                # Ref: https://ai.google.dev/gemini-api/docs/google-search
                 tools.append(types.Tool(google_search=types.GoogleSearch()))
-                logger.info("🔍 Google Search habilitado (FREE: 500 RPD)")
+                logger.info("🔍 Google Search habilitado")
             
             if usar_code_execution:
-                # Documentação: https://ai.google.dev/gemini-api/docs/code-execution
+                # Code Execution
+                # Ref: https://ai.google.dev/gemini-api/docs/code-execution
                 tools.append(types.Tool(code_execution=types.ToolCodeExecution()))
                 logger.info("🐍 Code Execution habilitado")
             
             # Configuração completa
+            # Ref: https://ai.google.dev/api/generate-content
             config = types.GenerateContentConfig(
                 temperature=0.7,
                 top_p=0.95,
                 top_k=40,
-                max_output_tokens=65536,  # ✅ CORRETO: Gemini 2.5 Flash limit
+                max_output_tokens=65536,  # ✅ Limite correto: 65.536 tokens
                 tools=tools if tools else None,
                 safety_settings=self.safety_settings,
-                # Thinking Mode com orçamento dinâmico
+                # Thinking Mode com budget dinâmico
                 # Ref: https://ai.google.dev/gemini-api/docs/thinking
                 thinking_config=types.ThinkingConfig(
-                    thinking_budget=-1,  # -1 = dinâmico (recomendado)
-                    include_thoughts=True  # Incluir resumos de pensamento
+                    thinking_budget=24000,  
+                    include_thoughts=True
                 )
             )
             
-            # Prepara conteúdo (histórico + mensagem atual)
+            # Prepara conteúdo
             contents = []
             
             # Adiciona histórico
@@ -237,93 +590,83 @@ class GeminiService:
             contents.append(full_message)
             
             # Gera resposta
-            logger.debug("📤 Enviando requisição para Gemini...")
+            logger.debug("📤 Enviando requisição...")
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=contents,
                 config=config
             )
             
-            # Extração de dados da resposta
+            # Extrai dados
             thinking_process = None
             response_text = ""
             code_executed = False
             
-            # Processa todas as partes da resposta
             for part in response.candidates[0].content.parts:
-                # Thinking process (processo de pensamento da IA)
                 if part.thought:
                     thinking_process = part.text
-                    logger.info(f"💭 Thinking detectado: {len(thinking_process)} chars")
-                
-                # Código executado
+                    logger.info(f"💭 Thinking: {len(thinking_process)} chars")
                 elif hasattr(part, 'executable_code'):
                     code_executed = True
-                    logger.info(f"🐍 Código executado: {part.executable_code.code[:100]}...")
-                
-                # Resultado de código
-                elif hasattr(part, 'code_execution_result'):
-                    logger.info(f"✅ Resultado do código disponível")
-                
-                # Texto normal (resposta final)
+                    logger.info(f"🐍 Código executado")
                 elif part.text and not part.thought:
                     response_text += part.text
             
-            # Verifica se usou Google Search
+            # Verifica Google Search
             search_used = False
             if hasattr(response.candidates[0], 'grounding_metadata'):
                 grounding = response.candidates[0].grounding_metadata
                 if grounding and hasattr(grounding, 'web_search_queries'):
                     search_used = len(grounding.web_search_queries) > 0
                     if search_used:
-                        logger.info(f"🔍 Usou Google Search: {grounding.web_search_queries}")
+                        logger.info(f"🔍 Google Search usado")
+                        gemini_stats.record_search(user_id)
             
-            # Registra tokens
+            # Registra estatísticas
+            tokens_input = 0
+            tokens_output = 0
+            
             if hasattr(response, 'usage_metadata'):
                 tokens_input = response.usage_metadata.prompt_token_count
                 tokens_output = response.usage_metadata.candidates_token_count
                 
-                gemini_stats.record_tokens(None, tokens_input, tokens_output)
-            
-            # Registra uso de pesquisa
-            if search_used:
-                gemini_stats.record_search()
-            
-            duration = (time.time() - start_time) * 1000
-            
-            # Log de uso da IA
-            if hasattr(response, 'usage_metadata'):
-                tokens_input = response.usage_metadata.prompt_token_count
-                tokens_output = response.usage_metadata.candidates_token_count
+                # Registra request
+                gemini_stats.record_request(user_id, tokens_input, tokens_output)
+                
                 logger.info(f"📊 Tokens - Input: {tokens_input} | Output: {tokens_output}")
+                
+                # Cache usado?
                 if hasattr(response.usage_metadata, 'cached_content_token_count'):
                     cached = response.usage_metadata.cached_content_token_count
                     if cached > 0:
-                        logger.info(f"💾 Cache IMPLÍCITO usado: {cached} tokens economizados!")
-                log_ai_usage(
-                    self.model_name,
-                    'CHAT',
-                    tokens_input=tokens_input,
-                    tokens_output=tokens_output,
-                    thinking=bool(thinking_process),
-                    search=search_used
-                )
+                        logger.info(f"💾 Cache usado: {cached} tokens economizados!")
+            
+            duration = (time.time() - start_time) * 1000
             logger.info(f"✅ Resposta gerada em {duration:.2f}ms ({len(response_text)} chars)")
             
-            result = {
+            # Log de uso da IA
+            log_ai_usage(
+                self.model_name,
+                'CHAT',
+                tokens_input=tokens_input,
+                tokens_output=tokens_output,
+                thinking=bool(thinking_process),
+                search=search_used
+            )
+            
+            return {
                 'response': response_text or response.text,
                 'thinking_process': thinking_process,
                 'search_used': search_used,
                 'code_executed': code_executed
             }
             
-            return result
-            
         except Exception as e:
             duration = (time.time() - start_time) * 1000
-            logger.error(f"❌ Erro no Gemini após {duration:.2f}ms: {str(e)}")
+            logger.error(f"❌ Erro após {duration:.2f}ms: {str(e)}")
             import traceback
             logger.error(f"Traceback:\n{traceback.format_exc()}")
+            
             return {
                 'response': f"Erro ao processar mensagem: {str(e)}",
                 'thinking_process': None,
@@ -334,22 +677,20 @@ class GeminiService:
     
     def upload_file(self, file_path):
         """
-        Upload de arquivo usando File API NOVA
+        Upload de arquivo multimodal
         
-        Documentação: https://ai.google.dev/api/files
-        
-        Suporta: imagens, vídeos, áudio, documentos (PDF, TXT, etc)
+        Ref: https://ai.google.dev/api/files
+        Suporta: imagens, vídeos, áudio, documentos
         
         Args:
             file_path: Caminho do arquivo
         
         Returns:
-            File object ou None em caso de erro
+            File object ou None
         """
         try:
-            logger.info(f"📤 Fazendo upload do arquivo: {file_path}")
+            logger.info(f"📤 Upload: {file_path}")
             
-            # ✅ API NOVA: client.files.upload (não genai.upload_file)
             with open(file_path, 'rb') as f:
                 uploaded_file = self.client.files.upload(file=f)
             
@@ -357,43 +698,51 @@ class GeminiService:
             logger.info(f"   URI: {uploaded_file.uri}")
             logger.info(f"   MIME: {uploaded_file.mime_type}")
             
-            # Aguarda processamento (importante para vídeos)
+            # Aguarda processamento (para vídeos)
             while uploaded_file.state.name == "PROCESSING":
-                logger.info("⏳ Processando arquivo...")
+                logger.info("⏳ Processando...")
                 time.sleep(2)
                 uploaded_file = self.client.files.get(name=uploaded_file.name)
             
             if uploaded_file.state.name == "FAILED":
                 raise ValueError(f"Falha no processamento: {uploaded_file.error}")
             
-            logger.info(f"✅ Arquivo pronto para uso!")
+            logger.info("✅ Arquivo pronto!")
             return uploaded_file
             
         except Exception as e:
             logger.error(f"❌ Erro no upload: {e}")
             return None
-
-    def chat_with_file(self, message, file_path, tipo_usuario='participante'):
+    
+    def chat_with_file(self, message, file_path, tipo_usuario='participante', user_id=None):
         """
-        Chat com arquivo anexado (multimodal)
+        Chat com arquivo (multimodal)
         
-        Suporta: imagens, vídeos, áudio, documentos (PDF, DOC, TXT, etc)
+        Refs:
+        - Imagem: https://ai.google.dev/gemini-api/docs/image-understanding
+        - Vídeo: https://ai.google.dev/gemini-api/docs/video-understanding
+        - Documentos: https://ai.google.dev/gemini-api/docs/document-processing
         
         Args:
-            message: Mensagem do usuário
+            message: Mensagem
             file_path: Caminho do arquivo
             tipo_usuario: Tipo do usuário
+            user_id: ID do usuário
         
         Returns:
             dict com response e thinking_process
         """
+        # Verifica limites
+        can_proceed, error_msg = gemini_stats.check_limits(user_id)
+        if not can_proceed:
+            return {'response': f"⚠️ {error_msg}", 'error': True}
+        
         try:
-            # Upload do arquivo
             uploaded_file = self.upload_file(file_path)
             if not uploaded_file:
-                return {'response': 'Erro ao fazer upload do arquivo', 'error': True}
+                return {'response': 'Erro ao fazer upload', 'error': True}
             
-            # Detecta tipo de arquivo
+            # Detecta tipo
             mime = uploaded_file.mime_type.lower()
             if 'image' in mime:
                 file_type = 'imagem'
@@ -404,13 +753,13 @@ class GeminiService:
             else:
                 file_type = 'documento'
             
-            logger.info(f"🔍 Tipo de arquivo detectado: {file_type}")
+            logger.info(f"🔍 Tipo: {file_type}")
             
             # System instruction
             system_instruction = self._get_system_instruction(tipo_usuario)
             full_message = f"{system_instruction}\n\n{self.context_files}\n\n{message}"
             
-            # Configuração
+            # Config
             config = types.GenerateContentConfig(
                 temperature=0.7,
                 max_output_tokens=65536,
@@ -421,14 +770,14 @@ class GeminiService:
                 )
             )
             
-            # Gera resposta com arquivo
+            # Gera resposta
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=[full_message, uploaded_file],
                 config=config
             )
             
-            # Extrai thinking e resposta
+            # Extrai dados
             thinking_process = None
             response_text = ""
             
@@ -438,7 +787,13 @@ class GeminiService:
                 elif part.text:
                     response_text += part.text
             
-            # Deleta arquivo temporário (economia de espaço)
+            # Registra estatísticas
+            if hasattr(response, 'usage_metadata'):
+                tokens_input = response.usage_metadata.prompt_token_count
+                tokens_output = response.usage_metadata.candidates_token_count
+                gemini_stats.record_request(user_id, tokens_input, tokens_output)
+            
+            # Deleta arquivo temporário
             self.client.files.delete(name=uploaded_file.name)
             logger.info("🗑️ Arquivo temporário deletado")
             
@@ -449,124 +804,37 @@ class GeminiService:
             }
             
         except Exception as e:
-            logger.error(f"❌ Erro ao processar arquivo: {e}")
-            return {
-                'response': f"Erro ao processar arquivo: {str(e)}",
-                'error': True
-            }
-    
-    def generate_structured_output(self, prompt, schema_dict):
-        """
-        Gera saída estruturada em JSON com schema
-        
-        Documentação: https://ai.google.dev/gemini-api/docs/structured-output
-        
-        Args:
-            prompt: Prompt para IA
-            schema_dict: Dict com schema (será convertido para types.Schema)
-                Exemplo: {
-                    'type': 'OBJECT',
-                    'properties': {
-                        'titulo': {'type': 'STRING'},
-                        'categoria': {'type': 'STRING'}
-                    },
-                    'required': ['titulo']
-                }
-        
-        Returns:
-            dict: {'success': bool, 'data': dict ou 'error': str}
-        """
-        try:
-            logger.info("📋 Gerando JSON estruturado...")
-            
-            # Converte dict para types.Schema
-            def dict_to_schema(d):
-                if d['type'] == 'OBJECT':
-                    props = {}
-                    for key, value in d.get('properties', {}).items():
-                        props[key] = dict_to_schema(value)
-                    
-                    return types.Schema(
-                        type=types.Type.OBJECT,
-                        properties=props,
-                        required=d.get('required', [])
-                    )
-                elif d['type'] == 'STRING':
-                    return types.Schema(type=types.Type.STRING)
-                elif d['type'] == 'NUMBER':
-                    return types.Schema(type=types.Type.NUMBER)
-                elif d['type'] == 'INTEGER':
-                    return types.Schema(type=types.Type.INTEGER)
-                elif d['type'] == 'BOOLEAN':
-                    return types.Schema(type=types.Type.BOOLEAN)
-                elif d['type'] == 'ARRAY':
-                    return types.Schema(
-                        type=types.Type.ARRAY,
-                        items=dict_to_schema(d.get('items', {'type': 'STRING'}))
-                    )
-                else:
-                    return types.Schema(type=types.Type.STRING)
-            
-            schema = dict_to_schema(schema_dict)
-            
-            # Config
-            config = types.GenerateContentConfig(
-                response_mime_type="application/json",
-                response_schema=schema,
-                max_output_tokens=65536
-            )
-            
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=prompt,
-                config=config
-            )
-            
-            # Parse JSON
-            import json
-            result = json.loads(response.text)
-            logger.info(f"✅ JSON gerado com sucesso")
-            
-            return {
-                'success': True,
-                'data': result
-            }
-            
-        except Exception as e:
-            logger.error(f"❌ Erro em structured output: {e}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
+            logger.error(f"❌ Erro: {e}")
+            return {'response': f"Erro: {str(e)}", 'error': True}
     
     def count_tokens(self, text):
         """
-        Conta tokens de um texto
+        Conta tokens
         
-        Útil para verificar limites antes de enviar
+        Ref: https://ai.google.dev/api/tokens
         
         Args:
-            text: Texto para contar
+            text: Texto
         
         Returns:
-            int: Número de tokens (aproximado)
+            int: Número de tokens
         """
         try:
-            # Workaround: gera com output mínimo para pegar contagem
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=text,
-                config=types.GenerateContentConfig(
-                    max_output_tokens=1
-                )
+                config=types.GenerateContentConfig(max_output_tokens=1)
             )
             
-            # Pega do usage_metadata
             if hasattr(response, 'usage_metadata'):
                 return response.usage_metadata.prompt_token_count
             
             return 0
         except Exception as e:
             logger.warning(f"⚠️ Erro ao contar tokens: {e}")
-            # Fallback: estimativa grosseira (1 token ≈ 4 caracteres)
+            # Fallback: 1 token ≈ 4 caracteres
             return len(text) // 4
+    
+    def get_stats(self):
+        """Retorna estatísticas atuais"""
+        return gemini_stats.get_stats()

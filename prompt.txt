@@ -236,6 +236,18 @@ Entendimento de documentos(pro multimodal): https://ai.google.dev/gemini-api/doc
 modo pensamento (pra ela responder melhor, ela sempore deve pensar): https://ai.google.dev/gemini-api/docs/thinking?hl=pt-br  
 Embasamento com a Pesquisa Google (pro google serch): https://ai.google.dev/gemini-api/docs/google-search?hl=pt-br  
 contexto de url (pra melhorar op google serach): https://ai.google.dev/gemini-api/docs/url-context?hl=pt-br  
-Execução do código (para executar scripts e testar eles, pra ver um que funciona e mostrar o resultado para o usuario): https://ai.google.dev/gemini-api/docs/code-execution?hl=pt-br  O armazenamento em cache de contexto (pra memoria da ia, afinal, em um chat/ sessão deve ter a impressão de uma conversa continua): https://ai.google.dev/gemini-api/docs/caching?hl=pt-br&lang=python  configurações de segurança (sei que nn é recomendavel mas desativa tudo, quero testar o quao longe a ia vai) https://ai.google.dev/gemini-api/docs/safety-settings?hl=pt-br   saida estruturada: https://ai.google.dev/gemini-api/docs/structured-output?hl=pt-br  referencias da api, visão geral: https://ai.google.dev/api?hl=pt-br  referencias da api, modelos: https://ai.google.dev/api/models?hl=pt-br  refrencias da api, geração de conteudo: https://ai.google.dev/api/generate-content?hl=pt-br  referencias da api, tokens: https://ai.google.dev/api/tokens?hl=pt-br  referencias da api, arquivos: https://ai.google.dev/api/files?hl=pt-br  referencias da api, cache: https://ai.google.dev/api/caching?hl=pt-br  o projeto deve usar TODOS os recursos listados nessa api, se estiver usando algum recurso errado ou nem sequer usando tal recurso, corrija ele pra usar o recurso corretamente
+Execução do código (para executar scripts e testar eles, pra ver um que funciona e mostrar o resultado para o usuario): https://ai.google.dev/gemini-api/docs/code-execution?hl=pt-br  
+O armazenamento em cache de contexto (pra memoria da ia, afinal, em um chat/ sessão deve ter a impressão de uma conversa continua): https://ai.google.dev/gemini-api/docs/caching?hl=pt-br&lang=python  
+configurações de segurança (sei que nn é recomendavel mas desativa tudo, quero testar o quao longe a ia vai) https://ai.google.dev/gemini-api/docs/safety-settings?hl=pt-br   
+saida estruturada: https://ai.google.dev/gemini-api/docs/structured-output?hl=pt-br  
+referencias da api, visão geral: https://ai.google.dev/api?hl=pt-br  
+referencias da api, modelos: https://ai.google.dev/api/models?hl=pt-br  
+refrencias da api, geração de conteudo: https://ai.google.dev/api/generate-content?hl=pt-br  
+referencias da api, tokens: https://ai.google.dev/api/tokens?hl=pt-br  
+referencias da api, arquivos: https://ai.google.dev/api/files?hl=pt-br  
+referencias da api, cache: https://ai.google.dev/api/caching?hl=pt-br  
+
+o projeto deve usar TODOS os recursos listados nessa api, se estiver usando algum recurso 
+errado ou nem sequer usando tal recurso, corrija ele pra usar o recurso corretamente
 
 Oq vc acha, consegue fazer tudo isso? grande parte do projeto ja esta feito como pode ver, seu objetivo é revisar o projeto e corrigir bugs conforme os links da documentação que enviei

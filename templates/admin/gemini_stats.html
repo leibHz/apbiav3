@@ -1,24 +1,346 @@
-<div class="card">
-    <div class="card-header">
-        <h5>Uso do Gemini (FREE Tier)</h5>
+{% extends "base.html" %}
+
+{% block title %}Estatísticas Gemini - APBIA{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="fas fa-chart-line"></i> Estatísticas do Gemini API
+            </h2>
+            <p class="text-muted">Monitoramento em tempo real do uso do Gemini 2.5 Flash (FREE Tier)</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" onclick="refreshStats()">
+                <i class="fas fa-sync"></i> Atualizar
+            </button>
+        </div>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-4">
-                <h6>Hoje</h6>
-                <p class="h3">{{ requests_today }}/250</p>
-                <small>Requests por dia</small>
+    
+    <!-- Limites Globais -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-primary">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">RPM (Requests/Min)</h6>
+                            <h3 class="mb-0" id="rpm-current">0</h3>
+                            <small class="text-muted">de <span id="rpm-limit">10</span></small>
+                        </div>
+                        <div>
+                            <div class="spinner-border text-primary" role="status" id="rpm-spinner" style="display: none;">
+                                <span class="visually-hidden">Carregando...</span>
+                            </div>
+                            <i class="fas fa-clock fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-primary" id="rpm-bar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-success" id="rpm-remaining">Disponível: 10</small>
+                </div>
             </div>
-            <div class="col-md-4">
-                <h6>Último minuto</h6>
-                <p class="h3">{{ requests_minute }}/10</p>
-                <small>Requests por minuto</small>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">TPM (Tokens/Min)</h6>
+                            <h3 class="mb-0" id="tpm-current">0</h3>
+                            <small class="text-muted">de <span id="tpm-limit">250k</span></small>
+                        </div>
+                        <div>
+                            <i class="fas fa-coins fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-info" id="tpm-bar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-success" id="tpm-remaining">Disponível: 250k</small>
+                </div>
             </div>
-            <div class="col-md-4">
-                <h6>Google Search</h6>
-                <p class="h3">{{ search_today }}/500</p>
-                <small>Buscas por dia</small>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">RPD (Requests/Dia)</h6>
+                            <h3 class="mb-0" id="rpd-current">0</h3>
+                            <small class="text-muted">de <span id="rpd-limit">250</span></small>
+                        </div>
+                        <div>
+                            <i class="fas fa-calendar-day fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-success" id="rpd-bar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-success" id="rpd-remaining">Disponível: 250</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card border-warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-1">Google Search/Dia</h6>
+                            <h3 class="mb-0" id="search-current">0</h3>
+                            <small class="text-muted">de <span id="search-limit">500</span></small>
+                        </div>
+                        <div>
+                            <i class="fas fa-search fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-warning" id="search-bar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-success" id="search-remaining">Disponível: 500</small>
+                </div>
             </div>
         </div>
     </div>
+    
+    <!-- Alertas de Limite -->
+    <div id="limit-alerts"></div>
+    
+    <!-- Estatísticas Detalhadas -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-info-circle"></i> Informações do Modelo
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless mb-0">
+                        <tbody>
+                            <tr>
+                                <td><i class="fas fa-robot"></i> Modelo:</td>
+                                <td><strong>gemini-2.5-flash</strong></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-window-maximize"></i> Context Window:</td>
+                                <td><strong>1.048.576 tokens (1M)</strong></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-arrow-up"></i> Max Output:</td>
+                                <td><strong>65.536 tokens</strong></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-shield-alt"></i> Safety:</td>
+                                <td><span class="badge bg-danger">DESABILITADO (BLOCK_NONE)</span></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-brain"></i> Thinking Mode:</td>
+                                <td><span class="badge bg-success">ATIVO (Budget Dinâmico)</span></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-search"></i> Google Search:</td>
+                                <td><span class="badge bg-info">DISPONÍVEL (500 RPD)</span></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-code"></i> Code Execution:</td>
+                                <td><span class="badge bg-primary">DISPONÍVEL</span></td>
+                            </tr>
+                            <tr>
+                                <td><i class="fas fa-dollar-sign"></i> Custo:</td>
+                                <td><strong class="text-success">GRÁTIS (FREE Tier)</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <i class="fas fa-chart-pie"></i> Uso do Sistema
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>RPM</small>
+                            <small id="rpm-percent">0%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar" id="rpm-percent-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>TPM</small>
+                            <small id="tpm-percent">0%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-info" id="tpm-percent-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>RPD</small>
+                            <small id="rpd-percent">0%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-success" id="rpd-percent-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-0">
+                        <div class="d-flex justify-content-between mb-1">
+                            <small>Google Search</small>
+                            <small id="search-percent">0%</small>
+                        </div>
+                        <div class="progress">
+                            <div class="progress-bar bg-warning" id="search-percent-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Histórico de Uso -->
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-history"></i> Histórico de Uso (Hoje)
+        </div>
+        <div class="card-body">
+            <canvas id="usageChart" height="100"></canvas>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let usageChart = null;
+
+async function refreshStats() {
+    try {
+        const response = await fetch('/admin/gemini-stats-api');
+        const data = await response.json();
+        
+        if (data.error) {
+            APBIA.showNotification('Erro ao carregar estatísticas', 'error');
+            return;
+        }
+        
+        updateStats(data);
+        
+    } catch (error) {
+        console.error('Erro:', error);
+        APBIA.showNotification('Erro ao atualizar estatísticas', 'error');
+    }
+}
+
+function updateStats(data) {
+    const global = data.global;
+    
+    // RPM
+    document.getElementById('rpm-current').textContent = global.requests_minute;
+    document.getElementById('rpm-remaining').textContent = `Disponível: ${global.rpm_remaining}`;
+    updateProgress('rpm', global.requests_minute, global.rpm_limit);
+    
+    // TPM
+    const tpmK = Math.round(global.tokens_minute / 1000);
+    document.getElementById('tpm-current').textContent = tpmK + 'k';
+    document.getElementById('tpm-remaining').textContent = `Disponível: ${Math.round(global.tpm_remaining / 1000)}k`;
+    updateProgress('tpm', global.tokens_minute, global.tpm_limit);
+    
+    // RPD
+    document.getElementById('rpd-current').textContent = global.requests_today;
+    document.getElementById('rpd-remaining').textContent = `Disponível: ${global.rpd_remaining}`;
+    updateProgress('rpd', global.requests_today, global.rpd_limit);
+    
+    // Search
+    document.getElementById('search-current').textContent = global.searches_today;
+    document.getElementById('search-remaining').textContent = `Disponível: ${global.search_remaining}`;
+    updateProgress('search', global.searches_today, global.search_limit);
+    
+    // Alertas
+    updateAlerts(global);
+}
+
+function updateProgress(type, current, limit) {
+    const percent = Math.min((current / limit) * 100, 100);
+    
+    // Barra de progresso
+    document.getElementById(`${type}-bar`).style.width = `${percent}%`;
+    
+    // Percentual
+    document.getElementById(`${type}-percent`).textContent = `${percent.toFixed(1)}%`;
+    document.getElementById(`${type}-percent-bar`).style.width = `${percent}%`;
+    
+    // Cor da barra baseado no uso
+    const bar = document.getElementById(`${type}-bar`);
+    const percentBar = document.getElementById(`${type}-percent-bar`);
+    
+    if (percent >= 90) {
+        bar.classList.remove('bg-primary', 'bg-warning', 'bg-info', 'bg-success');
+        bar.classList.add('bg-danger');
+        percentBar.classList.remove('bg-primary', 'bg-warning', 'bg-info', 'bg-success');
+        percentBar.classList.add('bg-danger');
+    } else if (percent >= 75) {
+        bar.classList.remove('bg-primary', 'bg-danger', 'bg-info', 'bg-success');
+        bar.classList.add('bg-warning');
+        percentBar.classList.remove('bg-primary', 'bg-danger', 'bg-info', 'bg-success');
+        percentBar.classList.add('bg-warning');
+    }
+}
+
+function updateAlerts(global) {
+    const alertsDiv = document.getElementById('limit-alerts');
+    alertsDiv.innerHTML = '';
+    
+    // Alertas baseados em uso
+    const alerts = [];
+    
+    if (global.requests_minute >= global.rpm_limit * 0.9) {
+        alerts.push({
+            type: 'danger',
+            message: `⚠️ RPM próximo do limite: ${global.requests_minute}/${global.rpm_limit}`
+        });
+    }
+    
+    if (global.requests_today >= global.rpd_limit * 0.9) {
+        alerts.push({
+            type: 'warning',
+            message: `⚠️ RPD próximo do limite: ${global.requests_today}/${global.rpd_limit}`
+        });
+    }
+    
+    if (global.searches_today >= global.search_limit * 0.9) {
+        alerts.push({
+            type: 'warning',
+            message: `⚠️ Google Search próximo do limite: ${global.searches_today}/${global.search_limit}`
+        });
+    }
+    
+    // Renderiza alertas
+    alerts.forEach(alert => {
+        const div = document.createElement('div');
+        div.className = `alert alert-${alert.type} alert-dismissible fade show`;
+        div.innerHTML = `
+            ${alert.message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        alertsDiv.appendChild(div);
+    });
+}
+
+// Inicializa e atualiza a cada 10 segundos
+refreshStats();
+setInterval(refreshStats, 10000);
+</script>
+{% endblock %}

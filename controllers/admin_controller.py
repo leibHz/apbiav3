@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from functools import wraps
 from dao.dao import SupabaseDAO
 from config import Config
+from services.gemini_service import gemini_stats
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 dao = SupabaseDAO()
@@ -14,7 +15,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if not current_user.is_admin():
             flash('Acesso negado. Apenas administradores.', 'error')
-            return redirect(url_for('main.index'))
+            return redirect(url_for('index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -76,7 +77,7 @@ def adicionar_usuario():
         tipo_usuario_id = int(tipo_usuario_id)
         
         # Valida BP para participantes e orientadores
-        if tipo_usuario_id in [2, 3]:  # Participante ou Orientador
+        if tipo_usuario_id in [2, 3]:
             if not numero_inscricao:
                 return jsonify({
                     'error': True,
@@ -91,7 +92,6 @@ def adicionar_usuario():
             
             numero_inscricao = format_bp(numero_inscricao)
         else:
-            # Para admin e visitante, BP é opcional
             numero_inscricao = format_bp(numero_inscricao) if numero_inscricao else None
         
         # Verifica se email já existe
@@ -236,3 +236,139 @@ def configuracoes():
     return render_template('admin/configuracoes.html', 
                          ia_status=Config.IA_STATUS,
                          context_files=context_files)
+
+
+@admin_bp.route('/gemini-stats')
+@admin_required
+def gemini_stats_page():
+    """
+    Página de estatísticas do Gemini API
+    """
+    return render_template('admin/gemini_stats.html')
+
+
+@admin_bp.route('/gemini-stats-api')
+@admin_required
+def gemini_stats_api():
+    """
+    API JSON para retornar estatísticas do Gemini
+    """
+    try:
+        stats = gemini_stats.get_stats()
+        
+        return jsonify({
+            'success': True,
+            'global': stats['global'],
+            'timestamp': datetime.now().isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Erro ao obter estatísticas: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/gemini-stats-user/<int:user_id>')
+@admin_required
+def gemini_stats_user(user_id):
+    """
+    Estatísticas de um usuário específico
+    """
+    try:
+        user_stats = gemini_stats.get_user_stats(user_id)
+        
+        if user_stats is None:
+            return jsonify({
+                'error': True,
+                'message': 'Usuário não encontrado ou sem estatísticas'
+            }), 404
+        
+        return jsonify({
+            'success': True,
+            'user_id': user_id,
+            'stats': user_stats
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Erro ao obter estatísticas: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/gemini-stats-all-users')
+@admin_required
+def gemini_stats_all_users():
+    """
+    Estatísticas de todos os usuários
+    """
+    try:
+        all_stats = gemini_stats.get_all_users_stats()
+        
+        return jsonify({
+            'success': True,
+            'users': all_stats,
+            'total_users': len(all_stats)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Erro ao obter estatísticas: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/gemini-stats-export')
+@admin_required
+def gemini_stats_export():
+    """
+    Exporta todas as estatísticas em JSON
+    """
+    try:
+        export_data = gemini_stats.export_stats()
+        
+        from flask import Response
+        import json
+        
+        # Gera arquivo JSON para download
+        json_data = json.dumps(export_data, indent=2, ensure_ascii=False)
+        
+        return Response(
+            json_data,
+            mimetype='application/json',
+            headers={
+                'Content-Disposition': f'attachment; filename=gemini_stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+            }
+        )
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Erro ao exportar estatísticas: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/gemini-stats-reset/<int:user_id>', methods=['POST'])
+@admin_required
+def gemini_stats_reset_user(user_id):
+    """
+    Reseta estatísticas de um usuário
+    """
+    try:
+        gemini_stats.reset_user(user_id)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Estatísticas do usuário {user_id} resetadas'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Erro ao resetar estatísticas: {str(e)}'
+        }), 500
+
+
+# Importar datetime
+from datetime import datetime

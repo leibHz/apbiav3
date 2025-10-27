@@ -52,6 +52,41 @@
                         </a>
                     </li>
                     {% endif %}
+                    {% if current_user.is_authenticated and current_user.is_admin() %}
+                    <li class="nav-item">
+                        <a class="nav-link position-relative" href="{{ url_for('admin.gemini_stats_page') }}" title="Estatísticas Gemini">
+                            <i class="fas fa-chart-line"></i>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info" id="gemini-stats-badge">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                <span class="visually-hidden">Carregando estatísticas</span>
+                            </span>
+                        </a>
+                    </li>
+                    <script>
+                    // Atualiza badge de estatísticas na navbar
+                    async function updateStatsBadge() {
+                        try {
+                            const response = await fetch('/admin/gemini-stats/api');
+                            const data = await response.json();
+                            const badge = document.getElementById('gemini-stats-badge');
+                            
+                            if (badge) {
+                                const requests24h = data.global.requests_24h || 0;
+                                badge.textContent = requests24h;
+                                badge.title = `${requests24h} requisições (24h)`;
+                            }
+                        } catch (error) {
+                            console.error('Erro ao atualizar badge de stats:', error);
+                        }
+                    }
+
+                    // Atualiza a cada 30 segundos
+                    if (document.getElementById('gemini-stats-badge')) {
+                        updateStatsBadge();
+                        setInterval(updateStatsBadge, 30000);
+                    }
+                    </script>
+                    {% endif %}
                 </ul>
                 
                 <ul class="navbar-nav">
