@@ -8,14 +8,14 @@ from datetime import datetime, timedelta
 from threading import Lock
 import json
 
-class GeminiStatsTracker:
+class GeminiStats:
     """
     Rastreador de estatísticas do Gemini 2.5 Flash
     
     FREE Tier Limits (verificado em 27/10/2025):
     - RPM (Requests Per Minute): 10
-    - TPM (Tokens Per Minute): 4.000.000
-    - RPD (Requests Per Day): 1.500
+    - TPM (Tokens Per Minute): 250.000
+    - RPD (Requests Per Day): 250
     - TPD (Tokens Per Day): Unlimited
     - Google Search RPD: 500 (FREE)
     
@@ -29,8 +29,8 @@ class GeminiStatsTracker:
         
         # Limites FREE tier do Gemini 2.5 Flash
         self.RPM_LIMIT = 10        # Requests por minuto
-        self.TPM_LIMIT = 4_000_000 # Tokens por minuto (4M)
-        self.RPD_LIMIT = 1_500     # Requests por dia
+        self.TPM_LIMIT = 250_000   # Tokens por minuto
+        self.RPD_LIMIT = 250       # Requests por dia
         self.SEARCH_RPD_LIMIT = 500 # Google Search por dia
         
         # Contadores por usuário
@@ -309,7 +309,47 @@ class GeminiStatsTracker:
             }
             
             return json.dumps(data, indent=2)
+    
+    def get_stats(self):
+        """
+        Retorna estatísticas combinadas (compatibilidade)
+        
+        Returns:
+            dict: Estatísticas
+        """
+        return {
+            'global': self.get_global_stats()
+        }
+    
+    def get_all_users_stats(self):
+        """
+        Retorna estatísticas de todos os usuários
+        
+        Returns:
+            dict: {user_id: stats}
+        """
+        all_stats = {}
+        
+        for user_id in set(list(self.requests_minute.keys()) + list(self.requests_day.keys())):
+            all_stats[user_id] = self.get_user_stats(user_id)
+        
+        return all_stats
+    
+    def reset_user(self, user_id):
+        """
+        Reseta estatísticas de um usuário
+        
+        Args:
+            user_id: ID do usuário
+        """
+        with self.lock:
+            if user_id in self.requests_minute:
+                del self.requests_minute[user_id]
+            if user_id in self.requests_day:
+                del self.requests_day[user_id]
+            if user_id in self.searches_day:
+                del self.searches_day[user_id]
 
 
 # Instância global
-gemini_stats = GeminiStatsTracker()
+gemini_stats = GeminiStats()
