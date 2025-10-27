@@ -10,7 +10,8 @@ import os
 import time
 from config import Config
 from utils.advanced_logger import logger, log_ai_usage
-from services.gemini_stats import gemini_stats
+from collections import defaultdict
+from datetime import datetime, timedelta
 
 
 class GeminiService:
@@ -219,13 +220,13 @@ class GeminiService:
                 temperature=0.7,
                 top_p=0.95,
                 top_k=40,
-                max_output_tokens=65536,  # ✅ Limite correto: 65.536 tokens
+                max_output_tokens=65526,  # ✅ Limite correto: 65.536 tokens
                 tools=tools if tools else None,
                 safety_settings=self.safety_settings,
                 # Thinking Mode com budget dinâmico
                 # Ref: https://ai.google.dev/gemini-api/docs/thinking
                 thinking_config=types.ThinkingConfig(
-                    thinking_budget=24000,  
+                    thinking_budget=24000,  # 24.000 tokens de budget
                     include_thoughts=True
                 )
             )
@@ -417,7 +418,7 @@ class GeminiService:
                 max_output_tokens=65536,
                 safety_settings=self.safety_settings,
                 thinking_config=types.ThinkingConfig(
-                    thinking_budget=24000,
+                    thinking_budget=-1,
                     include_thoughts=True
                 )
             )
