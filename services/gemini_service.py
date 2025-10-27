@@ -17,6 +17,9 @@ from google.genai import types
 import os
 import time
 from config import Config
+# ✅ NOVO: Importa logger e função de log de uso da IA
+from utils.advanced_logger import logger, log_ai_usage
+from services.gemini_stats import gemini_stats
 
 class GeminiService:
     """
@@ -26,47 +29,51 @@ class GeminiService:
     
     def __init__(self):
         """Inicializa o cliente Gemini com todas as configurações corretas"""
-        # Cliente usando biblioteca NOVA
-        self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
-        
-        self.model_name = 'gemini-2.5-flash'
-        self.context_files = self._load_context_files()
-        
-        # Safety Settings DESABILITADOS (BLOCK_NONE em todas as categorias)
-        # Documentação: https://ai.google.dev/gemini-api/docs/safety-settings
-        self.safety_settings = [
-            types.SafetySetting(
-                category='HARM_CATEGORY_HATE_SPEECH',
-                threshold='BLOCK_NONE'
-            ),
-            types.SafetySetting(
-                category='HARM_CATEGORY_HARASSMENT',
-                threshold='BLOCK_NONE'
-            ),
-            types.SafetySetting(
-                category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                threshold='BLOCK_NONE'
-            ),
-            types.SafetySetting(
-                category='HARM_CATEGORY_DANGEROUS_CONTENT',
-                threshold='BLOCK_NONE'
-            )
-        ]
-        
-        print("="*60)
-        print("✅ GeminiService inicializado (google-genai v1.11.0)")
-        print(f"✅ Modelo: {self.model_name}")
-        print(f"✅ Output limit: 65.536 tokens (CORRETO)")
-        print(f"✅ Input limit: 1.048.576 tokens")
-        print(f"✅ Safety: DESABILITADO (BLOCK_NONE)")
-        print(f"✅ Rate Limits FREE:")
-        print(f"   - 10 RPM (requests/minuto)")
-        print(f"   - 250k TPM (tokens/minuto)")
-        print(f"   - 250 RPD (requests/dia)")
-        print(f"✅ Google Search: 500 RPD (grátis)")
-        print(f"✅ Context Caching: IMPLÍCITO (automático, FREE)")
-        print("="*60)
-    
+        logger.info("🤖 Inicializando GeminiService...")
+        try:
+            # Cliente usando biblioteca NOVA
+            self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
+            
+            self.model_name = 'gemini-2.5-flash'
+            self.context_files = self._load_context_files()
+            
+            # Safety Settings DESABILITADOS (BLOCK_NONE em todas as categorias)
+            # Documentação: https://ai.google.dev/gemini-api/docs/safety-settings
+            self.safety_settings = [
+                types.SafetySetting(
+                    category='HARM_CATEGORY_HATE_SPEECH',
+                    threshold='BLOCK_NONE'
+                ),
+                types.SafetySetting(
+                    category='HARM_CATEGORY_HARASSMENT',
+                    threshold='BLOCK_NONE'
+                ),
+                types.SafetySetting(
+                    category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
+                    threshold='BLOCK_NONE'
+                ),
+                types.SafetySetting(
+                    category='HARM_CATEGORY_DANGEROUS_CONTENT',
+                    threshold='BLOCK_NONE'
+                )
+            ]
+            
+            logger.info("✅ GeminiService inicializado")
+            logger.info(f"   Modelo: {self.model_name}")
+            logger.info(f"   Output limit: 65.536 tokens")
+            logger.info(f"   Input limit: 1.048.576 tokens")
+            logger.info(f"   Safety: DESABILITADO (BLOCK_NONE)")
+            logger.info(f"✅ Rate Limits FREE:")
+            logger.info(f"   - 10 RPM (requests/minuto)")
+            logger.info(f"   - 250k TPM (tokens/minuto)")
+            logger.info(f"   - 250 RPD (requests/dia)")
+            logger.info(f"✅ Google Search: 500 RPD (grátis)")
+            logger.info(f"✅ Context Caching: IMPLÍCITO (automático, FREE)")
+            logger.info("="*60)
+        except Exception as e:
+            logger.critical(f"💥 ERRO ao inicializar Gemini: {e}")
+            raise
+
     def _load_context_files(self):
         """
         Carrega arquivos de contexto da Bragantec
@@ -74,11 +81,12 @@ class GeminiService:
         OTIMIZAÇÃO: Coloca contexto grande no INÍCIO para aproveitar
         cache implícito automático (Gemini 2.5 feature)
         """
+        logger.debug("📂 Carregando arquivos de contexto...")
         context_content = []
         context_path = Config.CONTEXT_FILES_PATH
         
         if not os.path.exists(context_path):
-            print(f"⚠️ Pasta {context_path} não existe. Criando...")
+            logger.warning(f"⚠️ Pasta {context_path} não existe. Criando...")
             os.makedirs(context_path, exist_ok=True)
             return ""
         
@@ -91,12 +99,14 @@ class GeminiService:
                     with open(filepath, 'r', encoding='utf-8') as f:
                         content = f.read()
                         context_content.append(f"=== {filename} ===\n{content}\n")
-                    print(f"✅ Contexto carregado: {filename}")
+                    logger.info(f"✅ Contexto carregado: {filename}")
                 except Exception as e:
-                    print(f"❌ Erro ao carregar {filename}: {e}")
+                    logger.error(f"❌ Erro ao carregar {filename}: {e}")
         
         if not files_found:
-            print("⚠️ Nenhum arquivo .txt encontrado em context_files/")
+            logger.warning("⚠️ Nenhum arquivo .txt encontrado em context_files/")
+        else:
+            logger.info(f"✅ {files_found} arquivos de contexto carregados")
         
         return "\n".join(context_content) if context_content else ""
     
@@ -141,7 +151,7 @@ class GeminiService:
             return base_instruction
     
     def chat(self, message, tipo_usuario='participante', history=None, 
-             usar_pesquisa=True, usar_code_execution=True):
+             usar_pesquisa=True, usar_code_execution=True, analyze_url=None):
         """
         Chat com TODOS os recursos do Gemini 2.5 Flash
         
@@ -165,6 +175,17 @@ class GeminiService:
                 'code_executed': bool
             }
         """
+        logger.info("🚀 Iniciando chat com Gemini")
+        logger.debug(f"   Tipo usuário: {tipo_usuario}")
+        logger.debug(f"   Google Search: {usar_pesquisa}")
+        logger.debug(f"   Code Execution: {usar_code_execution}")
+        logger.debug(f"   Histórico: {len(history) if history else 0} mensagens")
+        logger.debug(f"   Mensagem: {message[:100]}...")
+        
+        # Registra requisição
+        gemini_stats.record_request(user_id=None)  # ou current_user.id se disponível
+        
+        start_time = time.time()
         try:
             # System instruction + contexto da Bragantec
             system_instruction = self._get_system_instruction(tipo_usuario)
@@ -181,12 +202,12 @@ class GeminiService:
             if usar_pesquisa:
                 # Documentação: https://ai.google.dev/gemini-api/docs/google-search
                 tools.append(types.Tool(google_search=types.GoogleSearch()))
-                print("🔍 Google Search habilitado (FREE: 500 RPD)")
+                logger.info("🔍 Google Search habilitado (FREE: 500 RPD)")
             
             if usar_code_execution:
                 # Documentação: https://ai.google.dev/gemini-api/docs/code-execution
                 tools.append(types.Tool(code_execution=types.ToolCodeExecution()))
-                print("🐍 Code Execution habilitado")
+                logger.info("🐍 Code Execution habilitado")
             
             # Configuração completa
             config = types.GenerateContentConfig(
@@ -216,7 +237,7 @@ class GeminiService:
             contents.append(full_message)
             
             # Gera resposta
-            print("🚀 Gerando resposta com Thinking Mode...")
+            logger.debug("📤 Enviando requisição para Gemini...")
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=contents,
@@ -233,16 +254,16 @@ class GeminiService:
                 # Thinking process (processo de pensamento da IA)
                 if part.thought:
                     thinking_process = part.text
-                    print(f"💭 Thinking detectado: {len(thinking_process)} chars")
+                    logger.info(f"💭 Thinking detectado: {len(thinking_process)} chars")
                 
                 # Código executado
                 elif hasattr(part, 'executable_code'):
                     code_executed = True
-                    print(f"🐍 Código executado: {part.executable_code.code[:100]}...")
+                    logger.info(f"🐍 Código executado: {part.executable_code.code[:100]}...")
                 
                 # Resultado de código
                 elif hasattr(part, 'code_execution_result'):
-                    print(f"✅ Resultado do código disponível")
+                    logger.info(f"✅ Resultado do código disponível")
                 
                 # Texto normal (resposta final)
                 elif part.text and not part.thought:
@@ -255,18 +276,39 @@ class GeminiService:
                 if grounding and hasattr(grounding, 'web_search_queries'):
                     search_used = len(grounding.web_search_queries) > 0
                     if search_used:
-                        print(f"🔍 Usou Google Search: {grounding.web_search_queries}")
+                        logger.info(f"🔍 Usou Google Search: {grounding.web_search_queries}")
             
-            # Log de usage (incluindo cache implícito)
+            # Registra tokens
             if hasattr(response, 'usage_metadata'):
-                print(f"📊 Tokens - Input: {response.usage_metadata.prompt_token_count}")
-                print(f"📊 Tokens - Output: {response.usage_metadata.candidates_token_count}")
+                tokens_input = response.usage_metadata.prompt_token_count
+                tokens_output = response.usage_metadata.candidates_token_count
                 
-                # Cache implícito (automático no Gemini 2.5)
+                gemini_stats.record_tokens(None, tokens_input, tokens_output)
+            
+            # Registra uso de pesquisa
+            if search_used:
+                gemini_stats.record_search()
+            
+            duration = (time.time() - start_time) * 1000
+            
+            # Log de uso da IA
+            if hasattr(response, 'usage_metadata'):
+                tokens_input = response.usage_metadata.prompt_token_count
+                tokens_output = response.usage_metadata.candidates_token_count
+                logger.info(f"📊 Tokens - Input: {tokens_input} | Output: {tokens_output}")
                 if hasattr(response.usage_metadata, 'cached_content_token_count'):
                     cached = response.usage_metadata.cached_content_token_count
                     if cached > 0:
-                        print(f"💾 Cache IMPLÍCITO usado: {cached} tokens economizados!")
+                        logger.info(f"💾 Cache IMPLÍCITO usado: {cached} tokens economizados!")
+                log_ai_usage(
+                    self.model_name,
+                    'CHAT',
+                    tokens_input=tokens_input,
+                    tokens_output=tokens_output,
+                    thinking=bool(thinking_process),
+                    search=search_used
+                )
+            logger.info(f"✅ Resposta gerada em {duration:.2f}ms ({len(response_text)} chars)")
             
             result = {
                 'response': response_text or response.text,
@@ -275,13 +317,13 @@ class GeminiService:
                 'code_executed': code_executed
             }
             
-            print(f"✅ Resposta pronta: {len(result['response'])} chars")
             return result
             
         except Exception as e:
-            print(f"❌ Erro no Gemini: {str(e)}")
+            duration = (time.time() - start_time) * 1000
+            logger.error(f"❌ Erro no Gemini após {duration:.2f}ms: {str(e)}")
             import traceback
-            print(traceback.format_exc())
+            logger.error(f"Traceback:\n{traceback.format_exc()}")
             return {
                 'response': f"Erro ao processar mensagem: {str(e)}",
                 'thinking_process': None,
@@ -305,32 +347,32 @@ class GeminiService:
             File object ou None em caso de erro
         """
         try:
-            print(f"📤 Fazendo upload: {file_path}")
+            logger.info(f"📤 Fazendo upload do arquivo: {file_path}")
             
             # ✅ API NOVA: client.files.upload (não genai.upload_file)
             with open(file_path, 'rb') as f:
                 uploaded_file = self.client.files.upload(file=f)
             
-            print(f"✅ Upload concluído: {uploaded_file.display_name}")
-            print(f"   URI: {uploaded_file.uri}")
-            print(f"   MIME: {uploaded_file.mime_type}")
+            logger.info(f"✅ Upload concluído: {uploaded_file.display_name}")
+            logger.info(f"   URI: {uploaded_file.uri}")
+            logger.info(f"   MIME: {uploaded_file.mime_type}")
             
             # Aguarda processamento (importante para vídeos)
             while uploaded_file.state.name == "PROCESSING":
-                print("⏳ Processando arquivo...")
+                logger.info("⏳ Processando arquivo...")
                 time.sleep(2)
                 uploaded_file = self.client.files.get(name=uploaded_file.name)
             
             if uploaded_file.state.name == "FAILED":
                 raise ValueError(f"Falha no processamento: {uploaded_file.error}")
             
-            print(f"✅ Arquivo pronto para uso!")
+            logger.info(f"✅ Arquivo pronto para uso!")
             return uploaded_file
             
         except Exception as e:
-            print(f"❌ Erro no upload: {e}")
+            logger.error(f"❌ Erro no upload: {e}")
             return None
-    
+
     def chat_with_file(self, message, file_path, tipo_usuario='participante'):
         """
         Chat com arquivo anexado (multimodal)
@@ -362,7 +404,7 @@ class GeminiService:
             else:
                 file_type = 'documento'
             
-            print(f"🔍 Analisando {file_type}...")
+            logger.info(f"🔍 Tipo de arquivo detectado: {file_type}")
             
             # System instruction
             system_instruction = self._get_system_instruction(tipo_usuario)
@@ -398,7 +440,7 @@ class GeminiService:
             
             # Deleta arquivo temporário (economia de espaço)
             self.client.files.delete(name=uploaded_file.name)
-            print("🗑️ Arquivo temporário deletado")
+            logger.info("🗑️ Arquivo temporário deletado")
             
             return {
                 'response': response_text or response.text,
@@ -407,7 +449,7 @@ class GeminiService:
             }
             
         except Exception as e:
-            print(f"❌ Erro ao processar arquivo: {e}")
+            logger.error(f"❌ Erro ao processar arquivo: {e}")
             return {
                 'response': f"Erro ao processar arquivo: {str(e)}",
                 'error': True
@@ -435,7 +477,7 @@ class GeminiService:
             dict: {'success': bool, 'data': dict ou 'error': str}
         """
         try:
-            print("📋 Gerando JSON estruturado...")
+            logger.info("📋 Gerando JSON estruturado...")
             
             # Converte dict para types.Schema
             def dict_to_schema(d):
@@ -483,7 +525,7 @@ class GeminiService:
             # Parse JSON
             import json
             result = json.loads(response.text)
-            print(f"✅ JSON gerado com sucesso")
+            logger.info(f"✅ JSON gerado com sucesso")
             
             return {
                 'success': True,
@@ -491,7 +533,7 @@ class GeminiService:
             }
             
         except Exception as e:
-            print(f"❌ Erro em structured output: {e}")
+            logger.error(f"❌ Erro em structured output: {e}")
             return {
                 'success': False,
                 'error': str(e)
@@ -525,6 +567,6 @@ class GeminiService:
             
             return 0
         except Exception as e:
-            print(f"⚠️ Erro ao contar tokens: {e}")
+            logger.warning(f"⚠️ Erro ao contar tokens: {e}")
             # Fallback: estimativa grosseira (1 token ≈ 4 caracteres)
             return len(text) // 4

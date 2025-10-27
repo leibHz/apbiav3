@@ -2,30 +2,37 @@ from supabase import create_client, Client
 from config import Config
 from models.models import Usuario, Projeto, Chat, ArquivoChat, FerramentaChat, TipoUsuario, TipoIA
 import bcrypt
+from utils.advanced_logger import logger, log_database_operation  # ✅ NOVO: Importa logger
 
 class SupabaseDAO:
-    """Data Access Object para Supabase"""
+    """Data Access Object para Supabase com Debug Avançado"""
     
     def __init__(self):
+        logger.info("🗄️ Inicializando SupabaseDAO...")
         try:
-            # Tenta criar client com argumentos mínimos
             self.supabase: Client = create_client(
                 Config.SUPABASE_URL, 
                 Config.SUPABASE_KEY
             )
+            logger.info(f"✅ Conectado ao Supabase: {Config.SUPABASE_URL}")
         except TypeError:
-            # Fallback para versões mais antigas
+            logger.warning("⚠️ Tentando fallback para versão antiga do Supabase...")
             from supabase.client import ClientOptions
             self.supabase = create_client(
                 Config.SUPABASE_URL,
                 Config.SUPABASE_KEY,
                 options=ClientOptions()
             )
+            logger.info("✅ Conectado (modo compatibilidade)")
+        except Exception as e:
+            logger.critical(f"💥 ERRO ao conectar ao Supabase: {e}")
+            raise
     
     # ============ USUÁRIOS ============
     
     def criar_usuario(self, nome_completo, email, senha, tipo_usuario_id, numero_inscricao=None):
         """Cria um novo usuário"""
+        logger.info(f"👤 Criando usuário: {email} (Tipo: {tipo_usuario_id})")
         from utils.helpers import validate_bp, format_bp
         
         # Valida BP se for participante ou orientador
@@ -48,12 +55,21 @@ class SupabaseDAO:
             'numero_inscricao': numero_inscricao
         }
         
-        result = self.supabase.table('usuarios').insert(data).execute()
-        return self._row_to_usuario(result.data[0]) if result.data else None
-    
+        try:
+            result = self.supabase.table('usuarios').insert(data).execute()
+            log_database_operation('INSERT', 'usuarios', data={'email': email}, result='Success')
+            logger.info(f"✅ Usuário criado com sucesso: {email}")
+            return self._row_to_usuario(result.data[0]) if result.data else None
+        except Exception as e:
+            log_database_operation('INSERT', 'usuarios', data={'email': email}, result=f'Error: {e}')
+            logger.error(f"❌ Erro ao criar usuário: {e}")
+            raise
+
     def buscar_usuario_por_id(self, usuario_id):
         """Busca usuário por ID"""
+        logger.debug(f"🔍 Buscando usuário ID: {usuario_id}")
         result = self.supabase.table('usuarios').select('*').eq('id', usuario_id).execute()
+        log_database_operation('SELECT', 'usuarios', data={'id': usuario_id}, result='Found' if result.data else 'Not Found')
         return self._row_to_usuario(result.data[0]) if result.data else None
     
     def buscar_usuario_por_email(self, email):
@@ -325,17 +341,8 @@ class SupabaseDAO:
     def criar_mensagem(self, chat_id, role, conteudo, thinking_process=None):
         """
         Cria uma nova mensagem no histórico do chat
-        ✅ CORRIGIDO: Agora salva thinking_process
-        
-        Args:
-            chat_id: ID do chat
-            role: 'user' ou 'model'
-            conteudo: Conteúdo da mensagem
-            thinking_process: Processo de pensamento da IA (opcional)
-        
-        Returns:
-            dict: Dados da mensagem criada
         """
+        logger.debug(f"💬 Salvando mensagem: Chat {chat_id} | Role: {role}")
         data = {
             'chat_id': chat_id,
             'role': role,
@@ -346,8 +353,15 @@ class SupabaseDAO:
         if thinking_process:
             data['thinking_process'] = thinking_process
         
-        result = self.supabase.table('mensagens').insert(data).execute()
-        return result.data[0] if result.data else None
+        try:
+            result = self.supabase.table('mensagens').insert(data).execute()
+            log_database_operation('INSERT', 'mensagens', data={'chat_id': chat_id, 'role': role}, result='Success')
+            logger.info(f"✅ Mensagem salva: Chat {chat_id}")
+            return result.data[0] if result.data else None
+        except Exception as e:
+            log_database_operation('INSERT', 'mensagens', data={'chat_id': chat_id}, result=f'Error: {e}')
+            logger.error(f"❌ Erro ao salvar mensagem: {e}")
+            raise
 
     def listar_mensagens_por_chat(self, chat_id, limit=100):
         """
