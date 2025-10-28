@@ -12,6 +12,7 @@ from config import Config
 from utils.advanced_logger import logger, log_ai_usage
 from collections import defaultdict
 from datetime import datetime, timedelta
+from services.gemini_stats import gemini_stats
 
 
 class GeminiService:
@@ -267,13 +268,19 @@ class GeminiService:
             
             # Verifica Google Search
             search_used = False
-            if hasattr(response.candidates[0], 'grounding_metadata'):
-                grounding = response.candidates[0].grounding_metadata
-                if grounding and hasattr(grounding, 'web_search_queries'):
-                    search_used = len(grounding.web_search_queries) > 0
-                    if search_used:
-                        logger.info(f"🔍 Google Search usado")
-                        gemini_stats.record_search(user_id)
+            try:
+                if hasattr(response.candidates[0], 'grounding_metadata'):
+                    grounding = response.candidates[0].grounding_metadata
+                    if grounding and hasattr(grounding, 'web_search_queries'):
+                            queries = grounding.web_search_queries
+                            # Verifica múltiplas condições
+                            if queries and isinstance(queries, (list, tuple)) and len(queries) > 0:
+                                search_used = True
+                                logger.info(f"🔍 Google Search usado: {len(queries)} queries")
+                                gemini_stats.record_search(user_id)
+            except Exception as e:
+                logger.warning(f"⚠️ Erro ao verificar Google Search: {e}")
+    # Não falha, apenas não marca como usado
             
             # Registra estatísticas
             tokens_input = 0
@@ -288,10 +295,9 @@ class GeminiService:
                 
                 logger.info(f"📊 Tokens - Input: {tokens_input} | Output: {tokens_output}")
                 
-                # Cache usado?
                 if hasattr(response.usage_metadata, 'cached_content_token_count'):
                     cached = response.usage_metadata.cached_content_token_count
-                    if cached > 0:
+                    if cached is not None and cached > 0:  # ✅ Verifica None primeiro
                         logger.info(f"💾 Cache usado: {cached} tokens economizados!")
             
             duration = (time.time() - start_time) * 1000
