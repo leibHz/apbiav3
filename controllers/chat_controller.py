@@ -45,12 +45,22 @@ def send_message():
     - URL Analysis
     - Thinking Mode
     - Context Caching
+    - Rate Limiting
     """
     if not Config.IA_STATUS:
         return jsonify({
             'error': True,
             'message': 'IA está temporariamente offline.'
         }), 503
+    
+    # ✅ Verifica rate limit
+    can_proceed, error_msg = rate_limiter.check_limit(current_user.id)
+    
+    if not can_proceed:
+        return jsonify({
+            'error': True,
+            'message': error_msg
+        }), 429
     
     data = request.json
     message = data.get('message', '')
@@ -122,7 +132,8 @@ Resumo: {projeto.resumo or 'Não informado'}
             history=history,
             usar_pesquisa=usar_pesquisa,
             usar_code_execution=usar_code_execution,
-            analyze_url=analyze_url
+            analyze_url=analyze_url,
+            user_id=current_user.id
         )
         
         if response.get('error'):
@@ -199,7 +210,7 @@ def upload_file():
             message, 
             filepath, 
             tipo_usuario,
-            analyze_as=analyze_as
+            user_id=current_user.id
         )
         
         # Remove arquivo temporário
@@ -263,7 +274,8 @@ def analyze_url():
         response = gemini.chat(
             message,
             tipo_usuario=tipo_usuario,
-            analyze_url=url
+            analyze_url=url,
+            user_id=current_user.id
         )
         
         if chat_id:
@@ -408,15 +420,3 @@ def delete_chat(chat_id):
             'error': True,
             'message': f'Erro: {str(e)}'
         }), 500
-        
-@chat_bp.route('/send', methods=['POST'])
-@login_required
-def send_message():
-    # Verifica rate limit
-    can_proceed, error_msg = rate_limiter.check_limit(current_user.id)
-    
-    if not can_proceed:
-        return jsonify({
-            'error': True,
-            'message': error_msg
-        }), 429  
