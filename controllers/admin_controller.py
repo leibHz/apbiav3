@@ -4,6 +4,9 @@ from functools import wraps
 from dao.dao import SupabaseDAO
 from config import Config
 from services.gemini_stats import gemini_stats  # ✅ CORREÇÃO
+from utils.advanced_logger import logger  # ✅ ADICIONE ESTA LINHA
+from datetime import datetime  # ✅ ADICIONE ESTA LINHA TAMBÉM (você usa no código)
+import traceback  
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 dao = SupabaseDAO()
@@ -254,20 +257,74 @@ def gemini_stats_api():
     API JSON para retornar estatísticas do Gemini
     """
     try:
-        stats = gemini_stats.get_stats()
+        from datetime import datetime
         
+        # ✅ CORREÇÃO: Obtém estatísticas globais diretas
+        global_stats = gemini_stats.get_global_stats()
+        
+        # ✅ Calcula estatísticas por minuto/dia
+        now = datetime.now()
+        
+        # Limpa dados antigos
+        gemini_stats._cleanup_old_data(None, now)
+        
+        # Soma requests de todos os usuários (último minuto)
+        total_rpm = 0
+        total_tpm = 0
+        for user_id in gemini_stats.requests_minute.keys():
+            total_rpm += len(gemini_stats.requests_minute[user_id])
+            total_tpm += sum(tokens for _, tokens in gemini_stats.requests_minute[user_id])
+        
+        # Soma requests do dia
+        total_rpd = 0
+        for user_id in gemini_stats.requests_day.keys():
+            total_rpd += len(gemini_stats.requests_day[user_id])
+        
+        # Soma buscas do dia
+        total_searches = 0
+        for user_id in gemini_stats.searches_day.keys():
+            total_searches += len(gemini_stats.searches_day[user_id])
+        
+        # ✅ Retorna dados estruturados
         return jsonify({
             'success': True,
-            'global': stats['global'],
-            'timestamp': datetime.now().isoformat()
+            'global': {
+                # Minuto
+                'requests_minute': total_rpm,
+                'rpm_limit': gemini_stats.RPM_LIMIT,
+                'rpm_remaining': max(0, gemini_stats.RPM_LIMIT - total_rpm),
+                
+                'tokens_minute': total_tpm,
+                'tpm_limit': gemini_stats.TPM_LIMIT,
+                'tpm_remaining': max(0, gemini_stats.TPM_LIMIT - total_tpm),
+                
+                # Dia
+                'requests_today': total_rpd,
+                'rpd_limit': gemini_stats.RPD_LIMIT,
+                'rpd_remaining': max(0, gemini_stats.RPD_LIMIT - total_rpd),
+                
+                # Buscas
+                'searches_today': total_searches,
+                'search_limit': gemini_stats.SEARCH_RPD_LIMIT,
+                'search_remaining': max(0, gemini_stats.SEARCH_RPD_LIMIT - total_searches),
+                
+                # Histórico (últimas 24h)
+                'requests_24h': global_stats.get('requests_24h', 0),
+                'tokens_24h': global_stats.get('tokens_24h', 0),
+                'unique_users_24h': global_stats.get('unique_users_24h', 0),
+                'avg_tokens_per_request': global_stats.get('avg_tokens_per_request', 0),
+            },
+            'timestamp': now.isoformat()
         })
         
     except Exception as e:
+        logger.error(f"❌ Erro ao obter estatísticas Gemini: {e}")
+        logger.error(traceback.format_exc())
+        
         return jsonify({
             'error': True,
             'message': f'Erro ao obter estatísticas: {str(e)}'
         }), 500
-
 
 @admin_bp.route('/gemini-stats-user/<int:user_id>')
 @admin_required
