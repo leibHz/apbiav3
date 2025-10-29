@@ -1,4 +1,4 @@
-// Chat JavaScript - APBIA com Histórico Persistente e Google Search
+// Chat JavaScript - APBIA com Histórico Persistente, Google Search e Code Execution
 let currentChatId = null;
 let usarPesquisaGoogle = true; // Google Search ativado por padrão
 
@@ -107,7 +107,7 @@ async function handleSendMessage(e) {
                 message: message,
                 chat_id: currentChatId,
                 usar_pesquisa: usarPesquisaGoogle,
-                usar_code_execution: true  // ✅ Sempre ativo
+                usar_code_execution: true  // ✅ Sempre habilitado
             })
         });
         
@@ -116,29 +116,27 @@ async function handleSendMessage(e) {
         showThinking(false);
         
         if (data.success) {
-            // ✅ Adiciona resposta da IA com code_results
+            // ✅ Log para debug
+            console.log('📦 Resposta recebida:', {
+                code_executed: data.code_executed,
+                code_results: data.code_results,
+                search_used: data.search_used,
+                thinking: data.thinking_process ? 'sim' : 'não'
+            });
+            
+            // ✅ Adiciona resposta da IA com TODOS os dados
             addMessageToChat(
                 'assistant', 
                 data.response, 
                 data.thinking_process,
                 data.search_used,
-                data.code_results  // ✅ NOVO
+                data.code_results  // ✅ NOVO: resultados do código
             );
             
-            // ✅ Log de debug
-            if (data.code_executed) {
-                console.log('🐍 Code Execution detectado!');
-                console.log('Resultados:', data.code_results);
-            }
-            
-            // ✅ CORREÇÃO: Atualiza ID do chat se for novo SEM recarregar a página
+            // Atualiza ID do chat se for novo SEM recarregar a página
             if (data.chat_id && !currentChatId) {
                 currentChatId = data.chat_id;
-                
-                // Adiciona novo chat na sidebar dinamicamente
                 addChatToSidebar(data.chat_id, message);
-                
-                // Mostra notificação
                 APBIA.showNotification('Nova conversa iniciada!', 'success');
             }
         } else {
@@ -154,7 +152,7 @@ async function handleSendMessage(e) {
 
 function addChatToSidebar(chatId, firstMessage) {
     /**
-     * ✅ NOVA FUNÇÃO: Adiciona chat na sidebar sem recarregar página
+     * Adiciona chat na sidebar sem recarregar página
      */
     const chatHistory = document.getElementById('chatHistory');
     
@@ -220,7 +218,6 @@ function addChatToSidebar(chatId, firstMessage) {
     });
 }
 
-// Atualização da função addMessageToChat para suportar code execution
 function addMessageToChat(role, content, thinking = null, searchUsed = false, codeResults = null) {
     const messagesContainer = document.getElementById('chatMessages');
     
@@ -270,6 +267,48 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         });
     }
     
+    // ✅ CORREÇÃO: Badge de Code Execution
+    if (role === 'assistant' && codeResults && Array.isArray(codeResults) && codeResults.length > 0) {
+        console.log('🐍 Renderizando code execution:', codeResults);
+        
+        const codeBadge = document.createElement('div');
+        codeBadge.className = 'alert alert-dark border mb-2';
+        codeBadge.style.background = '#1e1e1e';
+        codeBadge.style.color = '#d4d4d4';
+        
+        codeBadge.innerHTML = `
+            <div class="d-flex align-items-center mb-2">
+                <i class="fas fa-code text-success me-2"></i>
+                <strong style="color: #4ec9b0;">Código Python Executado:</strong>
+                <span class="badge bg-success ms-2">${codeResults.length} script(s)</span>
+                <button class="btn btn-sm btn-outline-success ms-auto toggle-code">
+                    <i class="fas fa-chevron-down"></i> Ver Código
+                </button>
+            </div>
+            <div class="code-content" style="display: none;">
+                ${formatCodeResults(codeResults)}
+            </div>
+        `;
+        
+        messageDiv.appendChild(codeBadge);
+        
+        // Toggle para mostrar/ocultar código
+        codeBadge.querySelector('.toggle-code').addEventListener('click', function() {
+            const content = codeBadge.querySelector('.code-content');
+            const icon = this.querySelector('i');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.className = 'fas fa-chevron-up';
+                this.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar Código';
+            } else {
+                content.style.display = 'none';
+                icon.className = 'fas fa-chevron-down';
+                this.innerHTML = '<i class="fas fa-chevron-down"></i> Ver Código';
+            }
+        });
+    }
+    
     // Conteúdo principal
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
@@ -288,41 +327,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         messageDiv.appendChild(searchBadge);
     }
     
-    // ✅ NOVO: Badge de Code Execution
-    if (role === 'assistant' && codeResults && codeResults.length > 0) {
-        const codeBadge = document.createElement('div');
-        codeBadge.className = 'alert alert-dark border mb-2';
-        codeBadge.innerHTML = `
-            <div class="d-flex align-items-center mb-2">
-                <i class="fas fa-code text-success me-2"></i>
-                <strong>Código Python Executado:</strong>
-                <span class="badge bg-success ms-2">${codeResults.length} script(s)</span>
-                <button class="btn btn-sm btn-outline-success ms-auto toggle-code">
-                    <i class="fas fa-chevron-down"></i> Ver Código
-                </button>
-            </div>
-            <div class="code-content" style="display: none;">
-                ${formatCodeResults(codeResults)}
-            </div>
-        `;
-        messageDiv.appendChild(codeBadge);
-
-        // Toggle para mostrar/ocultar código
-        codeBadge.querySelector('.toggle-code').addEventListener('click', function() {
-            const content = codeBadge.querySelector('.code-content');
-            const icon = this.querySelector('i');
-            if (content.style.display === 'none') {
-                content.style.display = 'block';
-                icon.className = 'fas fa-chevron-up';
-                this.innerHTML = '<i class="fas fa-chevron-up"></i> Ocultar Código';
-            } else {
-                content.style.display = 'none';
-                icon.className = 'fas fa-chevron-down';
-                this.innerHTML = '<i class="fas fa-chevron-down"></i> Ver Código';
-            }
-        });
-    }
-    
     // Timestamp
     const timestamp = document.createElement('div');
     timestamp.className = 'timestamp';
@@ -338,6 +342,49 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+// ✅ NOVA FUNÇÃO: Formata resultados de code execution
+function formatCodeResults(codeResults) {
+    let html = '';
+    
+    codeResults.forEach((codeInfo, index) => {
+        const language = codeInfo.language || 'python';
+        const code = codeInfo.code || '';
+        const result = codeInfo.result || null;
+        
+        html += `
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <strong style="color: #4ec9b0;">Script ${index + 1}:</strong>
+                    <span class="badge bg-secondary">${language}</span>
+                </div>
+                <pre style="background: #282c34; color: #abb2bf; padding: 15px; border-radius: 8px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 0.9em;"><code>${escapeHtml(code)}</code></pre>
+                ${result ? `
+                    <div class="mt-2">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <strong style="color: #98c379;">Resultado da Execução:</strong>
+                            <span class="badge ${result.outcome === 'OUTCOME_OK' ? 'bg-success' : 'bg-danger'}">
+                                ${result.outcome === 'OUTCOME_OK' ? '✅ Sucesso' : '❌ Erro'}
+                            </span>
+                        </div>
+                        ${result.output ? `
+                            <pre style="background: #1e3a1e; color: #98c379; padding: 15px; border-radius: 8px; margin-top: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 0.9em;"><code>${escapeHtml(result.output)}</code></pre>
+                        ` : '<em style="color: #888;">Nenhuma saída gerada</em>'}
+                    </div>
+                ` : '<em style="color: #888;">Aguardando execução...</em>'}
+            </div>
+        `;
+    });
+    
+    return html;
+}
+
+// ✅ Função para escapar HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function formatMessageContent(content) {
     const div = document.createElement('div');
     div.textContent = content;
@@ -351,45 +398,9 @@ function formatMessageContent(content) {
     html = html.replace(/^\d+\. (.+)$/gm, '<strong>$&</strong>');
     
     // Formata código inline (entre ``)
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    html = html.replace(/`([^`]+)`/g, '<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: monospace;">$1</code>');
     
     return html;
-}
-
-// ✅ NOVA FUNÇÃO: Formata resultados de code execution
-function formatCodeResults(codeResults) {
-    let html = '';
-    codeResults.forEach((codeInfo, index) => {
-        const language = codeInfo.language || 'python';
-        const code = codeInfo.code || '';
-        const result = codeInfo.result || null;
-        html += `
-            <div class="mb-3">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <strong>Script ${index + 1}:</strong>
-                    <span class="badge bg-secondary">${language}</span>
-                </div>
-                <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto;"><code class="language-${language}">${escapeHtml(code)}</code></pre>
-                ${result ? `
-                    <div class="mt-2">
-                        <strong>Resultado:</strong>
-                        <span class="badge ${result.outcome === 'success' ? 'bg-success' : 'bg-danger'}">${result.outcome}</span>
-                        ${result.output ? `
-                            <pre style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-top: 5px; overflow-x: auto;"><code>${escapeHtml(result.output)}</code></pre>
-                        ` : ''}
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    });
-    return html;
-}
-
-// ✅ NOVA FUNÇÃO: Escape HTML para evitar XSS
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
 }
 
 function showThinking(show) {

@@ -142,6 +142,12 @@ Resumo: {projeto.resumo or 'Não informado'}
                 'message': response['response']
             }), 500
         
+        # ✅ LOG DE DEBUG
+        print(f"📦 Resposta do Gemini:")
+        print(f"   - Code executed: {response.get('code_executed', False)}")
+        print(f"   - Code results: {response.get('code_results')}")
+        print(f"   - Search used: {response.get('search_used', False)}")
+        
         # Salva mensagem do usuário
         dao.criar_mensagem(chat_id, 'user', message)
         
@@ -153,13 +159,15 @@ Resumo: {projeto.resumo or 'Não informado'}
             thinking_process=response.get('thinking_process')
         )
         
+        # ✅ CORREÇÃO: Retorna code_results
         return jsonify({
             'success': True,
             'response': response['response'],
             'thinking_process': response.get('thinking_process'),
             'chat_id': chat_id,
             'search_used': response.get('search_used', False),
-            'code_executed': response.get('code_executed', False)
+            'code_executed': response.get('code_executed', False),
+            'code_results': response.get('code_results')  # ✅ ADICIONA ISTO
         })
         
     except Exception as e:
