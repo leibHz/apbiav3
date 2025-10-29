@@ -318,7 +318,7 @@ def count_tokens():
         return jsonify({
             'success': True,
             'tokens': tokens,
-            'within_limit': tokens <= 1048576  # 1M tokens input limit
+            'within_limit': tokens <= 1000000  # 1M tokens input limit
         })
     except Exception as e:
         return jsonify({

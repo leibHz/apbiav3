@@ -171,7 +171,8 @@ class GeminiService:
                 'response': str,
                 'thinking_process': str ou None,
                 'search_used': bool,
-                'code_executed': bool
+                'code_executed': bool,
+                'code_results': list ou None
             }
         """
         logger.info("🚀 Iniciando chat com Gemini")
@@ -189,7 +190,8 @@ class GeminiService:
                 'thinking_process': None,
                 'error': True,
                 'search_used': False,
-                'code_executed': False
+                'code_executed': False,
+                'code_results': None
             }
         
         start_time = time.time()
@@ -251,20 +253,61 @@ class GeminiService:
                 config=config
             )
             
-            # Extrai dados
+            # ✅ CORREÇÃO: Extrai dados com detecção melhorada de code execution
             thinking_process = None
             response_text = ""
             code_executed = False
+            code_results = []
             
-            for part in response.candidates[0].content.parts:
+            logger.debug(f"📦 Processando {len(response.candidates[0].content.parts)} parts da resposta")
+            
+            for i, part in enumerate(response.candidates[0].content.parts):
+                logger.debug(f"   Part {i}: {type(part).__name__}")
+                
+                # ✅ Thinking process
                 if part.thought:
                     thinking_process = part.text
                     logger.info(f"💭 Thinking: {len(thinking_process)} chars")
-                elif hasattr(part, 'executable_code'):
+                
+                # ✅ CORREÇÃO: Detecção correta de code execution
+                # Ref: https://ai.google.dev/gemini-api/docs/code-execution
+                elif hasattr(part, 'executable_code') and part.executable_code:
                     code_executed = True
-                    logger.info(f"🐍 Código executado")
+                    code_info = {
+                        'language': part.executable_code.language if hasattr(part.executable_code, 'language') else 'python',
+                        'code': part.executable_code.code if hasattr(part.executable_code, 'code') else str(part.executable_code)
+                    }
+                    logger.info(f"🐍 Código detectado: {code_info['language']}")
+                    logger.debug(f"   Código: {code_info['code'][:100]}...")
+                    code_results.append(code_info)
+                
+                # ✅ Resultado da execução
+                elif hasattr(part, 'code_execution_result') and part.code_execution_result:
+                    result_info = {
+                        'outcome': part.code_execution_result.outcome if hasattr(part.code_execution_result, 'outcome') else 'unknown',
+                        'output': part.code_execution_result.output if hasattr(part.code_execution_result, 'output') else str(part.code_execution_result)
+                    }
+                    logger.info(f"✅ Resultado da execução: {result_info['outcome']}")
+                    logger.debug(f"   Output: {result_info['output'][:100]}...")
+                    
+                    # Adiciona resultado ao último código
+                    if code_results:
+                        code_results[-1]['result'] = result_info
+                
+                # ✅ Texto normal
                 elif part.text and not part.thought:
                     response_text += part.text
+            
+            # ✅ Log detalhado se código foi executado
+            if code_executed:
+                logger.info(f"🎯 CODE EXECUTION SUMMARY:")
+                logger.info(f"   Total de códigos executados: {len(code_results)}")
+                for idx, code_info in enumerate(code_results, 1):
+                    logger.info(f"   Código {idx}:")
+                    logger.info(f"     - Linguagem: {code_info.get('language', 'python')}")
+                    logger.info(f"     - Linhas: {len(code_info.get('code', '').split(chr(10)))}")
+                    if 'result' in code_info:
+                        logger.info(f"     - Resultado: {code_info['result'].get('outcome', 'unknown')}")
             
             # Verifica Google Search
             search_used = False
@@ -272,15 +315,13 @@ class GeminiService:
                 if hasattr(response.candidates[0], 'grounding_metadata'):
                     grounding = response.candidates[0].grounding_metadata
                     if grounding and hasattr(grounding, 'web_search_queries'):
-                            queries = grounding.web_search_queries
-                            # Verifica múltiplas condições
-                            if queries and isinstance(queries, (list, tuple)) and len(queries) > 0:
-                                search_used = True
-                                logger.info(f"🔍 Google Search usado: {len(queries)} queries")
-                                gemini_stats.record_search(user_id)
+                        queries = grounding.web_search_queries
+                        if queries and isinstance(queries, (list, tuple)) and len(queries) > 0:
+                            search_used = True
+                            logger.info(f"🔍 Google Search usado: {len(queries)} queries")
+                            gemini_stats.record_search(user_id)
             except Exception as e:
                 logger.warning(f"⚠️ Erro ao verificar Google Search: {e}")
-    # Não falha, apenas não marca como usado
             
             # Registra estatísticas
             tokens_input = 0
@@ -297,7 +338,7 @@ class GeminiService:
                 
                 if hasattr(response.usage_metadata, 'cached_content_token_count'):
                     cached = response.usage_metadata.cached_content_token_count
-                    if cached is not None and cached > 0:  # ✅ Verifica None primeiro
+                    if cached is not None and cached > 0:
                         logger.info(f"💾 Cache usado: {cached} tokens economizados!")
             
             duration = (time.time() - start_time) * 1000
@@ -313,12 +354,17 @@ class GeminiService:
                 search=search_used
             )
             
-            return {
+            # ✅ CORREÇÃO: Adiciona informações de código na resposta
+            result = {
                 'response': response_text or response.text,
                 'thinking_process': thinking_process,
                 'search_used': search_used,
-                'code_executed': code_executed
+                'code_executed': code_executed,
+                'code_results': code_results if code_results else None
             }
+            
+            logger.debug(f"📤 Retornando: {result.keys()}")
+            return result
             
         except Exception as e:
             duration = (time.time() - start_time) * 1000
@@ -331,7 +377,8 @@ class GeminiService:
                 'thinking_process': None,
                 'error': True,
                 'search_used': False,
-                'code_executed': False
+                'code_executed': False,
+                'code_results': None
             }
     
     def upload_file(self, file_path):
@@ -424,7 +471,7 @@ class GeminiService:
                 max_output_tokens=65536,
                 safety_settings=self.safety_settings,
                 thinking_config=types.ThinkingConfig(
-                    thinking_budget=-1,
+                    thinking_budget=20000,
                     include_thoughts=True
                 )
             )
