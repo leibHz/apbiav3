@@ -107,7 +107,7 @@ def validate_bp(bp):
     bp = str(bp).strip().upper()
     
     # Padrão: BP + 1-8 dígitos + letra opcional
-    pattern = r'^BP\d{1,8}[A-Z]?'
+    pattern = r'^BP\d{1,8}[A-Z]?$'
 
 
 def truncate_text(text, max_length=100, suffix='...'):
