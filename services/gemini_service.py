@@ -1,7 +1,6 @@
 """
 Serviço COMPLETO para Google Gemini 2.5 Flash
-Baseado na documentação oficial (Outubro 2025)
-Implementa TODOS os recursos com estatísticas integradas
+COM MODO BRAGANTEC OPCIONAL para reduzir consumo de tokens
 """
 
 from google import genai
@@ -17,26 +16,21 @@ from services.gemini_stats import gemini_stats
 
 class GeminiService:
     """
-    Serviço Gemini 2.5 Flash com TODOS os recursos
-    Documentação: https://ai.google.dev/gemini-api/docs
+    Serviço Gemini 2.5 Flash com MODO BRAGANTEC opcional
     """
     
     def __init__(self):
-        """Inicializa cliente Gemini com configurações oficiais"""
+        """Inicializa cliente Gemini"""
         logger.info("🤖 Inicializando GeminiService...")
         
         try:
-            # Cliente oficial google-genai
             self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
-            
-            # Modelo: gemini-2.5-flash (FREE tier)
             self.model_name = 'gemini-2.5-flash'
             
-            # Carrega contexto da Bragantec
+            # ✅ NOVO: Carrega contexto da Bragantec APENAS UMA VEZ
             self.context_files = self._load_context_files()
             
-            # Safety Settings: DESABILITADO (BLOCK_NONE)
-            # Ref: https://ai.google.dev/gemini-api/docs/safety-settings
+            # Safety Settings: BLOCK_NONE
             self.safety_settings = [
                 types.SafetySetting(
                     category='HARM_CATEGORY_HATE_SPEECH',
@@ -58,15 +52,9 @@ class GeminiService:
             
             logger.info("✅ GeminiService inicializado")
             logger.info(f"   Modelo: {self.model_name}")
-            logger.info(f"   Context window: 1.048.576 tokens (1M)")
+            logger.info(f"   Context window: 1.048.576 tokens")
             logger.info(f"   Max output: 65.536 tokens")
-            logger.info(f"   Safety: DESABILITADO (BLOCK_NONE)")
-            logger.info(f"   FREE tier limits:")
-            logger.info(f"     - 10 RPM (requests/minuto)")
-            logger.info(f"     - 250k TPM (tokens/minuto)")
-            logger.info(f"     - 250 RPD (requests/dia)")
-            logger.info(f"     - 500 Google Search/dia (grátis)")
-            logger.info("="*60)
+            logger.info(f"   🎯 MODO BRAGANTEC: Opcional (controlado pelo usuário)")
             
         except Exception as e:
             logger.critical(f"💥 ERRO ao inicializar Gemini: {e}")
@@ -79,11 +67,13 @@ class GeminiService:
         context_path = Config.CONTEXT_FILES_PATH
         
         if not os.path.exists(context_path):
-            logger.warning(f"⚠️ Pasta {context_path} não existe. Criando...")
+            logger.warning(f"⚠️ Pasta {context_path} não existe")
             os.makedirs(context_path, exist_ok=True)
             return ""
         
         files_found = 0
+        total_chars = 0
+        
         for filename in os.listdir(context_path):
             if filename.endswith('.txt'):
                 files_found += 1
@@ -91,6 +81,7 @@ class GeminiService:
                 try:
                     with open(filepath, 'r', encoding='utf-8') as f:
                         content = f.read()
+                        total_chars += len(content)
                         context_content.append(f"=== {filename} ===\n{content}\n")
                     logger.info(f"✅ Contexto carregado: {filename}")
                 except Exception as e:
@@ -99,89 +90,122 @@ class GeminiService:
         if files_found == 0:
             logger.warning("⚠️ Nenhum arquivo .txt encontrado em context_files/")
         else:
-            logger.info(f"✅ {files_found} arquivos de contexto carregados")
+            logger.info(f"✅ {files_found} arquivos carregados (~{total_chars:,} caracteres)")
         
         return "\n".join(context_content) if context_content else ""
     
-    def _get_system_instruction(self, tipo_usuario):
-        """Instruções do sistema por tipo de usuário"""
-        base = (
-            "Você é o APBIA (Assistente de Projetos para Bragantec Baseado em IA), "
-            "um assistente virtual especializado em ajudar estudantes e orientadores "
-            "na Bragantec, feira de ciências do IFSP Bragança Paulista.\n\n"
-            
-            "🎯 SUAS CAPACIDADES:\n"
-            "- Buscar informações atualizadas no Google\n"
-            "- Executar código Python para validar soluções\n"
-            "- Analisar imagens, vídeos, documentos e áudio\n"
-            "- Pensar profundamente sobre problemas complexos\n"
-            "- Gerar saídas estruturadas em JSON\n\n"
-            
-            "💡 SUA PERSONALIDADE:\n"
-            "- Amigável e acessível\n"
-            "- Encorajadora e positiva\n"
-            "- Paciente e didática\n"
-            "- Entusiasta por ciência\n\n"
-            
-            "📚 SUAS FUNÇÕES:\n"
-            "- Auxiliar no desenvolvimento de projetos científicos\n"
-            "- Sugerir ideias inovadoras\n"
-            "- Ajudar no planejamento de projetos\n"
-            "- Esclarecer dúvidas sobre a Bragantec\n"
-        )
+    def _get_system_instruction(self, tipo_usuario, usar_contexto_bragantec=False):
+        """
+        System instructions OTIMIZADAS com/sem contexto Bragantec
         
-        if tipo_usuario == 'participante':
-            return base + (
-                "\n✨ MODO PARTICIPANTE:\n"
-                "Foque em ajudá-lo a desenvolver seu projeto e preparar sua apresentação. "
-                "Seja encorajador e explique conceitos de forma clara."
-            )
-        elif tipo_usuario == 'orientador':
-            return base + (
-                "\n👨‍🏫 MODO ORIENTADOR:\n"
-                "Forneça insights pedagógicos e estratégias para guiar múltiplos projetos. "
-                "Ajude na orientação de estudantes."
-            )
+        Args:
+            tipo_usuario: 'participante', 'orientador' ou 'visitante'
+            usar_contexto_bragantec: Se True, adiciona conhecimento da Bragantec
+        """
+        
+        # ✅ PROMPT BASE (sem contexto pesado)
+        base = f"""Você é o APBIA (Assistente de Projetos para Bragantec Baseado em IA), um assistente virtual especializado em ajudar estudantes e orientadores na Bragantec, a feira de ciências do IFSP Bragança Paulista.
+
+🎯 SUAS CAPACIDADES:
+- Buscar informações atualizadas no Google (SEMPRE cite as fontes com links)
+- Executar código Python para validar soluções
+- Analisar imagens, vídeos, documentos e áudio
+- Pensar profundamente sobre problemas complexos
+- Gerar saídas estruturadas em JSON
+
+💡 SUA PERSONALIDADE:
+- Amigável, acessível e encorajadora
+- Paciente e didática
+- Entusiasta por ciência e inovação
+- Sempre cite fontes quando usar Google Search
+
+📚 SUAS FUNÇÕES:
+- Auxiliar no desenvolvimento de projetos científicos
+- Sugerir ideias inovadoras
+- Ajudar no planejamento de projetos
+- Esclarecer dúvidas sobre metodologia científica
+
+⚠️ CITAÇÕES OBRIGATÓRIAS:
+Quando usar Google Search, SEMPRE:
+1. Cite a fonte com o link completo
+2. Exemplo: "Segundo [Nome da Fonte](link), ..."
+3. Nunca invente informações sem fontes
+"""
+        
+        # ✅ ADICIONA CONTEXTO BRAGANTEC SE ATIVADO
+        if usar_contexto_bragantec:
+            base += f"""
+
+📖 CONHECIMENTO SOBRE A BRAGANTEC:
+Você tem acesso ao histórico completo das edições anteriores da Bragantec, incluindo:
+- Projetos vencedores e suas características
+- Critérios de avaliação dos jurados
+- Tendências e padrões de projetos premiados
+- Categorias: Ciências da Natureza e Exatas, Informática, Ciências Humanas e Linguagens, Engenharias
+
+Use este conhecimento para:
+- Sugerir ideias alinhadas com projetos vencedores anteriores
+- Orientar sobre o que os jurados valorizam
+- Identificar oportunidades de inovação baseadas em edições passadas
+
+⚠️ IMPORTANTE: Este conhecimento consome muitos tokens. Use-o com sabedoria.
+"""
         else:
-            return base
+            base += """
+
+ℹ️ MODO SEM CONTEXTO BRAGANTEC:
+O usuário desativou o contexto histórico da Bragantec para economizar recursos.
+Você ainda pode:
+- Ajudar com metodologia científica geral
+- Buscar informações atualizadas no Google
+- Auxiliar no planejamento de projetos
+- Sugerir ideias baseadas em conhecimento geral
+
+💡 DICA: O usuário pode ativar o "Modo Bragantec" para ter acesso ao histórico completo de edições anteriores.
+"""
+        
+        # ✅ PERSONALIZAÇÃO POR TIPO DE USUÁRIO
+        if tipo_usuario == 'participante':
+            base += """
+
+✨ MODO PARTICIPANTE:
+Foque em ajudá-lo a desenvolver seu projeto científico com entusiasmo e clareza.
+Seja encorajador, explique conceitos de forma didática e ajude-o a brilhar na apresentação.
+"""
+        elif tipo_usuario == 'orientador':
+            base += """
+
+👨‍🏫 MODO ORIENTADOR:
+Forneça insights pedagógicos e estratégias para guiar múltiplos projetos.
+Ajude na orientação de estudantes com dicas profissionais e boas práticas.
+"""
+        
+        return base
     
     def chat(self, message, tipo_usuario='participante', history=None, 
              usar_pesquisa=True, usar_code_execution=True, analyze_url=None, 
-             user_id=None):
+             usar_contexto_bragantec=False, user_id=None):
         """
-        Chat com TODOS os recursos do Gemini 2.5 Flash
-        
-        Refs:
-        - Thinking: https://ai.google.dev/gemini-api/docs/thinking
-        - Google Search: https://ai.google.dev/gemini-api/docs/google-search
-        - Code Execution: https://ai.google.dev/gemini-api/docs/code-execution
-        - URL Context: https://ai.google.dev/gemini-api/docs/url-context
+        Chat com MODO BRAGANTEC opcional
         
         Args:
             message: Mensagem do usuário
             tipo_usuario: 'participante', 'orientador' ou 'visitante'
             history: Histórico de conversas
-            usar_pesquisa: Habilita Google Search (500 RPD grátis)
-            usar_code_execution: Habilita execução de código Python
-            analyze_url: URL para análise de contexto
-            user_id: ID do usuário (para estatísticas)
-        
-        Returns:
-            dict: {
-                'response': str,
-                'thinking_process': str ou None,
-                'search_used': bool,
-                'code_executed': bool,
-                'code_results': list ou None
-            }
+            usar_pesquisa: Habilita Google Search
+            usar_code_execution: Habilita execução de código
+            analyze_url: URL para análise
+            usar_contexto_bragantec: 🆕 Se True, adiciona contexto da Bragantec
+            user_id: ID do usuário
         """
         logger.info("🚀 Iniciando chat com Gemini")
         logger.debug(f"   Tipo usuário: {tipo_usuario}")
         logger.debug(f"   Google Search: {usar_pesquisa}")
         logger.debug(f"   Code Execution: {usar_code_execution}")
+        logger.debug(f"   🎯 MODO BRAGANTEC: {usar_contexto_bragantec}")
         logger.debug(f"   Histórico: {len(history) if history else 0} mensagens")
         
-        # Verifica limites ANTES de fazer request
+        # Verifica limites
         can_proceed, error_msg = gemini_stats.check_limits(user_id)
         if not can_proceed:
             logger.warning(f"⚠️ Rate limit excedido: {error_msg}")
@@ -197,39 +221,41 @@ class GeminiService:
         start_time = time.time()
         
         try:
-            # System instruction + contexto
-            system_instruction = self._get_system_instruction(tipo_usuario)
-            full_context = f"{system_instruction}\n\n{self.context_files}"
-            full_message = f"{full_context}\n\n=== MENSAGEM DO USUÁRIO ===\n{message}"
+            # ✅ System instruction OTIMIZADA
+            system_instruction = self._get_system_instruction(
+                tipo_usuario, 
+                usar_contexto_bragantec
+            )
+            
+            # ✅ ADICIONA CONTEXTO BRAGANTEC APENAS SE ATIVADO
+            if usar_contexto_bragantec:
+                full_message = f"{system_instruction}\n\n{self.context_files}\n\n=== MENSAGEM DO USUÁRIO ===\n{message}"
+                logger.info("📚 Contexto Bragantec ADICIONADO (~{} chars)".format(len(self.context_files)))
+            else:
+                full_message = f"{system_instruction}\n\n=== MENSAGEM DO USUÁRIO ===\n{message}"
+                logger.info("🚀 Contexto Bragantec DESABILITADO (economia de tokens)")
             
             # Ferramentas
             tools = []
             
             if usar_pesquisa:
-                # Google Search (500 RPD grátis)
-                # Ref: https://ai.google.dev/gemini-api/docs/google-search
                 tools.append(types.Tool(google_search=types.GoogleSearch()))
                 logger.info("🔍 Google Search habilitado")
             
             if usar_code_execution:
-                # Code Execution
-                # Ref: https://ai.google.dev/gemini-api/docs/code-execution
                 tools.append(types.Tool(code_execution=types.ToolCodeExecution()))
                 logger.info("🐍 Code Execution habilitado")
             
-            # Configuração completa
-            # Ref: https://ai.google.dev/api/generate-content
+            # Configuração
             config = types.GenerateContentConfig(
                 temperature=0.7,
                 top_p=0.95,
                 top_k=40,
-                max_output_tokens=65526,  # ✅ Limite correto: 65.536 tokens
+                max_output_tokens=65536,
                 tools=tools if tools else None,
                 safety_settings=self.safety_settings,
-                # Thinking Mode com budget dinâmico
-                # Ref: https://ai.google.dev/gemini-api/docs/thinking
                 thinking_config=types.ThinkingConfig(
-                    thinking_budget=24000,  # 24.000 tokens de budget
+                    thinking_budget=24000,
                     include_thoughts=True
                 )
             )
@@ -253,24 +279,23 @@ class GeminiService:
                 config=config
             )
             
-            # ✅ CORREÇÃO: Extrai dados com detecção melhorada de code execution
+            # Extrai dados
             thinking_process = None
             response_text = ""
             code_executed = False
             code_results = []
             
-            logger.debug(f"📦 Processando {len(response.candidates[0].content.parts)} parts da resposta")
+            logger.debug(f"📦 Processando {len(response.candidates[0].content.parts)} parts")
             
             for i, part in enumerate(response.candidates[0].content.parts):
                 logger.debug(f"   Part {i}: {type(part).__name__}")
                 
-                # ✅ Thinking process
+                # Thinking process
                 if part.thought:
                     thinking_process = part.text
                     logger.info(f"💭 Thinking: {len(thinking_process)} chars")
                 
-                # ✅ CORREÇÃO: Detecção correta de code execution
-                # Ref: https://ai.google.dev/gemini-api/docs/code-execution
+                # Code execution
                 elif hasattr(part, 'executable_code') and part.executable_code:
                     code_executed = True
                     code_info = {
@@ -278,36 +303,22 @@ class GeminiService:
                         'code': part.executable_code.code if hasattr(part.executable_code, 'code') else str(part.executable_code)
                     }
                     logger.info(f"🐍 Código detectado: {code_info['language']}")
-                    logger.debug(f"   Código: {code_info['code'][:100]}...")
                     code_results.append(code_info)
                 
-                # ✅ Resultado da execução
+                # Resultado da execução
                 elif hasattr(part, 'code_execution_result') and part.code_execution_result:
                     result_info = {
                         'outcome': part.code_execution_result.outcome if hasattr(part.code_execution_result, 'outcome') else 'unknown',
                         'output': part.code_execution_result.output if hasattr(part.code_execution_result, 'output') else str(part.code_execution_result)
                     }
-                    logger.info(f"✅ Resultado da execução: {result_info['outcome']}")
-                    logger.debug(f"   Output: {result_info['output'][:100]}...")
+                    logger.info(f"✅ Resultado: {result_info['outcome']}")
                     
-                    # Adiciona resultado ao último código
                     if code_results:
                         code_results[-1]['result'] = result_info
                 
-                # ✅ Texto normal
+                # Texto normal
                 elif part.text and not part.thought:
                     response_text += part.text
-            
-            # ✅ Log detalhado se código foi executado
-            if code_executed:
-                logger.info(f"🎯 CODE EXECUTION SUMMARY:")
-                logger.info(f"   Total de códigos executados: {len(code_results)}")
-                for idx, code_info in enumerate(code_results, 1):
-                    logger.info(f"   Código {idx}:")
-                    logger.info(f"     - Linguagem: {code_info.get('language', 'python')}")
-                    logger.info(f"     - Linhas: {len(code_info.get('code', '').split(chr(10)))}")
-                    if 'result' in code_info:
-                        logger.info(f"     - Resultado: {code_info['result'].get('outcome', 'unknown')}")
             
             # Verifica Google Search
             search_used = False
@@ -331,20 +342,24 @@ class GeminiService:
                 tokens_input = response.usage_metadata.prompt_token_count
                 tokens_output = response.usage_metadata.candidates_token_count
                 
-                # Registra request
                 gemini_stats.record_request(user_id, tokens_input, tokens_output)
                 
-                logger.info(f"📊 Tokens - Input: {tokens_input} | Output: {tokens_output}")
+                logger.info(f"📊 Tokens - Input: {tokens_input:,} | Output: {tokens_output:,}")
+                
+                # ✅ ALERTA se consumo alto
+                if tokens_input > 100000:
+                    logger.warning(f"⚠️ CONSUMO ALTO DE TOKENS INPUT: {tokens_input:,}")
+                    logger.warning(f"💡 Considere desativar o Modo Bragantec para economizar")
                 
                 if hasattr(response.usage_metadata, 'cached_content_token_count'):
                     cached = response.usage_metadata.cached_content_token_count
                     if cached is not None and cached > 0:
-                        logger.info(f"💾 Cache usado: {cached} tokens economizados!")
+                        logger.info(f"💾 Cache usado: {cached:,} tokens economizados!")
             
             duration = (time.time() - start_time) * 1000
             logger.info(f"✅ Resposta gerada em {duration:.2f}ms ({len(response_text)} chars)")
             
-            # Log de uso da IA
+            # Log de uso
             log_ai_usage(
                 self.model_name,
                 'CHAT',
@@ -354,17 +369,13 @@ class GeminiService:
                 search=search_used
             )
             
-            # ✅ CORREÇÃO: Adiciona informações de código na resposta
-            result = {
+            return {
                 'response': response_text or response.text,
                 'thinking_process': thinking_process,
                 'search_used': search_used,
                 'code_executed': code_executed,
                 'code_results': code_results if code_results else None
             }
-            
-            logger.debug(f"📤 Retornando: {result.keys()}")
-            return result
             
         except Exception as e:
             duration = (time.time() - start_time) * 1000

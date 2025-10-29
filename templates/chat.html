@@ -88,6 +88,15 @@
         border-radius: 8px;
         margin-bottom: 10px;
     }
+    
+    /* ✅ NOVO: Estilo para Modo Bragantec */
+    .bragantec-toggle-container {
+        background: #fff3cd;
+        border: 1px solid #ffc107;
+        padding: 10px 12px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+    }
 </style>
 {% endblock %}
 
@@ -101,7 +110,7 @@
     </div>
     {% else %}
     <div class="row">
-        <!-- Sidebar - Histórico de Chats -->
+        <!-- Sidebar -->
         <div class="col-md-3 sidebar">
             <div class="d-grid mb-3">
                 <button class="btn btn-primary" id="newChatBtn">
@@ -109,19 +118,37 @@
                 </button>
             </div>
             
-            <!-- Toggle Google Search -->
-            <div class="search-toggle-container">
+            <!-- ✅ Toggle Google Search -->
+            <div class="toggle-container">
                 <div class="form-check form-switch">
                     <input class="form-check-input" type="checkbox" id="searchToggle" checked>
                     <label class="form-check-label" for="searchToggle">
                         <small>
                             <i class="fas fa-search"></i>
-                            <strong>Modo Pesquisar</strong>
+                            <strong>Google Search</strong>
                         </small>
                     </label>
                 </div>
                 <small class="text-muted d-block mt-1">
-                    Permite que a IA busque informações atualizadas no Google
+                    Busca informações atualizadas e cita fontes
+                </small>
+            </div>
+            
+            <!-- ✅ NOVO: Toggle Modo Bragantec -->
+            <div class="bragantec-toggle-container">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="bragantecToggle">
+                    <label class="form-check-label" for="bragantecToggle">
+                        <small>
+                            <i class="fas fa-book"></i>
+                            <strong>Modo Bragantec</strong>
+                            <span class="badge bg-warning text-dark ms-1">⚠️</span>
+                        </small>
+                    </label>
+                </div>
+                <small class="text-muted d-block mt-1">
+                    <strong>⚠️ Consome MUITOS tokens!</strong><br>
+                    Ativa conhecimento histórico da Bragantec
                 </small>
             </div>
             
@@ -167,11 +194,11 @@
                         <h4>Olá, {{ current_user.nome_completo }}!</h4>
                         <p>Como posso ajudar você hoje com seu projeto da Bragantec?</p>
                         <div class="mt-3">
-                            <small class="text-muted">
+                            <div class="alert alert-warning d-inline-block">
                                 <i class="fas fa-lightbulb"></i>
-                                <strong>Dica:</strong> O Modo Pesquisar está ativo! 
-                                Posso buscar informações atualizadas no Google para você.
-                            </small>
+                                <strong>💡 DICA:</strong> O Modo Bragantec está <strong>desativado</strong> para economizar tokens.<br>
+                                Ative-o apenas quando precisar de conhecimento específico da Bragantec!
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -180,7 +207,6 @@
                 <div class="thinking-indicator" id="thinkingIndicator">
                     <i class="fas fa-brain fa-spin"></i>
                     <strong>Pensando...</strong>
-                    <span class="ms-2">A IA está processando sua pergunta com cuidado.</span>
                 </div>
                 
                 <!-- Input -->
@@ -202,19 +228,22 @@
                         </button>
                     </form>
                     
-                    <input type="file" id="fileInput" class="d-none" accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg">
+                    <input type="file" id="fileInput" class="d-none">
                     
+                    <!-- ✅ Indicadores de Status -->
                     <div class="d-flex justify-content-between mt-2">
                         <small class="text-muted">
                             <i class="fas fa-keyboard"></i>
-                            Pressione Enter para enviar | Ctrl+Enter também funciona
+                            Pressione Enter para enviar
                         </small>
-                        <small class="text-muted">
-                            <span id="searchStatusIndicator">
-                                <i class="fas fa-search text-success"></i>
-                                Pesquisa ativa
-                            </span>
-                        </small>
+                        <div class="d-flex gap-3">
+                            <small id="searchStatusIndicator">
+                                <i class="fas fa-search text-success"></i> Pesquisa ativa
+                            </small>
+                            <small id="bragantecStatusIndicator">
+                                <i class="fas fa-book text-muted"></i> Modo Bragantec desativado
+                            </small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -226,16 +255,4 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
-
-<script>
-// Atualiza indicador visual do status de pesquisa
-document.getElementById('searchToggle')?.addEventListener('change', function() {
-    const indicator = document.getElementById('searchStatusIndicator');
-    if (this.checked) {
-        indicator.innerHTML = '<i class="fas fa-search text-success"></i> Pesquisa ativa';
-    } else {
-        indicator.innerHTML = '<i class="fas fa-search text-muted"></i> Pesquisa desativada';
-    }
-});
-</script>
 {% endblock %}

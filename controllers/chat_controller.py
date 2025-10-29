@@ -1,6 +1,5 @@
 """
-Chat Controller COMPLETO
-Usa TODOS os recursos do Gemini 2.5 Flash
+Chat Controller COM MODO BRAGANTEC
 """
 
 from flask import Blueprint, render_template, request, jsonify, session
@@ -38,40 +37,34 @@ def index():
 @login_required
 def send_message():
     """
-    Endpoint COMPLETO para enviar mensagens
-    Suporta:
-    - Google Search
-    - Code Execution
-    - URL Analysis
-    - Thinking Mode
-    - Context Caching
-    - Rate Limiting
+    Endpoint para enviar mensagens COM MODO BRAGANTEC
     """
     if not Config.IA_STATUS:
         return jsonify({
             'error': True,
             'message': 'IA está temporariamente offline.'
         }), 503
-    
-    # ✅ Verifica rate limit
+
+    # Verifica rate limit
     can_proceed, error_msg = rate_limiter.check_limit(current_user.id)
-    
+
     if not can_proceed:
         return jsonify({
             'error': True,
             'message': error_msg
         }), 429
-    
+
     data = request.json
     message = data.get('message', '')
     chat_id = data.get('chat_id')
     usar_pesquisa = data.get('usar_pesquisa', True)
     usar_code_execution = data.get('usar_code_execution', True)
-    analyze_url = data.get('url')  # URL para analisar (opcional)
-    
+    analyze_url = data.get('url')
+    usar_contexto_bragantec = data.get('usar_contexto_bragantec', False)  # ✅ NOVO
+
     if not message:
         return jsonify({'error': True, 'message': 'Mensagem vazia'}), 400
-    
+
     try:
         # Tipo de usuário
         if current_user.is_participante():
@@ -80,22 +73,22 @@ def send_message():
             tipo_usuario = 'orientador'
         else:
             tipo_usuario = 'visitante'
-        
+
         # Cria chat se não existir
         if not chat_id:
             tipo_ia_id = 2 if current_user.is_participante() else \
                         3 if current_user.is_orientador() else 1
-            
+
             from utils.helpers import generate_chat_title
             titulo = generate_chat_title(message)
-            
+
             chat = dao.criar_chat(current_user.id, tipo_ia_id, titulo)
             chat_id = chat.id
-        
+
         # Contexto de projetos
         projetos = dao.listar_projetos_por_usuario(current_user.id)
         contexto_projetos = ""
-        
+
         if projetos:
             contexto_projetos = "\n\n=== SEUS PROJETOS ===\n"
             for projeto in projetos:
@@ -106,60 +99,56 @@ Status: {projeto.status}
 Resumo: {projeto.resumo or 'Não informado'}
 ---
 """
-        
+
         # Carrega histórico (últimas 20 mensagens)
         mensagens_db = dao.obter_ultimas_n_mensagens(chat_id, n=20)
-        
+
         history = []
         for msg in mensagens_db:
             history.append({
                 'role': msg['role'],
                 'parts': [msg['conteudo']]
             })
-        
+
         # Mensagem com contexto
         message_com_contexto = f"{contexto_projetos}\n\n{message}"
-        
-        # Chama Gemini com TODOS os recursos
+
+        # ✅ Log dos modos ativos
         print(f"🚀 Chamando Gemini com:")
         print(f"   - Google Search: {usar_pesquisa}")
         print(f"   - Code Execution: {usar_code_execution}")
+        print(f"   - 🎯 MODO BRAGANTEC: {usar_contexto_bragantec}")
         print(f"   - URL Analysis: {analyze_url}")
-        
+
+        # ✅ Chama Gemini COM MODO BRAGANTEC
         response = gemini.chat(
-            message_com_contexto, 
-            tipo_usuario=tipo_usuario, 
+            message_com_contexto,
+            tipo_usuario=tipo_usuario,
             history=history,
             usar_pesquisa=usar_pesquisa,
             usar_code_execution=usar_code_execution,
             analyze_url=analyze_url,
+            usar_contexto_bragantec=usar_contexto_bragantec,  # ✅ NOVO
             user_id=current_user.id
         )
-        
+
         if response.get('error'):
             return jsonify({
                 'error': True,
                 'message': response['response']
             }), 500
-        
-        # ✅ LOG DE DEBUG
-        print(f"📦 Resposta do Gemini:")
-        print(f"   - Code executed: {response.get('code_executed', False)}")
-        print(f"   - Code results: {response.get('code_results')}")
-        print(f"   - Search used: {response.get('search_used', False)}")
-        
+
         # Salva mensagem do usuário
         dao.criar_mensagem(chat_id, 'user', message)
-        
-        # Salva resposta da IA com thinking process
+
+        # Salva resposta da IA
         dao.criar_mensagem(
-            chat_id, 
-            'model', 
+            chat_id,
+            'model',
             response['response'],
             thinking_process=response.get('thinking_process')
         )
-        
-        # ✅ CORREÇÃO: Retorna code_results
+
         return jsonify({
             'success': True,
             'response': response['response'],
@@ -167,9 +156,9 @@ Resumo: {projeto.resumo or 'Não informado'}
             'chat_id': chat_id,
             'search_used': response.get('search_used', False),
             'code_executed': response.get('code_executed', False),
-            'code_results': response.get('code_results')  # ✅ ADICIONA ISTO
+            'code_results': response.get('code_results')
         })
-        
+
     except Exception as e:
         import traceback
         print(f"❌ Erro: {traceback.format_exc()}")
