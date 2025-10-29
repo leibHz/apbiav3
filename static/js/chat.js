@@ -1,11 +1,13 @@
-// Chat JavaScript - APBIA com Histórico Persistente, Google Search e Code Execution
+// Chat JavaScript - APBIA com Histórico Persistente, Google Search, Code Execution e MODO BRAGANTEC
 let currentChatId = null;
 let usarPesquisaGoogle = true; // Google Search ativado por padrão
+let usarContextoBragantec = false; // ✅ NOVO: Modo Bragantec desativado por padrão
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
     initializeChatHandlers();
     loadSearchPreference();
+    loadBragantecPreference(); // ✅ NOVO
 });
 
 function initializeChatHandlers() {
@@ -43,10 +45,31 @@ function initializeChatHandlers() {
             usarPesquisaGoogle = this.checked;
             localStorage.setItem('apbia_usar_pesquisa', usarPesquisaGoogle);
             
+            // ✅ Atualiza indicador visual
+            updateSearchIndicator();
+            
             const msg = usarPesquisaGoogle ? 
                 'Google Search ativado - IA pode buscar informações atualizadas' : 
                 'Google Search desativado - IA usará apenas conhecimento base';
             APBIA.showNotification(msg, 'info');
+        });
+    }
+    
+    // ✅ NOVO: Toggle Modo Bragantec
+    const bragantecToggle = document.getElementById('bragantecToggle');
+    if (bragantecToggle) {
+        bragantecToggle.checked = usarContextoBragantec;
+        bragantecToggle.addEventListener('change', function() {
+            usarContextoBragantec = this.checked;
+            localStorage.setItem('apbia_usar_bragantec', usarContextoBragantec);
+            
+            // ✅ Atualiza indicador visual
+            updateBragantecIndicator();
+            
+            const msg = usarContextoBragantec ? 
+                '⚠️ Modo Bragantec ATIVADO - Consome muitos tokens!' : 
+                '✅ Modo Bragantec desativado - Economia de tokens';
+            APBIA.showNotification(msg, usarContextoBragantec ? 'warning' : 'success');
         });
     }
     
@@ -78,6 +101,44 @@ function loadSearchPreference() {
             toggle.checked = usarPesquisaGoogle;
         }
     }
+    updateSearchIndicator();
+}
+
+// ✅ NOVO: Carrega preferência do Modo Bragantec
+function loadBragantecPreference() {
+    const saved = localStorage.getItem('apbia_usar_bragantec');
+    if (saved !== null) {
+        usarContextoBragantec = saved === 'true';
+        const toggle = document.getElementById('bragantecToggle');
+        if (toggle) {
+            toggle.checked = usarContextoBragantec;
+        }
+    }
+    updateBragantecIndicator();
+}
+
+// ✅ NOVO: Atualiza indicador visual do Google Search
+function updateSearchIndicator() {
+    const indicator = document.getElementById('searchStatusIndicator');
+    if (indicator) {
+        if (usarPesquisaGoogle) {
+            indicator.innerHTML = '<i class="fas fa-search text-success"></i> Pesquisa ativa';
+        } else {
+            indicator.innerHTML = '<i class="fas fa-search text-muted"></i> Pesquisa desativada';
+        }
+    }
+}
+
+// ✅ NOVO: Atualiza indicador visual do Modo Bragantec
+function updateBragantecIndicator() {
+    const indicator = document.getElementById('bragantecStatusIndicator');
+    if (indicator) {
+        if (usarContextoBragantec) {
+            indicator.innerHTML = '<i class="fas fa-book text-warning"></i> Modo Bragantec ativo ⚠️';
+        } else {
+            indicator.innerHTML = '<i class="fas fa-book text-muted"></i> Modo Bragantec desativado';
+        }
+    }
 }
 
 async function handleSendMessage(e) {
@@ -107,7 +168,8 @@ async function handleSendMessage(e) {
                 message: message,
                 chat_id: currentChatId,
                 usar_pesquisa: usarPesquisaGoogle,
-                usar_code_execution: true  // ✅ Sempre habilitado
+                usar_code_execution: true,
+                usar_contexto_bragantec: usarContextoBragantec  // ✅ CORRIGIDO: Agora envia corretamente
             })
         });
         
@@ -116,7 +178,7 @@ async function handleSendMessage(e) {
         showThinking(false);
         
         if (data.success) {
-            // ✅ Log para debug
+            // Log para debug
             console.log('📦 Resposta recebida:', {
                 code_executed: data.code_executed,
                 code_results: data.code_results,
@@ -124,13 +186,13 @@ async function handleSendMessage(e) {
                 thinking: data.thinking_process ? 'sim' : 'não'
             });
             
-            // ✅ Adiciona resposta da IA com TODOS os dados
+            // Adiciona resposta da IA com TODOS os dados
             addMessageToChat(
                 'assistant', 
                 data.response, 
                 data.thinking_process,
                 data.search_used,
-                data.code_results  // ✅ NOVO: resultados do código
+                data.code_results
             );
             
             // Atualiza ID do chat se for novo SEM recarregar a página
@@ -267,7 +329,7 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         });
     }
     
-    // ✅ CORREÇÃO: Badge de Code Execution
+    // Badge de Code Execution
     if (role === 'assistant' && codeResults && Array.isArray(codeResults) && codeResults.length > 0) {
         console.log('🐍 Renderizando code execution:', codeResults);
         
@@ -342,7 +404,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
-// ✅ NOVA FUNÇÃO: Formata resultados de code execution
 function formatCodeResults(codeResults) {
     let html = '';
     
@@ -378,7 +439,6 @@ function formatCodeResults(codeResults) {
     return html;
 }
 
-// ✅ Função para escapar HTML
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;

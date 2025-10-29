@@ -1,11 +1,12 @@
 // =========================================
 // APBIA - JavaScript para Projetos
+// COM GERADOR BASEADO EM VENCEDORES
 // =========================================
 
 // Helpers
 function showLoading(message) {
     document.getElementById('loadingMessage').textContent = message;
-    document.getElementById('loadingIA').style.display = 'flex'; // Mudado para flex
+    document.getElementById('loadingIA').style.display = 'flex';
 }
 
 function hideLoading() {
@@ -111,11 +112,24 @@ document.querySelectorAll('.remove-etapa').forEach(btn => {
     });
 });
 
-// GERAR IDEIAS COM IA
+// ✅ GERAR IDEIAS COM ANÁLISE DE VENCEDORES
 const btnGerarIdeias = document.getElementById('btnGerarIdeias');
 if (btnGerarIdeias) {
     btnGerarIdeias.addEventListener('click', async function() {
-        showLoading('Gerando 4 ideias inovadoras, uma para cada categoria...');
+        // ✅ Aviso sobre Modo Bragantec automático
+        const confirmacao = confirm(
+            '🎯 MODO BRAGANTEC AUTOMÁTICO\n\n' +
+            'A IA vai analisar TODOS os projetos vencedores das edições anteriores da Bragantec para criar 4 ideias com alto potencial de vitória.\n\n' +
+            '⚠️ ATENÇÃO:\n' +
+            '• Processo pode levar 20-40 segundos\n' +
+            '• Consome ~100k-200k tokens (contexto histórico completo)\n' +
+            '• Gera ideias baseadas em padrões de projetos premiados\n\n' +
+            'Deseja continuar?'
+        );
+        
+        if (!confirmacao) return;
+        
+        showLoading('🧠 Analisando projetos vencedores das edições anteriores...');
         
         try {
             const response = await fetch('/projetos/gerar-ideias', {
@@ -128,7 +142,16 @@ if (btnGerarIdeias) {
             hideLoading();
             
             if (data.success) {
-                mostrarIdeias(data.ideias);
+                // ✅ Mostra metadados sobre a análise
+                if (data.metadata) {
+                    console.log('📊 Metadados da geração:', data.metadata);
+                    APBIA.showNotification(
+                        '✅ Ideias geradas com análise completa de projetos vencedores!',
+                        'success'
+                    );
+                }
+                
+                mostrarIdeias(data.ideias, data.metadata);
             } else {
                 APBIA.showNotification('Erro ao gerar ideias: ' + (data.message || ''), 'error');
             }
@@ -141,7 +164,7 @@ if (btnGerarIdeias) {
     });
 }
 
-function mostrarIdeias(ideias) {
+function mostrarIdeias(ideias, metadata) {
     // Parse se vier como string
     let ideiasText = ideias;
     
@@ -150,41 +173,94 @@ function mostrarIdeias(ideias) {
     try {
         ideiasObj = typeof ideias === 'string' ? JSON.parse(ideias) : ideias;
     } catch (e) {
-        // Não é JSON, vamos mostrar como texto
         console.log('Ideias não são JSON, mostrando como texto');
     }
     
     let html = '';
     
+    // ✅ Adiciona banner informativo sobre análise de vencedores
+    if (metadata && metadata.analise_vencedores) {
+        html += `
+            <div class="alert alert-success mb-4">
+                <h5><i class="fas fa-trophy"></i> <strong>Análise Completa Realizada</strong></h5>
+                <p class="mb-2">
+                    <i class="fas fa-check-circle"></i> <strong>Modo Bragantec ativado:</strong> 
+                    ${metadata.contexto_usado}
+                </p>
+                <small class="text-muted">
+                    <i class="fas fa-info-circle"></i> ${metadata.aviso_tokens}
+                </small>
+            </div>
+        `;
+    }
+    
     if (ideiasObj && typeof ideiasObj === 'object') {
         // Renderiza ideias estruturadas
-        html = '<div class="row g-3">';
+        html += '<div class="row g-3">';
         
         for (const [categoria, ideia] of Object.entries(ideiasObj)) {
             const titulo = ideia.titulo || ideia.nome || 'Sem título';
-            const descricao = ideia.resumo || ideia.descricao || 'Sem descrição';
+            const resumo = ideia.resumo || ideia.descricao || 'Sem descrição';
             const palavrasChave = ideia.palavras_chave || ideia.keywords || '';
+            
+            // ✅ NOVO: Exibe análise de vencedores
+            const inspiracao = ideia.inspiracao_vencedores || '';
+            const diferenciais = ideia.diferenciais_competitivos || ideia.diferenciais || '';
+            const viabilidade = ideia.viabilidade_tecnica || '';
+            
+            // Define cor do badge por categoria
+            const badgeColor = 
+                categoria === 'Informática' ? 'primary' :
+                categoria === 'Engenharias' ? 'success' :
+                categoria === 'Ciências da Natureza e Exatas' ? 'info' : 'warning';
             
             html += `
                 <div class="col-md-6">
-                    <div class="card h-100">
-                        <div class="card-header bg-primary text-white">
-                            <strong>${categoria}</strong>
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-${badgeColor} text-white">
+                            <strong><i class="fas fa-trophy"></i> ${categoria}</strong>
                         </div>
                         <div class="card-body">
                             <h5 class="card-title">${titulo}</h5>
-                            <p class="card-text">${descricao}</p>
+                            
+                            <div class="mb-3">
+                                <strong class="text-muted">Resumo:</strong>
+                                <p class="card-text">${resumo}</p>
+                            </div>
+                            
                             ${palavrasChave ? `
-                                <p class="text-muted small">
-                                    <strong>Palavras-chave:</strong> ${palavrasChave}
-                                </p>
+                                <div class="mb-2">
+                                    <strong class="text-muted"><i class="fas fa-tags"></i> Palavras-chave:</strong>
+                                    <p class="mb-0"><code>${palavrasChave}</code></p>
+                                </div>
+                            ` : ''}
+                            
+                            ${inspiracao ? `
+                                <div class="alert alert-info py-2 mb-2">
+                                    <strong><i class="fas fa-lightbulb"></i> Inspiração em Vencedores:</strong>
+                                    <p class="mb-0 small">${inspiracao}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${diferenciais ? `
+                                <div class="alert alert-success py-2 mb-2">
+                                    <strong><i class="fas fa-star"></i> Diferenciais Competitivos:</strong>
+                                    <p class="mb-0 small">${diferenciais}</p>
+                                </div>
+                            ` : ''}
+                            
+                            ${viabilidade ? `
+                                <div class="alert alert-warning py-2 mb-2">
+                                    <strong><i class="fas fa-tools"></i> Viabilidade Técnica:</strong>
+                                    <p class="mb-0 small">${viabilidade}</p>
+                                </div>
                             ` : ''}
                         </div>
-                        <div class="card-footer">
-                            <button class="btn btn-sm btn-success usar-ideia" 
+                        <div class="card-footer bg-light">
+                            <button class="btn btn-sm btn-success usar-ideia w-100" 
                                     data-ideia='${JSON.stringify(ideia).replace(/'/g, "&apos;")}'
                                     data-categoria="${categoria}">
-                                <i class="fas fa-check"></i> Usar Esta Ideia
+                                <i class="fas fa-check-circle"></i> <strong>Usar Esta Ideia</strong>
                             </button>
                         </div>
                     </div>
@@ -195,7 +271,7 @@ function mostrarIdeias(ideias) {
         html += '</div>';
     } else {
         // Mostra como texto formatado
-        html = `
+        html += `
             <div class="alert alert-info">
                 <h5><i class="fas fa-lightbulb"></i> Ideias Geradas:</h5>
                 <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">${ideiasText}</pre>
@@ -241,7 +317,17 @@ function preencherComIdeia(ideia, categoria) {
     }
     if (palavrasChaveInput) palavrasChaveInput.value = ideia.palavras_chave || ideia.keywords || '';
     
-    APBIA.showNotification('Ideia aplicada! Complete os demais campos', 'success');
+    // ✅ Mostra notificação com info sobre análise de vencedores
+    let notificacaoMsg = '✅ Ideia aplicada! Esta ideia foi criada baseada em projetos vencedores.';
+    
+    if (ideia.inspiracao_vencedores) {
+        notificacaoMsg += '\n\n📊 ' + ideia.inspiracao_vencedores;
+    }
+    
+    APBIA.showNotification(notificacaoMsg, 'success');
+    
+    // Scroll para o topo do formulário
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // AUTOCOMPLETAR CAMPOS COM IA
@@ -431,4 +517,4 @@ function coletarDadosCompletos(status) {
 }
 
 // Log de inicialização
-console.log('✅ projetos.js carregado com sucesso');
+console.log('✅ projetos.js carregado com sucesso - Modo Análise de Vencedores ativo');

@@ -33,6 +33,24 @@
 .loading-spinner {
     display: none;
 }
+
+/* ✅ NOVO: Estilo para alerta de Modo Bragantec */
+.bragantec-alert {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+    border: 2px solid #ffc107;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    animation: pulse-warning 2s infinite;
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
+    }
+    50% {
+        box-shadow: 0 4px 20px rgba(255, 193, 7, 0.5);
+    }
+}
 </style>
 {% endblock %}
 
@@ -51,19 +69,49 @@
         </div>
     </div>
     
-    <!-- Botão IA Gerador de Ideias -->
+    <!-- ✅ NOVO: Alerta sobre Modo Bragantec Automático -->
     <div class="row mb-4">
         <div class="col">
-            <div class="alert alert-info">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <i class="fas fa-lightbulb fa-2x me-3"></i>
-                        <strong>Precisa de uma ideia?</strong>
-                        <p class="mb-0">A IA pode gerar 4 ideias de projetos vencedores, uma para cada categoria!</p>
+            <div class="alert bragantec-alert">
+                <div class="d-flex align-items-start">
+                    <div class="me-3">
+                        <i class="fas fa-robot fa-3x text-warning"></i>
                     </div>
-                    <button class="btn btn-primary" id="btnGerarIdeias">
-                        <i class="fas fa-magic"></i> Gerar Ideias com IA
-                    </button>
+                    <div class="flex-grow-1">
+                        <h5 class="mb-2">
+                            <i class="fas fa-magic"></i>
+                            <strong>Gerador de Ideias Baseado em Projetos Vencedores</strong>
+                        </h5>
+                        <p class="mb-2">
+                            A IA vai <strong>analisar TODAS as edições anteriores da Bragantec</strong> 
+                            (incluindo os cadernos de resumos completos) para criar <strong>4 ideias de projetos 
+                            com ALTO POTENCIAL DE VITÓRIA</strong>, uma para cada categoria.
+                        </p>
+                        <div class="alert alert-warning mb-2">
+                            <strong>⚠️ Como funciona:</strong>
+                            <ol class="mb-0 mt-2">
+                                <li><strong>Análise automática</strong> dos projetos vencedores anteriores</li>
+                                <li><strong>Identificação de padrões</strong> de sucesso (temas, abordagens, metodologias)</li>
+                                <li><strong>Criação de 4 novas ideias</strong> inspiradas nos vencedores (mas não cópias!)</li>
+                                <li><strong>Adequação aos critérios</strong> de avaliação da Bragantec 2025</li>
+                            </ol>
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Modo Bragantec Automático:</strong> 
+                            Esta operação usa o histórico COMPLETO da Bragantec e pode consumir 
+                            <strong>~100k-200k tokens de contexto</strong>. O processo pode levar 
+                            <strong>20-40 segundos</strong>, mas garante ideias de alta qualidade baseadas em dados reais!
+                        </div>
+                    </div>
+                    <div>
+                        <button class="btn btn-warning btn-lg" id="btnGerarIdeias">
+                            <i class="fas fa-lightbulb"></i>
+                            <strong>Gerar Ideias</strong>
+                            <br>
+                            <small>Análise Completa</small>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -311,13 +359,21 @@
     </form>
 </div>
 
-<!-- Loading Overlay -->
-<div id="loadingIA" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 9999;">
+<!-- ✅ ATUALIZADO: Loading Overlay com mensagem sobre análise de vencedores -->
+<div id="loadingIA" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999;">
     <div class="d-flex justify-content-center align-items-center h-100">
         <div class="text-center text-white">
-            <div class="spinner-border mb-3" style="width: 3rem; height: 3rem;"></div>
-            <h4>IA Trabalhando...</h4>
-            <p id="loadingMessage">Gerando ideias inovadoras...</p>
+            <div class="spinner-border mb-3" style="width: 4rem; height: 4rem; border-width: 0.5rem;"></div>
+            <h3 class="mb-2">
+                <i class="fas fa-brain"></i> IA Analisando Projetos Vencedores...
+            </h3>
+            <p id="loadingMessage" class="lead">Processando histórico completo da Bragantec...</p>
+            <div class="mt-3">
+                <small class="text-muted">
+                    <i class="fas fa-clock"></i> Isso pode levar 20-40 segundos<br>
+                    <i class="fas fa-database"></i> Analisando ~100k-200k tokens de contexto
+                </small>
+            </div>
         </div>
     </div>
 </div>
@@ -326,11 +382,12 @@
 <div class="modal fade" id="modalIdeias" tabindex="-1">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header bg-warning">
                 <h5 class="modal-title">
-                    <i class="fas fa-lightbulb"></i> Ideias de Projetos Geradas pela IA
+                    <i class="fas fa-trophy"></i> 
+                    <strong>Ideias Baseadas em Projetos Vencedores</strong>
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="ideiasContent">
                 <!-- Conteúdo será preenchido dinamicamente -->
