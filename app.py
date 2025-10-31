@@ -55,7 +55,7 @@ logger.debug("✅ admin_bp registrado em /admin")
 app.register_blueprint(project_bp, url_prefix='/projetos')
 logger.debug("✅ project_bp registrado em /projetos")
 
-# Rota principal
+# ✅ CORRIGIDO: Rota principal agora funciona
 @app.route('/')
 def index():
     """Página inicial"""

@@ -165,10 +165,14 @@ class GeminiStats:
             return True, ""
     
     def _cleanup_old_data(self, user_id, now):
-        """Limpa dados antigos dos contadores"""
+        """
+        ✅ CORRIGIDO: Limpa dados antigos dos contadores com verificações de segurança
+        """
         # Limpa requests_minute (> 1 minuto)
         cutoff_minute = now - timedelta(minutes=1)
-        if user_id in self.requests_minute:
+        
+        # ✅ CORRIGIDO: Verifica se user_id existe antes de limpar
+        if user_id and user_id in self.requests_minute:
             self.requests_minute[user_id] = [
                 (ts, tokens) for ts, tokens in self.requests_minute[user_id]
                 if ts > cutoff_minute
@@ -176,14 +180,15 @@ class GeminiStats:
         
         # Limpa requests_day (> 24h)
         cutoff_day = now - timedelta(days=1)
-        if user_id in self.requests_day:
+        
+        if user_id and user_id in self.requests_day:
             self.requests_day[user_id] = [
                 (ts, tokens) for ts, tokens in self.requests_day[user_id]
                 if ts > cutoff_day
             ]
         
         # Limpa searches_day (> 24h)
-        if user_id in self.searches_day:
+        if user_id and user_id in self.searches_day:
             self.searches_day[user_id] = [
                 ts for ts in self.searches_day[user_id] if ts > cutoff_day
             ]

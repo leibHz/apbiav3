@@ -23,11 +23,13 @@ CHAT_FILES_DIR = os.path.join(Config.UPLOAD_FOLDER, 'chat_files')
 os.makedirs(CHAT_FILES_DIR, exist_ok=True)
 
 
+# ✅ SUBSTITUA A FUNÇÃO _save_chat_file_to_disk
+
 def _save_chat_file_to_disk(file, user_id, chat_id):
     """
-    ✅ Salva arquivo fisicamente no disco
+    ✅ CORRIGIDO: Salva arquivo fisicamente no disco com segurança contra race conditions
     
-    Estrutura: uploads/chat_files/{user_id}/{chat_id}/{uuid}_{filename}
+    Estrutura: uploads/chat_files/{user_id}/{chat_id}/{uuid}_{timestamp}_{filename}
     
     Returns:
         dict: {
@@ -37,36 +39,52 @@ def _save_chat_file_to_disk(file, user_id, chat_id):
             'size': 1234567
         }
     """
-    # Cria estrutura de pastas
-    user_dir = os.path.join(CHAT_FILES_DIR, str(user_id))
-    chat_dir = os.path.join(user_dir, str(chat_id))
-    os.makedirs(chat_dir, exist_ok=True)
+    import time
+    from threading import Lock
     
-    # Nome único
-    original_filename = secure_filename(file.filename)
-    unique_id = str(uuid.uuid4())[:8]
-    unique_filename = f"{unique_id}_{original_filename}"
+    # Lock global para evitar race conditions
+    if not hasattr(_save_chat_file_to_disk, 'lock'):
+        _save_chat_file_to_disk.lock = Lock()
     
-    full_path = os.path.join(chat_dir, unique_filename)
-    
-    # Salva arquivo
-    file.save(full_path)
-    
-    # Caminho relativo (para salvar no banco)
-    relative_path = os.path.join('chat_files', str(user_id), str(chat_id), unique_filename)
-    
-    # Tamanho do arquivo
-    file_size = os.path.getsize(full_path)
-    
-    # MIME type
-    mime_type = file.content_type or 'application/octet-stream'
-    
-    return {
-        'filepath': relative_path,
-        'filename': original_filename,
-        'mime_type': mime_type,
-        'size': file_size
-    }
+    with _save_chat_file_to_disk.lock:
+        # Cria estrutura de pastas
+        user_dir = os.path.join(CHAT_FILES_DIR, str(user_id))
+        chat_dir = os.path.join(user_dir, str(chat_id))
+        os.makedirs(chat_dir, exist_ok=True)
+        
+        # Nome único COM timestamp para evitar colisões
+        original_filename = secure_filename(file.filename)
+        unique_id = str(uuid.uuid4())[:8]
+        timestamp = int(time.time() * 1000)  # Milissegundos
+        unique_filename = f"{unique_id}_{timestamp}_{original_filename}"
+        
+        full_path = os.path.join(chat_dir, unique_filename)
+        
+        # ✅ Verifica se arquivo já existe (extremamente improvável agora)
+        counter = 1
+        while os.path.exists(full_path):
+            unique_filename = f"{unique_id}_{timestamp}_{counter}_{original_filename}"
+            full_path = os.path.join(chat_dir, unique_filename)
+            counter += 1
+        
+        # Salva arquivo
+        file.save(full_path)
+        
+        # Caminho relativo (para salvar no banco)
+        relative_path = os.path.join('chat_files', str(user_id), str(chat_id), unique_filename)
+        
+        # Tamanho do arquivo
+        file_size = os.path.getsize(full_path)
+        
+        # MIME type
+        mime_type = file.content_type or 'application/octet-stream'
+        
+        return {
+            'filepath': relative_path,
+            'filename': original_filename,
+            'mime_type': mime_type,
+            'size': file_size
+        }
 
 
 @chat_bp.route('/')

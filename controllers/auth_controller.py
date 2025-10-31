@@ -67,7 +67,8 @@ def logout():
     logout_user()
     session.clear()
     flash('Você saiu da sua conta', 'info')
-    return redirect(url_for('main.index'))
+    # ✅ CORRIGIDO: url_for correto
+    return redirect(url_for('index'))
 
 
 @auth_bp.route('/verificar-bp', methods=['POST'])

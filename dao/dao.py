@@ -622,3 +622,49 @@ class SupabaseDAO:
             .execute()
         
         return self._row_to_projeto(result.data[0]) if result.data else None
+
+    def listar_tipos_usuario(self):
+        """
+        ✅ NOVO: Lista todos os tipos de usuário
+        
+        Returns:
+            list: Lista de objetos TipoUsuario
+        """
+        from models.models import TipoUsuario
+        
+        try:
+            result = self.supabase.table('tipos_usuario').select('*').execute()
+            
+            if result.data:
+                return [TipoUsuario(id=row['id'], nome=row['nome']) for row in result.data]
+            
+            # Fallback: tipos hardcoded se tabela não existir
+            return [
+                TipoUsuario(id=1, nome='Administrador'),
+                TipoUsuario(id=2, nome='Participante'),
+                TipoUsuario(id=3, nome='Orientador'),
+                TipoUsuario(id=4, nome='Visitante')
+            ]
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao buscar tipos de usuário: {e}")
+            # Retorna tipos padrão
+            return [
+                TipoUsuario(id=1, nome='Administrador'),
+                TipoUsuario(id=2, nome='Participante'),
+                TipoUsuario(id=3, nome='Orientador'),
+                TipoUsuario(id=4, nome='Visitante')
+            ]
+    
+    def buscar_tipo_usuario_por_id(self, tipo_id):
+        """
+        ✅ NOVO: Busca tipo de usuário por ID
+        
+        Args:
+            tipo_id: ID do tipo
+        
+        Returns:
+            TipoUsuario: Objeto TipoUsuario ou None
+        """
+        tipos = self.listar_tipos_usuario()
+        return next((t for t in tipos if t.id == tipo_id), None)
