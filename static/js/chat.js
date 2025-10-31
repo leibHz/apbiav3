@@ -280,7 +280,8 @@ function addChatToSidebar(chatId, firstMessage) {
     });
 }
 
-function addMessageToChat(role, content, thinking = null, searchUsed = false, codeResults = null) {
+function addMessageToChat(role, content, thinking = null, searchUsed = false, codeResults = null, arquivo = null) {
+    // ✅ ATUALIZADO: Adiciona mensagem COM SUPORTE A ARQUIVO
     const messagesContainer = document.getElementById('chatMessages');
     
     // Remove mensagem de boas-vindas
@@ -292,6 +293,55 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     // Cria elemento da mensagem
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role} fade-in`;
+    
+    // ✅ NOVO: Badge de arquivo anexado
+    if (arquivo) {
+        const fileBadge = document.createElement('div');
+        fileBadge.className = 'alert alert-secondary border mb-2';
+        fileBadge.style.background = '#f8f9fa';
+        
+        // Ícone baseado no tipo
+        let icon = 'fa-file';
+        if (arquivo.tipo && arquivo.tipo.startsWith('image/')) {
+            icon = 'fa-image';
+        } else if (arquivo.tipo && arquivo.tipo.startsWith('video/')) {
+            icon = 'fa-video';
+        } else if (arquivo.tipo && arquivo.tipo.startsWith('audio/')) {
+            icon = 'fa-music';
+        } else if (arquivo.tipo && arquivo.tipo.includes('pdf')) {
+            icon = 'fa-file-pdf';
+        }
+        
+        // Formata tamanho
+        const tamanhoMB = (arquivo.tamanho / (1024 * 1024)).toFixed(2);
+        
+        fileBadge.innerHTML = `
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="fas ${icon} fa-2x text-primary me-3"></i>
+                    <div>
+                        <strong>${arquivo.nome}</strong>
+                        <br>
+                        <small class="text-muted">
+                            ${arquivo.tipo || 'Tipo desconhecido'} • ${tamanhoMB} MB
+                        </small>
+                    </div>
+                </div>
+                <div>
+                    ${arquivo.url ? `
+                        <a href="${arquivo.url}" 
+                           class="btn btn-sm btn-outline-primary" 
+                           target="_blank"
+                           title="Visualizar arquivo">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+        
+        messageDiv.appendChild(fileBadge);
+    }
     
     // Badge de thinking process
     if (role === 'assistant' && thinking) {
@@ -547,6 +597,7 @@ async function deleteChat(chatId) {
 }
 
 async function loadChat(chatId) {
+    // ✅ ATUALIZADO: Carrega histórico COM ARQUIVOS
     currentChatId = parseInt(chatId);
     
     APBIA.showLoadingOverlay('Carregando histórico...');
@@ -561,9 +612,16 @@ async function loadChat(chatId) {
             // Limpa mensagens atuais
             clearChatMessages();
             
-            // Adiciona mensagens do histórico
+            // ✅ Adiciona mensagens do histórico COM ARQUIVOS
             data.mensagens.forEach(msg => {
-                addMessageToChat(msg.role, msg.conteudo, msg.thinking_process);
+                addMessageToChat(
+                    msg.role, 
+                    msg.conteudo, 
+                    msg.thinking_process,
+                    false,  // search_used
+                    null,   // code_results
+                    msg.arquivo  // ✅ NOVO: Dados do arquivo
+                );
             });
             
             // Marca chat como ativo na sidebar
@@ -585,8 +643,17 @@ async function loadChat(chatId) {
 }
 
 async function handleFileUpload(e) {
+    // ✅ ATUALIZADO: Upload com informações do arquivo na resposta
     const file = e.target.files[0];
     if (!file) return;
+    
+    // ✅ Validação de tamanho (16MB)
+    const maxSize = 16 * 1024 * 1024;
+    if (file.size > maxSize) {
+        APBIA.showNotification('Arquivo muito grande! Máximo: 16MB', 'error');
+        e.target.value = '';
+        return;
+    }
     
     const formData = new FormData();
     formData.append('file', file);
@@ -606,8 +673,18 @@ async function handleFileUpload(e) {
         showThinking(false);
         
         if (data.success) {
-            addMessageToChat('user', `📎 Arquivo enviado: ${file.name}`);
+            // ✅ Adiciona mensagem do usuário COM dados do arquivo
+            addMessageToChat('user', `Analise este arquivo`, null, false, null, {
+                nome: data.file_info.name,
+                tipo: data.file_info.type,
+                tamanho: data.file_info.size,
+                url: data.file_info.url
+            });
+            
+            // Adiciona resposta da IA
             addMessageToChat('assistant', data.response, data.thinking_process);
+            
+            APBIA.showNotification('Arquivo processado com sucesso!', 'success');
         } else {
             showError(data.message || 'Erro ao processar arquivo');
         }
@@ -647,3 +724,6 @@ document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
         document.getElementById('chatForm').dispatchEvent(new Event('submit'));
     }
 });
+
+// ✅ ADICIONAR: Log de inicialização
+console.log('✅ chat.js carregado - Suporte a histórico multimodal ativo');

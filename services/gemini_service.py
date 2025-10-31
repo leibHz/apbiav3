@@ -431,9 +431,9 @@ Ajude na orientação de estudantes com dicas profissionais e boas práticas.
             logger.error(f"❌ Erro no upload: {e}")
             return None
     
-    def chat_with_file(self, message, file_path, tipo_usuario='participante', user_id=None):
+    def chat_with_file(self, message, file_path, tipo_usuario='participante', user_id=None, keep_file_on_gemini=False):
         """
-        Chat com arquivo (multimodal)
+        ✅ ATUALIZADO: Chat com arquivo (multimodal) com opção de manter no Gemini
         
         Refs:
         - Imagem: https://ai.google.dev/gemini-api/docs/image-understanding
@@ -445,9 +445,14 @@ Ajude na orientação de estudantes com dicas profissionais e boas práticas.
             file_path: Caminho do arquivo
             tipo_usuario: Tipo do usuário
             user_id: ID do usuário
+            keep_file_on_gemini: Se True, mantém arquivo no Gemini por 48h para re-uso
         
         Returns:
-            dict com response e thinking_process
+            dict com:
+                - response: Resposta da IA
+                - thinking_process: Processo de pensamento
+                - file_type: Tipo do arquivo
+                - gemini_file_uri: URI do arquivo no Gemini (se keep_file_on_gemini=True)
         """
         # Verifica limites
         can_proceed, error_msg = gemini_stats.check_limits(user_id)
@@ -455,6 +460,7 @@ Ajude na orientação de estudantes com dicas profissionais e boas práticas.
             return {'response': f"⚠️ {error_msg}", 'error': True}
         
         try:
+            # ✅ 1. Faz upload do arquivo para o Gemini
             uploaded_file = self.upload_file(file_path)
             if not uploaded_file:
                 return {'response': 'Erro ao fazer upload', 'error': True}
@@ -470,7 +476,7 @@ Ajude na orientação de estudantes com dicas profissionais e boas práticas.
             else:
                 file_type = 'documento'
             
-            logger.info(f"🔍 Tipo: {file_type}")
+            logger.info(f"🔍 Tipo: {file_type} | URI: {uploaded_file.uri}")
             
             # System instruction
             system_instruction = self._get_system_instruction(tipo_usuario)
@@ -487,7 +493,7 @@ Ajude na orientação de estudantes com dicas profissionais e boas práticas.
                 )
             )
             
-            # Gera resposta
+            # ✅ 2. Gera resposta
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=[full_message, uploaded_file],
@@ -509,15 +515,29 @@ Ajude na orientação de estudantes com dicas profissionais e boas práticas.
                 tokens_input = response.usage_metadata.prompt_token_count
                 tokens_output = response.usage_metadata.candidates_token_count
                 gemini_stats.record_request(user_id, tokens_input, tokens_output)
+                logger.info(f"📊 Tokens - Input: {tokens_input:,} | Output: {tokens_output:,}")
             
-            # Deleta arquivo temporário
-            self.client.files.delete(name=uploaded_file.name)
-            logger.info("🗑️ Arquivo temporário deletado")
+            # ✅ 3. Decide se mantém ou deleta arquivo no Gemini
+            gemini_file_uri = None
+            
+            if keep_file_on_gemini:
+                # ✅ Mantém arquivo por 48h para re-uso
+                gemini_file_uri = uploaded_file.uri
+                logger.info(f"💾 Arquivo mantido no Gemini por 48h: {uploaded_file.name}")
+                logger.info(f"   URI: {gemini_file_uri}")
+                logger.info(f"   Expira em: {uploaded_file.expiration_time}")
+            else:
+                # ❌ Deleta arquivo imediatamente
+                self.client.files.delete(name=uploaded_file.name)
+                logger.info("🗑️ Arquivo deletado do Gemini")
             
             return {
                 'response': response_text or response.text,
                 'thinking_process': thinking_process,
-                'file_type': file_type
+                'file_type': file_type,
+                'gemini_file_uri': gemini_file_uri,  # ✅ NOVO: URI para re-uso
+                'gemini_file_name': uploaded_file.name if keep_file_on_gemini else None,
+                'gemini_expiration': str(uploaded_file.expiration_time) if keep_file_on_gemini else None
             }
             
         except Exception as e:

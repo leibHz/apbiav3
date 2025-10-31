@@ -192,22 +192,160 @@ class SupabaseDAO:
         return [self._row_to_chat(row) for row in result.data] if result.data else []
     
     def deletar_chat(self, chat_id):
-        """Deleta um chat"""
-        result = self.supabase.table('chats').delete().eq('id', chat_id).execute()
-        return bool(result.data)
-    
-    # ============ TIPOS ============
-    
-    def listar_tipos_usuario(self):
-        """Lista todos os tipos de usuário"""
-        result = self.supabase.table('tipos_usuario').select('*').execute()
-        return [TipoUsuario(row['id'], row['nome']) for row in result.data] if result.data else []
-    
-    def listar_tipos_ia(self):
-        """Lista todos os tipos de IA"""
-        result = self.supabase.table('tipos_ia').select('*').execute()
-        return [TipoIA(row['id'], row['nome']) for row in result.data] if result.data else []
-    
+        """
+        ✅ ATUALIZADO: Deleta um chat (CASCADE deleta mensagens e arquivos)
+        """
+        logger.info(f"🗑️ Deletando chat ID: {chat_id}")
+        
+        try:
+            # ✅ 1. Deleta arquivos relacionados (CASCADE pode não funcionar para arquivos físicos)
+            self.deletar_arquivos_por_chat(chat_id)
+            
+            # ✅ 2. Deleta chat (CASCADE deleta mensagens automaticamente)
+            result = self.supabase.table('chats').delete().eq('id', chat_id).execute()
+            
+            log_database_operation('DELETE', 'chats', data={'id': chat_id}, result='Success')
+            return bool(result.data)
+            
+        except Exception as e:
+            log_database_operation('DELETE', 'chats', data={'id': chat_id}, result=f'Error: {e}')
+            logger.error(f"❌ Erro ao deletar chat: {e}")
+            return False
+
+    # ============ ARQUIVOS DE CHAT ============
+
+    def criar_arquivo_chat(self, chat_id, nome_arquivo, url_arquivo, tipo_arquivo=None, 
+                           tamanho_bytes=None, gemini_file_uri=None):
+        """
+        ✅ NOVO: Cria registro de arquivo no banco
+        """
+        logger.info(f"📎 Salvando arquivo no banco: {nome_arquivo}")
+        
+        data = {
+            'chat_id': chat_id,
+            'nome_arquivo': nome_arquivo,
+            'url_arquivo': url_arquivo,
+            'tipo_arquivo': tipo_arquivo,
+            'tamanho_bytes': tamanho_bytes
+        }
+        
+        if gemini_file_uri:
+            data['gemini_file_uri'] = gemini_file_uri
+        
+        try:
+            result = self.supabase.table('arquivos_chat').insert(data).execute()
+            log_database_operation('INSERT', 'arquivos_chat', data={'nome': nome_arquivo}, result='Success')
+            
+            if result.data:
+                logger.info(f"✅ Arquivo salvo: ID {result.data[0]['id']}")
+                return result.data[0]['id']
+            
+            return None
+            
+        except Exception as e:
+            log_database_operation('INSERT', 'arquivos_chat', data={'nome': nome_arquivo}, result=f'Error: {e}')
+            logger.error(f"❌ Erro ao salvar arquivo: {e}")
+            raise
+
+    def listar_arquivos_por_chat(self, chat_id):
+        """
+        ✅ NOVO: Lista todos os arquivos de um chat
+        """
+        logger.debug(f"📁 Buscando arquivos do chat {chat_id}")
+        
+        try:
+            result = self.supabase.table('arquivos_chat')\
+                .select('*')\
+                .eq('chat_id', chat_id)\
+                .order('data_upload', desc=False)\
+                .execute()
+            
+            if result.data:
+                logger.info(f"✅ {len(result.data)} arquivos encontrados")
+                return result.data
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao buscar arquivos: {e}")
+            return []
+
+    def buscar_arquivo_por_id(self, arquivo_id):
+        """
+        ✅ NOVO: Busca arquivo por ID
+        """
+        logger.debug(f"🔍 Buscando arquivo ID: {arquivo_id}")
+        
+        try:
+            result = self.supabase.table('arquivos_chat')\
+                .select('*')\
+                .eq('id', arquivo_id)\
+                .execute()
+            
+            if result.data:
+                return result.data[0]
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao buscar arquivo: {e}")
+            return None
+
+    def deletar_arquivo(self, arquivo_id):
+        """
+        ✅ NOVO: Deleta arquivo do banco
+        """
+        logger.info(f"🗑️ Deletando arquivo ID: {arquivo_id}")
+        
+        try:
+            result = self.supabase.table('arquivos_chat')\
+                .delete()\
+                .eq('id', arquivo_id)\
+                .execute()
+            
+            log_database_operation('DELETE', 'arquivos_chat', data={'id': arquivo_id}, result='Success')
+            return bool(result.data)
+            
+        except Exception as e:
+            log_database_operation('DELETE', 'arquivos_chat', data={'id': arquivo_id}, result=f'Error: {e}')
+            logger.error(f"❌ Erro ao deletar arquivo: {e}")
+            return False
+
+    def associar_arquivo_mensagem(self, arquivo_id, mensagem_id):
+        """
+        ✅ NOVO: Associa arquivo a uma mensagem específica
+        """
+        try:
+            result = self.supabase.table('arquivos_chat')\
+                .update({'mensagem_id': mensagem_id})\
+                .eq('id', arquivo_id)\
+                .execute()
+            
+            return bool(result.data)
+            
+        except Exception as e:
+            logger.warning(f"⚠️ Não foi possível associar arquivo à mensagem: {e}")
+            logger.warning("💡 Considere adicionar coluna 'mensagem_id' em 'arquivos_chat'")
+            return False
+
+    def deletar_arquivos_por_chat(self, chat_id):
+        """
+        ✅ NOVO: Deleta todos os arquivos de um chat
+        """
+        logger.info(f"🗑️ Deletando todos os arquivos do chat {chat_id}")
+        
+        try:
+            result = self.supabase.table('arquivos_chat')\
+                .delete()\
+                .eq('chat_id', chat_id)\
+                .execute()
+            
+            return bool(result.data)
+            
+        except Exception as e:
+            logger.error(f"❌ Erro ao deletar arquivos: {e}")
+            return False
+
     # ============ CONVERSORES ============
     
     def _row_to_usuario(self, row):
