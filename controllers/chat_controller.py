@@ -26,19 +26,7 @@ os.makedirs(CHAT_FILES_DIR, exist_ok=True)
 # ✅ SUBSTITUA A FUNÇÃO _save_chat_file_to_disk
 
 def _save_chat_file_to_disk(file, user_id, chat_id):
-    """
-    ✅ CORRIGIDO: Salva arquivo fisicamente no disco com segurança contra race conditions
-    
-    Estrutura: uploads/chat_files/{user_id}/{chat_id}/{uuid}_{timestamp}_{filename}
-    
-    Returns:
-        dict: {
-            'filepath': 'caminho/relativo/arquivo.jpg',
-            'filename': 'nome_original.jpg',
-            'mime_type': 'image/jpeg',
-            'size': 1234567
-        }
-    """
+    """Salva arquivo com proteção contra race conditions"""
     import time
     from threading import Lock
     
@@ -47,27 +35,25 @@ def _save_chat_file_to_disk(file, user_id, chat_id):
         _save_chat_file_to_disk.lock = Lock()
     
     with _save_chat_file_to_disk.lock:
-        # Cria estrutura de pastas
         user_dir = os.path.join(CHAT_FILES_DIR, str(user_id))
         chat_dir = os.path.join(user_dir, str(chat_id))
         os.makedirs(chat_dir, exist_ok=True)
         
-        # Nome único COM timestamp para evitar colisões
+        # Nome único COM timestamp + contador
         original_filename = secure_filename(file.filename)
         unique_id = str(uuid.uuid4())[:8]
         timestamp = int(time.time() * 1000)  # Milissegundos
-        unique_filename = f"{unique_id}_{timestamp}_{original_filename}"
         
-        full_path = os.path.join(chat_dir, unique_filename)
-        
-        # ✅ Verifica se arquivo já existe (extremamente improvável agora)
-        counter = 1
-        while os.path.exists(full_path):
-            unique_filename = f"{unique_id}_{timestamp}_{counter}_{original_filename}"
+        counter = 0
+        while True:
+            suffix = f"_{counter}" if counter > 0 else ""
+            unique_filename = f"{unique_id}_{timestamp}{suffix}_{original_filename}"
             full_path = os.path.join(chat_dir, unique_filename)
+            
+            if not os.path.exists(full_path):
+                break
             counter += 1
         
-        # Salva arquivo
         file.save(full_path)
         
         # Caminho relativo (para salvar no banco)
@@ -198,6 +184,8 @@ Resumo: {projeto.resumo or 'Não informado'}
 
         # Mensagem com contexto
         message_com_contexto = f"{contexto_projetos}\n\n{message}"
+        
+        apelido = current_user.apelido if hasattr(current_user, 'apelido') else None
 
         # Chama Gemini COM MODO BRAGANTEC
         response = gemini.chat(
@@ -208,7 +196,8 @@ Resumo: {projeto.resumo or 'Não informado'}
             usar_code_execution=usar_code_execution,
             analyze_url=analyze_url,
             usar_contexto_bragantec=usar_contexto_bragantec,
-            user_id=current_user.id
+            user_id=current_user.id,
+            apelido=apelido  # ✅ NOVO
         )
 
         if response.get('error'):
@@ -221,12 +210,24 @@ Resumo: {projeto.resumo or 'Não informado'}
         dao.criar_mensagem(chat_id, 'user', message)
 
         # Salva resposta da IA
-        dao.criar_mensagem(
+        msg_assistant_id = dao.criar_mensagem(
             chat_id,
             'model',
             response['response'],
             thinking_process=response.get('thinking_process')
         )
+
+        # ✅ NOVO: Salva informações sobre ferramentas usadas
+        if msg_assistant_id:
+            ferramentas_usadas = {
+                'google_search': response.get('search_used', False),
+                'contexto_bragantec': usar_contexto_bragantec,
+                'code_execution': response.get('code_executed', False),
+                'url_context': bool(analyze_url)
+            }
+            
+            dao.salvar_ferramenta_usada(msg_assistant_id['id'], ferramentas_usadas)
+            logger.info(f"🔧 Ferramentas usadas: {ferramentas_usadas}")
 
         return jsonify({
             'success': True,

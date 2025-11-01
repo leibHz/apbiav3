@@ -96,3 +96,114 @@ def verificar_bp():
         }
     
     return {'exists': False, 'message': 'BP não encontrado no sistema'}
+
+@auth_bp.route('/perfil', methods=['GET', 'POST'])
+@login_required
+def perfil():
+    """
+    Página de perfil do usuário
+    Permite editar nome, email e APELIDO
+    """
+    if request.method == 'POST':
+        try:
+            data = request.json if request.is_json else request.form
+            
+            nome_completo = data.get('nome_completo', '').strip()
+            email = data.get('email', '').strip()
+            apelido = data.get('apelido', '').strip()
+            
+            if not nome_completo or not email:
+                return jsonify({
+                    'error': True,
+                    'message': 'Nome e email são obrigatórios'
+                }), 400
+            
+            # Atualiza dados
+            dao.atualizar_usuario(
+                current_user.id,
+                nome_completo=nome_completo,
+                email=email
+            )
+            
+            # Atualiza apelido separadamente
+            dao.atualizar_apelido(current_user.id, apelido if apelido else None)
+            
+            # Atualiza sessão
+            current_user.nome_completo = nome_completo
+            current_user.email = email
+            current_user.apelido = apelido
+            
+            if request.is_json:
+                return jsonify({
+                    'success': True,
+                    'message': 'Perfil atualizado com sucesso!'
+                })
+            else:
+                flash('Perfil atualizado com sucesso!', 'success')
+                return redirect(url_for('auth.perfil'))
+            
+        except Exception as e:
+            if request.is_json:
+                return jsonify({
+                    'error': True,
+                    'message': f'Erro ao atualizar perfil: {str(e)}'
+                }), 500
+            else:
+                flash(f'Erro ao atualizar: {str(e)}', 'error')
+                return redirect(url_for('auth.perfil'))
+    
+    return render_template('perfil.html', usuario=current_user)
+
+
+@auth_bp.route('/alterar-senha', methods=['POST'])
+@login_required
+def alterar_senha():
+    """Altera senha do usuário"""
+    try:
+        data = request.json
+        senha_atual = data.get('senha_atual', '')
+        nova_senha = data.get('nova_senha', '')
+        confirmar_senha = data.get('confirmar_senha', '')
+        
+        if not senha_atual or not nova_senha or not confirmar_senha:
+            return jsonify({
+                'error': True,
+                'message': 'Preencha todos os campos'
+            }), 400
+        
+        # Verifica senha atual
+        if not dao.verificar_senha(senha_atual, current_user.senha_hash):
+            return jsonify({
+                'error': True,
+                'message': 'Senha atual incorreta'
+            }), 400
+        
+        # Verifica se senhas coincidem
+        if nova_senha != confirmar_senha:
+            return jsonify({
+                'error': True,
+                'message': 'As senhas não coincidem'
+            }), 400
+        
+        # Valida tamanho
+        if len(nova_senha) < 6:
+            return jsonify({
+                'error': True,
+                'message': 'A senha deve ter pelo menos 6 caracteres'
+            }), 400
+        
+        # Atualiza senha
+        import bcrypt
+        senha_hash = bcrypt.hashpw(nova_senha.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        dao.atualizar_usuario(current_user.id, senha_hash=senha_hash)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Senha alterada com sucesso!'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'error': True,
+            'message': f'Erro: {str(e)}'
+        }), 500

@@ -11,6 +11,7 @@ from controllers.auth_controller import auth_bp
 from controllers.chat_controller import chat_bp
 from controllers.admin_controller import admin_bp
 from controllers.project_controller import project_bp
+from controllers.orientador_controller import orientador_bp
 
 # Inicializa aplicação
 app = Flask(__name__)
@@ -54,6 +55,9 @@ logger.debug("✅ admin_bp registrado em /admin")
 
 app.register_blueprint(project_bp, url_prefix='/projetos')
 logger.debug("✅ project_bp registrado em /projetos")
+
+app.register_blueprint(orientador_bp, url_prefix='/orientador')
+logger.debug("✅ orientador_bp registrado em /orientador")
 
 # ✅ CORRIGIDO: Rota principal agora funciona
 @app.route('/')

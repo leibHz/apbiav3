@@ -25,7 +25,7 @@ class Usuario(UserMixin):
     """Modelo para usuários"""
     def __init__(self, id, nome_completo, email, senha_hash=None, 
                  tipo_usuario_id=None, numero_inscricao=None,
-                 data_criacao=None, data_atualizacao=None):
+                 data_criacao=None, data_atualizacao=None, apelido=None):
         self.id = id
         self.nome_completo = nome_completo
         self.email = email
@@ -34,6 +34,7 @@ class Usuario(UserMixin):
         self.numero_inscricao = numero_inscricao  # Formato: BP12345678X
         self.data_criacao = data_criacao or datetime.now()
         self.data_atualizacao = data_atualizacao or datetime.now()
+        self.apelido = apelido  # ✅ NOVO
     
     def get_id(self):
         """Necessário para Flask-Login"""
@@ -63,7 +64,8 @@ class Usuario(UserMixin):
             'tipo_usuario_id': self.tipo_usuario_id,
             'numero_inscricao': self.numero_inscricao,
             'data_criacao': self.data_criacao.isoformat() if self.data_criacao else None,
-            'data_atualizacao': self.data_atualizacao.isoformat() if self.data_atualizacao else None
+            'data_atualizacao': self.data_atualizacao.isoformat() if self.data_atualizacao else None,
+            'apelido': self.apelido  # ✅ NOVO
         }
 
 

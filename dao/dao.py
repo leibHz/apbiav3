@@ -381,7 +381,8 @@ class SupabaseDAO:
             tipo_usuario_id=row['tipo_usuario_id'],
             numero_inscricao=row.get('numero_inscricao'),
             data_criacao=data_criacao,
-            data_atualizacao=data_atualizacao
+            data_atualizacao=data_atualizacao,
+            apelido=row.get('apelido')
         )
     
     def _row_to_projeto(self, row):
@@ -668,3 +669,335 @@ class SupabaseDAO:
         """
         tipos = self.listar_tipos_usuario()
         return next((t for t in tipos if t.id == tipo_id), None)
+    
+    # ===== ADICIONAR ESTES MÉTODOS NO dao/dao.py =====
+
+    # ============ APELIDOS (adicionar na seção USUÁRIOS) ============
+
+    def atualizar_apelido(self, usuario_id, apelido):
+        """
+        Atualiza apelido do usuário
+    
+        Args:
+           usuario_id: ID do usuário
+            apelido: Novo apelido
+        """
+        logger.info(f"✏️ Atualizando apelido do usuário {usuario_id}")
+        result = self.supabase.table('usuarios')\
+            .update({'apelido': apelido})\
+            .eq('id', usuario_id)\
+            .execute()
+    
+        return bool(result.data)
+
+
+    # ============ ORIENTADORES E ORIENTADOS ============
+
+    def listar_orientados_por_orientador(self, orientador_id):
+        """
+        Lista todos os orientados de um orientador
+        COM dados dos chats
+    
+        Args:
+            orientador_id: ID do orientador
+    
+        Returns:
+            list: Lista de orientados com seus dados
+        """
+        logger.debug(f"📋 Buscando orientados do orientador {orientador_id}")
+    
+        try:
+            # Busca IDs dos orientados via tabela de projetos
+            # (assumindo que orientador e participante estão ligados via projetos)
+            result = self.supabase.table('orientadores_projetos')\
+                .select('projeto_id')\
+                .eq('orientador_id', orientador_id)\
+                .execute()
+        
+            if not result.data:
+                return []
+        
+            projeto_ids = [row['projeto_id'] for row in result.data]
+        
+            # Busca participantes desses projetos
+            participantes_result = self.supabase.table('participantes_projetos')\
+                .select('participante_id')\
+                .in_('projeto_id', projeto_ids)\
+                .execute()
+        
+            if not participantes_result.data:
+                return []
+        
+            participante_ids = list(set([row['participante_id'] for row in participantes_result.data]))
+        
+            # Busca dados completos dos participantes
+            orientados = []
+            for participante_id in participante_ids:
+                usuario = self.buscar_usuario_por_id(participante_id)
+                if usuario:
+                    # Adiciona chats
+                    chats = self.listar_chats_por_usuario(participante_id)
+                    orientado_data = usuario.to_dict()
+                    orientado_data['chats'] = [c.to_dict() for c in chats]
+                    orientados.append(orientado_data)
+        
+            logger.info(f"✅ {len(orientados)} orientados encontrados")
+            return orientados
+        
+        except Exception as e:
+            logger.error(f"❌ Erro ao buscar orientados: {e}")
+            return []
+
+
+    def verificar_orientador_participante(self, orientador_id, participante_id):
+        """
+        Verifica se um orientador tem um participante como orientado
+    
+        Args:
+            orientador_id: ID do orientador
+            participante_id: ID do participante
+    
+        Returns:
+            bool: True se é orientado
+        """
+        try:
+            # Busca projetos do orientador
+            result = self.supabase.table('orientadores_projetos')\
+                .select('projeto_id')\
+                .eq('orientador_id', orientador_id)\
+                .execute()
+        
+            if not result.data:
+                return False
+        
+            projeto_ids = [row['projeto_id'] for row in result.data]
+        
+            # Verifica se participante está em algum desses projetos
+            participante_result = self.supabase.table('participantes_projetos')\
+                .select('participante_id')\
+                .eq('participante_id', participante_id)\
+                .in_('projeto_id', projeto_ids)\
+                .execute()
+        
+            return bool(participante_result.data)
+        
+        except Exception as e:
+            logger.error(f"❌ Erro ao verificar orientador-participante: {e}")
+            return False
+
+
+    # ============ NOTAS DO ORIENTADOR ============
+
+    def criar_nota_orientador(self, mensagem_id, orientador_id, nota):
+        """
+        Cria nota do orientador em uma mensagem
+    
+        Args:
+            mensagem_id: ID da mensagem
+            orientador_id: ID do orientador
+            nota: Texto da nota
+    
+        Returns:
+            dict: Dados da nota criada
+        """
+        logger.info(f"📝 Criando nota do orientador {orientador_id} na mensagem {mensagem_id}")
+    
+        data = {
+            'mensagem_id': mensagem_id,
+            'orientador_id': orientador_id,
+            'nota': nota
+        }
+    
+        result = self.supabase.table('notas_orientador')\
+            .insert(data)\
+            .execute()
+    
+        log_database_operation('INSERT', 'notas_orientador', data, 'Success')
+        return result.data[0] if result.data else None
+
+
+    def listar_notas_por_mensagem(self, mensagem_id):
+        """
+        Lista todas as notas de uma mensagem
+    
+        Args:
+            mensagem_id: ID da mensagem
+    
+        Returns:
+            list: Lista de notas
+        """
+        result = self.supabase.table('notas_orientador')\
+            .select('*, usuarios(nome_completo)')\
+            .eq('mensagem_id', mensagem_id)\
+            .order('data_criacao', desc=False)\
+            .execute()
+    
+        return result.data if result.data else []
+
+
+    def buscar_nota_por_id(self, nota_id):
+        """Busca nota por ID"""
+        result = self.supabase.table('notas_orientador')\
+            .select('*')\
+            .eq('id', nota_id)\
+            .execute()
+    
+        return result.data[0] if result.data else None
+
+
+    def atualizar_nota_orientador(self, nota_id, nova_nota):
+        """Atualiza texto de uma nota"""
+        result = self.supabase.table('notas_orientador')\
+            .update({
+                'nota': nova_nota,
+                'data_atualizacao': datetime.now().isoformat()
+            })\
+            .eq('id', nota_id)\
+            .execute()
+    
+        return bool(result.data)
+
+
+    def deletar_nota_orientador(self, nota_id):
+        """Deleta nota"""
+        result = self.supabase.table('notas_orientador')\
+            .delete()\
+            .eq('id', nota_id)\
+            .execute()
+    
+        return bool(result.data)
+
+
+    def contar_chats_com_notas(self, orientador_id):
+        """Conta quantos chats têm notas do orientador"""
+        result = self.supabase.table('notas_orientador')\
+            .select('mensagem_id', count='exact')\
+            .eq('orientador_id', orientador_id)\
+            .execute()
+    
+        return result.count if hasattr(result, 'count') else 0
+
+
+    def contar_notas_por_orientado(self, participante_id, orientador_id):
+        """Conta total de notas de um orientador em chats de um orientado"""
+        # Busca chats do participante
+        chats = self.listar_chats_por_usuario(participante_id)
+        chat_ids = [c.id for c in chats]
+    
+        if not chat_ids:
+            return 0
+    
+        # Busca mensagens desses chats
+        mensagens_result = self.supabase.table('mensagens')\
+            .select('id')\
+            .in_('chat_id', chat_ids)\
+            .execute()
+    
+        if not mensagens_result.data:
+            return 0
+    
+        mensagem_ids = [m['id'] for m in mensagens_result.data]
+    
+        # Conta notas do orientador nessas mensagens
+        notas_result = self.supabase.table('notas_orientador')\
+            .select('id', count='exact')\
+            .eq('orientador_id', orientador_id)\
+            .in_('mensagem_id', mensagem_ids)\
+            .execute()
+    
+        return notas_result.count if hasattr(notas_result, 'count') else 0
+
+
+    # ============ VISUALIZAÇÕES DO ORIENTADOR ============
+
+    def registrar_visualizacao_orientador(self, orientador_id, chat_id):
+        """
+        Registra que orientador visualizou um chat
+    
+        Args:
+            orientador_id: ID do orientador
+            chat_id: ID do chat (None se for visualização geral)
+        """
+        data = {
+            'orientador_id': orientador_id,
+            'chat_id': chat_id
+        }
+    
+        result = self.supabase.table('visualizacoes_orientador')\
+            .insert(data)\
+            .execute()
+    
+        return bool(result.data)
+
+
+    # ============ MENSAGENS COM METADADOS ============
+
+    def buscar_mensagem_por_id(self, mensagem_id):
+        """Busca mensagem por ID"""
+        result = self.supabase.table('mensagens')\
+            .select('*')\
+            .eq('id', mensagem_id)\
+            .execute()
+    
+        return result.data[0] if result.data else None
+
+
+    def salvar_ferramenta_usada(self, mensagem_id, ferramentas):
+        """
+        Salva informações sobre ferramentas usadas na mensagem
+    
+        Args:
+            mensagem_id: ID da mensagem
+            ferramentas: Dict com ferramentas usadas
+                Ex: {'google_search': True, 'contexto_bragantec': True}
+        """
+        import json
+    
+        result = self.supabase.table('mensagens')\
+            .update({'ferramenta_usada': json.dumps(ferramentas)})\
+            .eq('id', mensagem_id)\
+            .execute()
+    
+        return bool(result.data)
+
+
+    def contar_uso_ferramenta(self, usuario_id, ferramenta):
+        """
+        Conta quantas vezes um usuário usou uma ferramenta específica
+    
+        Args:
+            usuario_id: ID do usuário
+            ferramenta: Nome da ferramenta ('google_search' ou 'contexto_bragantec')
+    
+        Returns:
+            int: Contagem
+        """
+        # Busca chats do usuário
+        chats = self.listar_chats_por_usuario(usuario_id)
+        chat_ids = [c.id for c in chats]
+    
+        if not chat_ids:
+            return 0
+    
+        # Busca mensagens com a ferramenta
+        mensagens = self.supabase.table('mensagens')\
+            .select('ferramenta_usada')\
+            .in_('chat_id', chat_ids)\
+            .execute()
+    
+        if not mensagens.data:
+            return 0
+    
+        # Conta uso da ferramenta
+        import json
+        count = 0
+        for msg in mensagens.data:
+            if msg.get('ferramenta_usada'):
+                try:
+                    ferramentas = json.loads(msg['ferramenta_usada']) if isinstance(msg['ferramenta_usada'], str) else msg['ferramenta_usada']
+                    if ferramentas.get(ferramenta):
+                        count += 1
+                except:
+                    pass
+    
+        return count
