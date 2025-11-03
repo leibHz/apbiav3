@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Orientações - APBIA{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>
+                <i class="fas fa-user-friends"></i> Gerenciar Orientações
+            </h2>
+            <p class="text-muted">Associe orientadores aos seus orientados e projetos</p>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addOrientacaoModal">
+                <i class="fas fa-plus"></i> Nova Orientação
+            </button>
+        </div>
+    </div>
+    
+    <!-- Filtros -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <select class="form-select" id="filtroOrientador">
+                <option value="">Todos os Orientadores</option>
+                {% for orientador in orientadores %}
+                <option value="{{ orientador.id }}">{{ orientador.nome_completo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <select class="form-select" id="filtroProjeto">
+                <option value="">Todos os Projetos</option>
+                {% for projeto in projetos %}
+                <option value="{{ projeto.id }}">{{ projeto.nome }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <!-- Tabela de Orientações -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="tabelaOrientacoes">
+                    <thead>
+                        <tr>
+                            <th>Orientador</th>
+                            <th>Participante</th>
+                            <th>Projeto</th>
+                            <th>Status</th>
+                            <th class="text-center">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for orientacao in orientacoes %}
+                        <tr data-orientacao-id="{{ orientacao.id }}">
+                            <td>
+                                <strong>{{ orientacao.orientador_nome }}</strong>
+                                <br>
+                                <small class="text-muted">{{ orientacao.orientador_email }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ orientacao.participante_nome }}</strong>
+                                <br>
+                                <small class="text-muted">{{ orientacao.participante_bp }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ orientacao.projeto_categoria }}</span>
+                                <br>
+                                {{ orientacao.projeto_nome }}
+                            </td>
+                            <td>
+                                <span class="badge bg-success">Ativa</span>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-outline-danger remover-orientacao" 
+                                        data-orientador-id="{{ orientacao.orientador_id }}"
+                                        data-projeto-id="{{ orientacao.projeto_id }}"
+                                        title="Remover orientação">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            {% if not orientacoes %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5>Nenhuma orientação cadastrada</h5>
+                <p class="text-muted">Clique em "Nova Orientação" para começar</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Nova Orientação -->
+<div class="modal fade" id="addOrientacaoModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-plus"></i> Nova Orientação
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formNovaOrientacao">
+                    <!-- Passo 1: Selecionar Projeto -->
+                    <div class="mb-4" id="passo1">
+                        <h6 class="mb-3"><i class="fas fa-flask"></i> 1. Selecione o Projeto</h6>
+                        <select class="form-select" id="projetoSelect" required>
+                            <option value="">Escolha um projeto...</option>
+                            {% for projeto in projetos %}
+                            <option value="{{ projeto.id }}" 
+                                    data-categoria="{{ projeto.categoria }}"
+                                    data-nome="{{ projeto.nome }}">
+                                [{{ projeto.categoria }}] {{ projeto.nome }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        
+                        <div class="alert alert-info mt-3" style="display:none;" id="projetoInfo">
+                            <strong>Projeto selecionado:</strong>
+                            <p class="mb-0 mt-2" id="projetoNome"></p>
+                            <small class="text-muted" id="projetoCategoria"></small>
+                        </div>
+                    </div>
+                    
+                    <!-- Passo 2: Selecionar Orientador -->
+                    <div class="mb-4" id="passo2" style="display:none;">
+                        <h6 class="mb-3"><i class="fas fa-chalkboard-teacher"></i> 2. Selecione o Orientador</h6>
+                        <select class="form-select" id="orientadorSelect" required>
+                            <option value="">Escolha um orientador...</option>
+                            {% for orientador in orientadores %}
+                            <option value="{{ orientador.id }}">
+                                {{ orientador.nome_completo }} ({{ orientador.email }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Passo 3: Selecionar Participantes -->
+                    <div class="mb-4" id="passo3" style="display:none;">
+                        <h6 class="mb-3"><i class="fas fa-users"></i> 3. Selecione os Participantes</h6>
+                        <p class="text-muted small">Participantes que já estão neste projeto:</p>
+                        
+                        <div id="participantesLista" class="list-group">
+                            <!-- Será preenchido dinamicamente -->
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="fas fa-info-circle"></i>
+                            <strong>Nota:</strong> A associação orientador-participante é feita através do projeto.
+                            Todos os participantes do projeto ficarão sob orientação do orientador escolhido.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="btnConfirmarOrientacao">
+                    <i class="fas fa-check"></i> Confirmar Orientação
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Seleção de projeto
+document.getElementById('projetoSelect').addEventListener('change', function() {
+    const projetoId = this.value;
+    
+    if (projetoId) {
+        const option = this.options[this.selectedIndex];
+        const nome = option.dataset.nome;
+        const categoria = option.dataset.categoria;
+        
+        document.getElementById('projetoNome').textContent = nome;
+        document.getElementById('projetoCategoria').textContent = `Categoria: ${categoria}`;
+        document.getElementById('projetoInfo').style.display = 'block';
+        document.getElementById('passo2').style.display = 'block';
+        
+        // Carrega participantes do projeto
+        carregarParticipantesProjeto(projetoId);
+    } else {
+        document.getElementById('projetoInfo').style.display = 'none';
+        document.getElementById('passo2').style.display = 'none';
+        document.getElementById('passo3').style.display = 'none';
+    }
+});
+
+// Seleção de orientador
+document.getElementById('orientadorSelect').addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('passo3').style.display = 'block';
+    } else {
+        document.getElementById('passo3').style.display = 'none';
+    }
+});
+
+// Carregar participantes do projeto
+async function carregarParticipantesProjeto(projetoId) {
+    try {
+        const response = await fetch(`/admin/projeto/${projetoId}/participantes`);
+        const data = await response.json();
+        
+        const lista = document.getElementById('participantesLista');
+        lista.innerHTML = '';
+        
+        if (data.participantes && data.participantes.length > 0) {
+            data.participantes.forEach(p => {
+                lista.innerHTML += `
+                    <div class="list-group-item">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${p.nome_completo}</strong>
+                                <br>
+                                <small class="text-muted">${p.email} | BP: ${p.numero_inscricao}</small>
+                            </div>
+                            <span class="badge bg-success">
+                                <i class="fas fa-check"></i> No projeto
+                            </span>
+                        </div>
+                    </div>
+                `;
+            });
+        } else {
+            lista.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Este projeto ainda não tem participantes associados.
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Erro ao carregar participantes:', error);
+    }
+}
+
+// Confirmar orientação
+document.getElementById('btnConfirmarOrientacao').addEventListener('click', async function() {
+    const projetoId = document.getElementById('projetoSelect').value;
+    const orientadorId = document.getElementById('orientadorSelect').value;
+    
+    if (!projetoId || !orientadorId) {
+        APBIA.showNotification('Selecione projeto e orientador', 'error');
+        return;
+    }
+    
+    if (!confirm('Confirma a criação desta orientação?')) return;
+    
+    APBIA.showLoadingOverlay('Criando orientação...');
+    
+    try {
+        const response = await fetch('/admin/orientacoes/criar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                projeto_id: parseInt(projetoId),
+                orientador_id: parseInt(orientadorId)
+            })
+        });
+        
+        const data = await response.json();
+        
+        APBIA.hideLoadingOverlay();
+        
+        if (data.success) {
+            APBIA.showNotification(data.message, 'success');
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            APBIA.showNotification('Erro: ' + data.message, 'error');
+        }
+    } catch (error) {
+        APBIA.hideLoadingOverlay();
+        APBIA.showNotification('Erro ao criar orientação', 'error');
+        console.error(error);
+    }
+});
+
+// Remover orientação
+document.querySelectorAll('.remover-orientacao').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        if (!confirm('Remover esta orientação?')) return;
+        
+        const orientadorId = this.dataset.orientadorId;
+        const projetoId = this.dataset.projetoId;
+        
+        try {
+            const response = await fetch('/admin/orientacoes/remover', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    orientador_id: parseInt(orientadorId),
+                    projeto_id: parseInt(projetoId)
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                APBIA.showNotification(data.message, 'success');
+                this.closest('tr').remove();
+            } else {
+                APBIA.showNotification('Erro: ' + data.message, 'error');
+            }
+        } catch (error) {
+            APBIA.showNotification('Erro ao remover orientação', 'error');
+        }
+    });
+});
+
+// Filtros
+document.getElementById('filtroOrientador').addEventListener('change', filtrarTabela);
+document.getElementById('filtroProjeto').addEventListener('change', filtrarTabela);
+
+function filtrarTabela() {
+    const orientadorId = document.getElementById('filtroOrientador').value;
+    const projetoId = document.getElementById('filtroProjeto').value;
+    
+    const rows = document.querySelectorAll('#tabelaOrientacoes tbody tr');
+    
+    rows.forEach(row => {
+        let mostrar = true;
+        
+        if (orientadorId && !row.textContent.includes(orientadorId)) {
+            mostrar = false;
+        }
+        
+        if (projetoId && !row.textContent.includes(projetoId)) {
+            mostrar = false;
+        }
+        
+        row.style.display = mostrar ? '' : 'none';
+    });
+}
+</script>
+{% endblock %}

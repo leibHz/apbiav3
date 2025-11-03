@@ -429,3 +429,132 @@ def gemini_stats_reset_user(user_id):
 
 # Importar datetime
 from datetime import datetime
+
+# ===== ADICIONAR ESTAS ROTAS NO FINAL DO admin_controller.py =====
+
+@admin_bp.route('/orientacoes')
+@admin_required
+def orientacoes():
+    """
+    Página de gerenciamento de orientações
+    """
+    try:
+        # Lista todos orientadores
+        usuarios = dao.listar_usuarios()
+        orientadores = [u for u in usuarios if u.is_orientador()]
+        participantes = [u for u in usuarios if u.is_participante()]
+        
+        # Lista todos projetos
+        projetos = dao.listar_todos_projetos()
+        
+        # Lista orientações ativas
+        orientacoes = dao.listar_orientacoes_completas()
+        
+        return render_template('admin/orientacoes.html',
+                             orientadores=orientadores,
+                             participantes=participantes,
+                             projetos=projetos,
+                             orientacoes=orientacoes)
+        
+    except Exception as e:
+        logger.error(f"Erro ao carregar orientações: {e}")
+        flash('Erro ao carregar dados', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.route('/projeto/<int:projeto_id>/participantes')
+@admin_required
+def projeto_participantes(projeto_id):
+    """
+    Retorna participantes de um projeto (JSON)
+    """
+    try:
+        participantes = dao.listar_participantes_por_projeto(projeto_id)
+        
+        return jsonify({
+            'success': True,
+            'participantes': [p.to_dict() for p in participantes]
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao buscar participantes: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/orientacoes/criar', methods=['POST'])
+@admin_required
+def criar_orientacao():
+    """
+    Cria associação orientador-projeto
+    """
+    try:
+        data = request.json
+        projeto_id = data.get('projeto_id')
+        orientador_id = data.get('orientador_id')
+        
+        if not projeto_id or not orientador_id:
+            return jsonify({
+                'error': True,
+                'message': 'Projeto e orientador são obrigatórios'
+            }), 400
+        
+        # Verifica se já existe
+        if dao.verificar_orientacao_existe(orientador_id, projeto_id):
+            return jsonify({
+                'error': True,
+                'message': 'Esta orientação já existe'
+            }), 400
+        
+        # Cria associação
+        dao.criar_orientacao(orientador_id, projeto_id)
+        
+        logger.info(f"✅ Orientação criada: Orientador {orientador_id} -> Projeto {projeto_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Orientação criada com sucesso!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao criar orientação: {e}")
+        return jsonify({
+            'error': True,
+            'message': f'Erro: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/orientacoes/remover', methods=['DELETE'])
+@admin_required
+def remover_orientacao():
+    """
+    Remove associação orientador-projeto
+    """
+    try:
+        data = request.json
+        orientador_id = data.get('orientador_id')
+        projeto_id = data.get('projeto_id')
+        
+        if not orientador_id or not projeto_id:
+            return jsonify({
+                'error': True,
+                'message': 'Dados inválidos'
+            }), 400
+        
+        dao.remover_orientacao(orientador_id, projeto_id)
+        
+        logger.info(f"🗑️ Orientação removida: Orientador {orientador_id} -> Projeto {projeto_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Orientação removida!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao remover orientação: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500

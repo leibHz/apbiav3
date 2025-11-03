@@ -1001,3 +1001,247 @@ class SupabaseDAO:
                     pass
     
         return count
+
+    def listar_todos_projetos(self):
+        """Lista todos os projetos do sistema"""
+        logger.debug("📋 Listando todos os projetos")
+        result = self.supabase.table('projetos').select('*').execute()
+        return [self._row_to_projeto(row) for row in result.data] if result.data else []
+
+
+    def listar_participantes_por_projeto(self, projeto_id):
+        """
+        Lista participantes associados a um projeto
+
+        Args:
+            projeto_id: ID do projeto
+
+        Returns:
+            list: Lista de usuários participantes
+        """
+        logger.debug(f"👥 Buscando participantes do projeto {projeto_id}")
+
+        try:
+            # Busca IDs dos participantes
+            result = self.supabase.table('participantes_projetos')\
+                .select('participante_id')\
+                .eq('projeto_id', projeto_id)\
+                .execute()
+
+            if not result.data:
+                return []
+
+            participante_ids = [row['participante_id'] for row in result.data]
+
+            # Busca dados completos dos participantes
+            participantes = []
+            for pid in participante_ids:
+                usuario = self.buscar_usuario_por_id(pid)
+                if usuario:
+                    participantes.append(usuario)
+
+            logger.info(f"✅ {len(participantes)} participantes encontrados")
+            return participantes
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao buscar participantes: {e}")
+            return []
+
+
+    def verificar_orientacao_existe(self, orientador_id, projeto_id):
+        """
+        Verifica se orientação já existe
+
+        Args:
+            orientador_id: ID do orientador
+            projeto_id: ID do projeto
+
+        Returns:
+            bool: True se existe
+        """
+        try:
+            result = self.supabase.table('orientadores_projetos')\
+                .select('*')\
+                .eq('orientador_id', orientador_id)\
+                .eq('projeto_id', projeto_id)\
+                .execute()
+
+            return bool(result.data)
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao verificar orientação: {e}")
+            return False
+
+
+    def criar_orientacao(self, orientador_id, projeto_id):
+        """
+        Cria associação orientador-projeto
+
+        Args:
+            orientador_id: ID do orientador
+            projeto_id: ID do projeto
+
+        Returns:
+            bool: True se sucesso
+        """
+        logger.info(f"➕ Criando orientação: Orientador {orientador_id} -> Projeto {projeto_id}")
+
+        try:
+            data = {
+                'orientador_id': orientador_id,
+                'projeto_id': projeto_id
+            }
+
+            result = self.supabase.table('orientadores_projetos')\
+                .insert(data)\
+                .execute()
+
+            log_database_operation('INSERT', 'orientadores_projetos', data, 'Success')
+            logger.info("✅ Orientação criada")
+            return bool(result.data)
+
+        except Exception as e:
+            log_database_operation('INSERT', 'orientadores_projetos', {'orientador': orientador_id, 'projeto': projeto_id}, f'Error: {e}')
+            logger.error(f"❌ Erro ao criar orientação: {e}")
+            raise
+
+
+    def remover_orientacao(self, orientador_id, projeto_id):
+        """
+        Remove associação orientador-projeto
+
+        Args:
+            orientador_id: ID do orientador
+            projeto_id: ID do projeto
+
+        Returns:
+            bool: True se sucesso
+        """
+        logger.info(f"🗑️ Removendo orientação: Orientador {orientador_id} -> Projeto {projeto_id}")
+
+        try:
+            result = self.supabase.table('orientadores_projetos')\
+                .delete()\
+                .eq('orientador_id', orientador_id)\
+                .eq('projeto_id', projeto_id)\
+                .execute()
+
+            log_database_operation('DELETE', 'orientadores_projetos', {'orientador': orientador_id, 'projeto': projeto_id}, 'Success')
+            logger.info("✅ Orientação removida")
+            return bool(result.data)
+            
+        except Exception as e:
+            log_database_operation('DELETE', 'orientadores_projetos', {'orientador': orientador_id, 'projeto': projeto_id}, f'Error: {e}')
+            logger.error(f"❌ Erro ao remover orientação: {e}")
+            raise
+
+
+    def listar_orientacoes_completas(self):
+        """
+        Lista todas orientações com dados completos
+
+        Returns:
+            list: Lista de orientações com dados de orientador, participante e projeto
+        """
+        logger.debug("📋 Listando orientações completas")
+
+        try:
+            # Busca todas as orientações
+            result = self.supabase.table('orientadores_projetos')\
+                .select('orientador_id, projeto_id')\
+                .execute()
+
+            if not result.data:
+                return []
+
+            orientacoes = []
+
+            for row in result.data:
+                orientador_id = row['orientador_id']
+                projeto_id = row['projeto_id']
+
+                # Busca dados do orientador
+                orientador = self.buscar_usuario_por_id(orientador_id)
+                if not orientador:
+                    continue
+                    
+                # Busca dados do projeto
+                projeto = self.buscar_projeto_por_id(projeto_id)
+                if not projeto:
+                    continue
+                    
+                # Busca participantes do projeto
+                participantes = self.listar_participantes_por_projeto(projeto_id)
+                
+            # Para cada participante, cria uma entrada
+                if participantes:
+                    for participante in participantes:
+                        orientacoes.append({
+                            'id': f"{orientador_id}-{projeto_id}-{participante.id}",
+                            'orientador_id': orientador_id,
+                            'orientador_nome': orientador.nome_completo,
+                            'orientador_email': orientador.email,
+                            'participante_id': participante.id,
+                            'participante_nome': participante.nome_completo,
+                            'participante_bp': participante.numero_inscricao,
+                            'projeto_id': projeto_id,
+                            'projeto_nome': projeto.nome,
+                            'projeto_categoria': projeto.categoria
+                        })
+                else:
+                    # Projeto sem participantes ainda
+                    orientacoes.append({
+                        'id': f"{orientador_id}-{projeto_id}",
+                        'orientador_id': orientador_id,
+                        'orientador_nome': orientador.nome_completo,
+                        'orientador_email': orientador.email,
+                        'participante_id': None,
+                        'participante_nome': '(Sem participantes)',
+                        'participante_bp': '-',
+                        'projeto_id': projeto_id,
+                        'projeto_nome': projeto.nome,
+                        'projeto_categoria': projeto.categoria
+                    })
+
+            logger.info(f"✅ {len(orientacoes)} orientações encontradas")
+            return orientacoes
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao listar orientações: {e}")
+            return []
+
+
+    def listar_projetos_por_orientador(self, orientador_id):
+        """
+        Lista projetos de um orientador
+
+        Args:
+            orientador_id: ID do orientador
+
+        Returns:
+            list: Lista de projetos
+        """
+        logger.debug(f"📚 Buscando projetos do orientador {orientador_id}")
+
+        try:
+            result = self.supabase.table('orientadores_projetos')\
+                .select('projeto_id')\
+                .eq('orientador_id', orientador_id)\
+                .execute()
+
+            if not result.data:
+                return []
+
+            projeto_ids = [row['projeto_id'] for row in result.data]
+
+            projetos = []
+            for pid in projeto_ids:
+                projeto = self.buscar_projeto_por_id(pid)
+                if projeto:
+                    projetos.append(projeto)
+
+            return projetos
+
+        except Exception as e:
+            logger.error(f"❌ Erro ao buscar projetos: {e}")
+            return []
