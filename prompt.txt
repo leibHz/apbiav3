@@ -1,3 +1,133 @@
 ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira pode revisar ele e corrigr os bugs que achar por favor?
 
-sabe, pode ver que o orientador tem ia propria, esse nn era o plano inicial, alem da ia ja implementada, o orientador poderia acessar o historico de chats dos seus orientados e adicionar notas, o orientador saberia se ele usou o modo google search ou o modo contexto da bragantec, e poder asdicionar notas nas respostas da IA, alem disso, na hora do login, poder adicionar um apelido e a IA ter conhecimento dessse apelido chamar o usuario por esse apelido, pode implementar essas coisas que falta por favor?, o banco de dados caso precise, eu copiei o sql da supabase que é como da pra ver no codigo, onde ele esta hospedado
+pode rervisar e corrigir os bugs que achar por favor? depois, vc pode ver que a assosiação entre oriaentadores e participantes (seus orientados) é feita de forma manual no banco de dados, pode arrumar iosso e fazer ele ser feito pelo painel adiministrativo por favor?
+
+o sql do banco de dados caso precise
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
+
+CREATE TABLE public.arquivos_chat (
+  id integer NOT NULL DEFAULT nextval('arquivos_chat_id_seq'::regclass),
+  chat_id integer NOT NULL,
+  nome_arquivo character varying NOT NULL,
+  url_arquivo character varying NOT NULL,
+  tipo_arquivo character varying,
+  tamanho_bytes bigint,
+  data_upload timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  mensagem_id bigint,
+  gemini_file_uri text,
+  gemini_file_name text,
+  gemini_expiration timestamp without time zone,
+  CONSTRAINT arquivos_chat_pkey PRIMARY KEY (id),
+  CONSTRAINT arquivos_chat_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id),
+  CONSTRAINT arquivos_chat_mensagem_id_fkey FOREIGN KEY (mensagem_id) REFERENCES public.mensagens(id)
+);
+CREATE TABLE public.chats (
+  id integer NOT NULL DEFAULT nextval('chats_id_seq'::regclass),
+  usuario_id integer NOT NULL,
+  tipo_ia_id integer NOT NULL,
+  titulo character varying NOT NULL,
+  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT chats_pkey PRIMARY KEY (id),
+  CONSTRAINT chats_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id),
+  CONSTRAINT chats_tipo_ia_id_fkey FOREIGN KEY (tipo_ia_id) REFERENCES public.tipos_ia(id)
+);
+CREATE TABLE public.ferramentas_chat (
+  id integer NOT NULL DEFAULT nextval('ferramentas_chat_id_seq'::regclass),
+  chat_id integer NOT NULL,
+  nome_ferramenta character varying NOT NULL,
+  CONSTRAINT ferramentas_chat_pkey PRIMARY KEY (id),
+  CONSTRAINT ferramentas_chat_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
+);
+CREATE TABLE public.mensagens (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  chat_id bigint NOT NULL,
+  role character varying NOT NULL CHECK (role::text = ANY (ARRAY['user'::character varying, 'model'::character varying]::text[])),
+  conteudo text NOT NULL,
+  thinking_process text,
+  data_envio timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  ferramenta_usada character varying,
+  CONSTRAINT mensagens_pkey PRIMARY KEY (id),
+  CONSTRAINT mensagens_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
+);
+CREATE TABLE public.notas_orientador (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  mensagem_id bigint NOT NULL,
+  orientador_id integer NOT NULL,
+  nota text NOT NULL,
+  data_criacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  data_atualizacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT notas_orientador_pkey PRIMARY KEY (id),
+  CONSTRAINT notas_orientador_mensagem_id_fkey FOREIGN KEY (mensagem_id) REFERENCES public.mensagens(id),
+  CONSTRAINT notas_orientador_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id)
+);
+CREATE TABLE public.orientadores_projetos (
+  orientador_id integer NOT NULL,
+  projeto_id integer NOT NULL,
+  CONSTRAINT orientadores_projetos_pkey PRIMARY KEY (orientador_id, projeto_id),
+  CONSTRAINT orientadores_projetos_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id)
+);
+CREATE TABLE public.participantes_projetos (
+  participante_id integer NOT NULL,
+  projeto_id integer NOT NULL,
+  CONSTRAINT participantes_projetos_pkey PRIMARY KEY (participante_id, projeto_id),
+  CONSTRAINT participantes_projetos_participante_id_fkey FOREIGN KEY (participante_id) REFERENCES public.usuarios(id)
+);
+CREATE TABLE public.projetos (
+  id integer NOT NULL DEFAULT nextval('projetos_id_seq'::regclass),
+  nome character varying NOT NULL,
+  categoria character varying NOT NULL,
+  resumo text,
+  palavras_chave text,
+  introducao text,
+  objetivo_geral text,
+  objetivos_especificos ARRAY,
+  metodologia text,
+  cronograma jsonb,
+  resultados_esperados text,
+  referencias_bibliograficas text,
+  eh_continuacao boolean DEFAULT false,
+  projeto_anterior_titulo character varying,
+  projeto_anterior_resumo text,
+  projeto_anterior_inicio date,
+  projeto_anterior_termino date,
+  status character varying DEFAULT 'rascunho'::character varying,
+  ano_edicao integer NOT NULL DEFAULT 2025,
+  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  data_atualizacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  gerado_por_ia boolean DEFAULT false,
+  prompt_ia_usado text,
+  CONSTRAINT projetos_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.tipos_ia (
+  id integer NOT NULL DEFAULT nextval('tipos_ia_id_seq'::regclass),
+  nome character varying NOT NULL UNIQUE,
+  CONSTRAINT tipos_ia_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.tipos_usuario (
+  id integer NOT NULL DEFAULT nextval('tipos_usuario_id_seq'::regclass),
+  nome character varying NOT NULL UNIQUE,
+  CONSTRAINT tipos_usuario_pkey PRIMARY KEY (id)
+);
+CREATE TABLE public.usuarios (
+  id integer NOT NULL DEFAULT nextval('usuarios_id_seq'::regclass),
+  nome_completo character varying NOT NULL,
+  email character varying NOT NULL UNIQUE,
+  senha_hash character varying,
+  tipo_usuario_id integer NOT NULL,
+  numero_inscricao character varying UNIQUE,
+  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  data_atualizacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  apelido character varying,
+  CONSTRAINT usuarios_pkey PRIMARY KEY (id),
+  CONSTRAINT usuarios_tipo_usuario_id_fkey FOREIGN KEY (tipo_usuario_id) REFERENCES public.tipos_usuario(id)
+);
+CREATE TABLE public.visualizacoes_orientador (
+  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
+  orientador_id integer NOT NULL,
+  chat_id integer NOT NULL,
+  data_visualizacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT visualizacoes_orientador_pkey PRIMARY KEY (id),
+  CONSTRAINT visualizacoes_orientador_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id),
+  CONSTRAINT visualizacoes_orientador_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
+);
