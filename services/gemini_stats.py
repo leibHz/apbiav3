@@ -62,6 +62,9 @@ class GeminiStats:
         """
         with self.lock:
             now = datetime.now()
+            
+            tokens_input = int(tokens_input or 0)
+            tokens_output = int(tokens_output or 0)
             total_tokens = tokens_input + tokens_output
             
             # Registra por usuário
