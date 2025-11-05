@@ -5,6 +5,7 @@ COM MODO BRAGANTEC OPCIONAL para reduzir consumo de tokens
 
 from google import genai
 from google.genai import types
+from google.genai.types import CountTokensConfig, Content, Part
 import os
 import time
 from config import Config
@@ -382,7 +383,10 @@ class GeminiService:
                 'thinking_process': thinking_process,
                 'search_used': search_used,
                 'code_executed': code_executed,
-                'code_results': code_results if code_results else None
+                'code_results': code_results if code_results else None,
+                'tokens_input': tokens_input,
+                'tokens_output': tokens_output,
+                'total_tokens': tokens_input + tokens_output
             }
             
         except Exception as e:
@@ -397,7 +401,10 @@ class GeminiService:
                 'error': True,
                 'search_used': False,
                 'code_executed': False,
-                'code_results': None
+                'code_results': None,
+                'tokens_input': 0,
+                'tokens_output': 0,
+                'total_tokens': 0
             }
     
     def upload_file(self, file_path):
@@ -554,31 +561,49 @@ class GeminiService:
     
     def count_tokens(self, text):
         """
-        Conta tokens
-        
+        ✅ CORRIGIDO: Conta tokens usando a API correta do Gemini
+
         Ref: https://ai.google.dev/api/tokens
-        
+
         Args:
             text: Texto
-        
+    
         Returns:
             int: Número de tokens
         """
         try:
-            response = self.client.models.generate_content(
+            # ✅ CORREÇÃO: Usa count_tokens_request ao invés de generate_content
+        
+            # Cria conteúdo para contar
+            contents = [
+                Content(
+                    parts=[Part(text=text)],
+                    role='user'
+                )
+            ]
+        
+            # ✅ Método CORRETO para contar tokens
+            result = self.client.models.count_tokens(
                 model=self.model_name,
-                contents=text,
-                config=types.GenerateContentConfig(max_output_tokens=1)
+                contents=contents
             )
-            
-            if hasattr(response, 'usage_metadata'):
-                return response.usage_metadata.prompt_token_count
-            
-            return 0
+        
+            # Retorna contagem total
+            token_count = result.total_tokens
+        
+            logger.info(f"📊 Contagem de tokens: {token_count} tokens para {len(text)} caracteres")
+        
+            return token_count
+        
         except Exception as e:
-            logger.warning(f"⚠️ Erro ao contar tokens: {e}")
-            # Fallback: 1 token ≈ 4 caracteres
-            return len(text) // 4
+            logger.warning(f"⚠️ Erro ao contar tokens via API: {e}")
+            logger.info("💡 Usando fallback: 1 token ≈ 4 caracteres")
+        
+            # Fallback: estimativa aproximada
+            # Em português, geralmente 1 token ≈ 4 caracteres
+            estimated_tokens = max(1, len(text) // 4)
+        
+            return estimated_tokens
     
     def get_stats(self):
         """Retorna estatísticas atuais"""

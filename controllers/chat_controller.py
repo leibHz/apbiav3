@@ -201,6 +201,19 @@ Resumo: {projeto.resumo or 'Não informado'}
             apelido=apelido  # ✅ NOVO
         )
 
+        # ✅ NOVO: Extrai contagem de tokens se disponível
+        tokens_input = response.get('tokens_input', 0)
+        tokens_output = response.get('tokens_output', 0)
+
+        # Log de consumo
+        if tokens_input or tokens_output:
+            logger.info(f"📊 Tokens - Input: {tokens_input:,} | Output: {tokens_output:,}")
+            
+            # ✅ Alerta se consumo muito alto
+            if tokens_input > 100000:
+                logger.warning(f"⚠️ ALTO CONSUMO DE INPUT: {tokens_input:,} tokens!")
+                logger.warning(f"💡 Usuário {current_user.id} - Modo Bragantec: {usar_contexto_bragantec}")
+
         if response.get('error'):
             return jsonify({
                 'error': True,
@@ -237,7 +250,11 @@ Resumo: {projeto.resumo or 'Não informado'}
             'chat_id': chat_id,
             'search_used': response.get('search_used', False),
             'code_executed': response.get('code_executed', False),
-            'code_results': response.get('code_results')
+            'code_results': response.get('code_results'),
+            # ✅ NOVO: Retorna contagem de tokens
+            'tokens_input': tokens_input,
+            'tokens_output': tokens_output,
+            'total_tokens': tokens_input + tokens_output
         })
 
     except Exception as e:

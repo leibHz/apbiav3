@@ -178,6 +178,23 @@ async function handleSendMessage(e) {
         showThinking(false);
         
         if (data.success) {
+            // NOVO: Armazena uso de tokens
+            if (data.tokens_input || data.tokens_output) {
+                window.lastTokenUsage = {
+                    input: data.tokens_input,
+                    output: data.tokens_output
+                };
+            }
+            
+            // NOVO: Alerta se consumo muito alto
+            if (data.tokens_input && data.tokens_input > 100000) {
+                APBIA.showNotification(
+                    `⚠️ Alto consumo de tokens: ${data.tokens_input.toLocaleString('pt-BR')} tokens de entrada!\n` +
+                    `Dica: Desative o Modo Bragantec se não precisar do histórico completo.`,
+                    'warning'
+                );
+            }
+            
             // Log para debug
             console.log('📦 Resposta recebida:', {
                 code_executed: data.code_executed,
@@ -437,6 +454,34 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
             </small>
         `;
         messageDiv.appendChild(searchBadge);
+    }
+    
+    // NOVO: Badge de consumo de tokens (se disponível)
+    if (role === 'assistant' && window.lastTokenUsage) {
+        const tokenBadge = document.createElement('div');
+        tokenBadge.className = 'mt-2';
+        
+        const inputTokens = window.lastTokenUsage.input || 0;
+        const outputTokens = window.lastTokenUsage.output || 0;
+        const totalTokens = inputTokens + outputTokens;
+        
+        // Alerta visual se consumo muito alto
+        const alertClass = inputTokens > 100000 ? 'bg-danger' : 
+                          inputTokens > 50000 ? 'bg-warning' : 'bg-info';
+        
+        tokenBadge.innerHTML = `
+            <small class="badge ${alertClass}">
+                <i class="fas fa-coins"></i> 
+                ${totalTokens.toLocaleString('pt-BR')} tokens
+                (↑${inputTokens.toLocaleString('pt-BR')} ↓${outputTokens.toLocaleString('pt-BR')})
+                ${inputTokens > 100000 ? ' ⚠️ Alto consumo!' : ''}
+            </small>
+        `;
+        
+        messageDiv.appendChild(tokenBadge);
+        
+        // Limpa para próxima mensagem
+        delete window.lastTokenUsage;
     }
     
     // Timestamp

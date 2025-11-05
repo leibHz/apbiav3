@@ -558,3 +558,118 @@ def remover_orientacao():
             'error': True,
             'message': str(e)
         }), 500
+        
+@admin_bp.route('/stats-api')
+@admin_required
+def stats_api():
+    """
+    API que retorna estatísticas do sistema
+    """
+    try:
+        # Conta conversas totais
+        chats_result = dao.supabase.table('chats').select('id', count='exact').execute()
+        total_chats = chats_result.count if hasattr(chats_result, 'count') else 0
+        
+        # Conta mensagens totais
+        msgs_result = dao.supabase.table('mensagens').select('id', count='exact').execute()
+        total_mensagens = msgs_result.count if hasattr(msgs_result, 'count') else 0
+        
+        # Conta usuários ativos (com chats)
+        usuarios_com_chats = dao.supabase.table('chats')\
+            .select('usuario_id')\
+            .execute()
+        
+        usuarios_unicos = len(set(row['usuario_id'] for row in usuarios_com_chats.data)) if usuarios_com_chats.data else 0
+        
+        # Conta projetos
+        projetos_result = dao.supabase.table('projetos').select('id', count='exact').execute()
+        total_projetos = projetos_result.count if hasattr(projetos_result, 'count') else 0
+        
+        # Estatísticas Gemini (últimas 24h)
+        gemini_global = gemini_stats.get_global_stats()
+        
+        return jsonify({
+            'success': True,
+            'conversas': total_chats,
+            'mensagens': total_mensagens,
+            'usuarios_ativos': usuarios_unicos,
+            'projetos': total_projetos,
+            'gemini_requests_24h': gemini_global.get('requests_24h', 0),
+            'gemini_tokens_24h': gemini_global.get('tokens_24h', 0),
+            'gemini_unique_users': gemini_global.get('unique_users_24h', 0),
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao obter estatísticas: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/test-gemini')
+@admin_required
+def test_gemini():
+    """
+    Testa conexão com Gemini API
+    """
+    try:
+        from services.gemini_service import GeminiService
+        
+        gemini = GeminiService()
+        
+        # Envia mensagem de teste simples
+        response = gemini.chat(
+            "Teste de conexão. Responda apenas: OK",
+            tipo_usuario='participante',
+            usar_contexto_bragantec=False
+        )
+        
+        if response.get('error'):
+            return jsonify({
+                'success': False,
+                'message': response.get('response', 'Erro desconhecido')
+            })
+        
+        return jsonify({
+            'success': True,
+            'message': 'Gemini funcionando corretamente',
+            'response': response.get('response', '')
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao testar Gemini: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Erro: {str(e)}'
+        }), 500
+
+
+@admin_bp.route('/test-db')
+@admin_required
+def test_db():
+    """
+    Testa conexão com banco de dados
+    """
+    try:
+        # Tenta fazer uma query simples
+        result = dao.supabase.table('usuarios').select('id').limit(1).execute()
+        
+        if result:
+            return jsonify({
+                'success': True,
+                'message': 'Banco de dados funcionando',
+                'rows': len(result.data) if result.data else 0
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Nenhum resultado retornado'
+            })
+        
+    except Exception as e:
+        logger.error(f"Erro ao testar DB: {e}")
+        return jsonify({
+            'success': False,
+            'message': f'Erro: {str(e)}'
+        }), 500

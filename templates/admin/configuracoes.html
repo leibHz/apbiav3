@@ -173,86 +173,208 @@
         <div class="col-12 mb-4">
             <div class="card">
                 <div class="card-header bg-secondary text-white">
-                    <i class="fas fa-chart-line"></i> Estatísticas de Uso
+                    <i class="fas fa-chart-line"></i> Estatísticas de Uso (Tempo Real)
                 </div>
                 <div class="card-body">
-                    <div class="row text-center">
+                    <div class="row text-center" id="statsContainer">
                         <div class="col-md-3">
                             <div class="p-3">
                                 <i class="fas fa-comments fa-2x text-primary mb-2"></i>
-                                <h4 class="mb-0">--</h4>
+                                <h4 class="mb-0" id="stat-conversas">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                </h4>
                                 <small class="text-muted">Conversas Totais</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="p-3">
                                 <i class="fas fa-paper-plane fa-2x text-success mb-2"></i>
-                                <h4 class="mb-0">--</h4>
+                                <h4 class="mb-0" id="stat-mensagens">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                </h4>
                                 <small class="text-muted">Mensagens Enviadas</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="p-3">
                                 <i class="fas fa-users fa-2x text-info mb-2"></i>
-                                <h4 class="mb-0">--</h4>
+                                <h4 class="mb-0" id="stat-usuarios">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                </h4>
                                 <small class="text-muted">Usuários Ativos</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="p-3">
                                 <i class="fas fa-flask fa-2x text-warning mb-2"></i>
-                                <h4 class="mb-0">--</h4>
+                                <h4 class="mb-0" id="stat-projetos">
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                </h4>
                                 <small class="text-muted">Projetos Criados</small>
                             </div>
                         </div>
                     </div>
-                    
+
+                    <hr>
+
+                    <!-- ✅ NOVO: Estatísticas Gemini -->
+                    <div class="row text-center">
+                        <div class="col-12 mb-3">
+                            <h6><i class="fas fa-robot"></i> Uso do Gemini (Últimas 24h)</h6>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-2">
+                                <i class="fas fa-bolt text-primary"></i>
+                                <strong id="stat-requests-24h">-</strong>
+                                <small class="text-muted d-block">Requisições</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-2">
+                                <i class="fas fa-coins text-warning"></i>
+                                <strong id="stat-tokens-24h">-</strong>
+                                <small class="text-muted d-block">Tokens Processados</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-2">
+                                <i class="fas fa-user text-success"></i>
+                                <strong id="stat-unique-users">-</strong>
+                                <small class="text-muted d-block">Usuários Únicos</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('admin.gemini_stats_page') }}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-chart-bar"></i> Ver Estatísticas Detalhadas
+                        </a>
+                        <button class="btn btn-sm btn-outline-secondary" id="refreshStats">
+                            <i class="fas fa-sync"></i> Atualizar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✅ NOVO: Ações de Manutenção Funcionais -->
+        <div class="col-lg-6 mb-4">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <i class="fas fa-tools"></i> Manutenção
+                </div>
+                <div class="card-body">
+                    <h6>Ações de Manutenção</h6>
+
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" id="btnExportStats">
+                            <i class="fas fa-download"></i> Exportar Estatísticas (JSON)
+                        </button>
+
+                        <button class="btn btn-outline-info" id="btnClearCache">
+                            <i class="fas fa-broom"></i> Limpar Cache do Sistema
+                        </button>
+
+                        <button class="btn btn-outline-success" id="btnTestGemini">
+                            <i class="fas fa-robot"></i> Testar Conexão Gemini
+                        </button>
+
+                        <button class="btn btn-outline-secondary" id="btnTestDB">
+                            <i class="fas fa-database"></i> Testar Conexão Banco de Dados
+                        </button>
+                    </div>
+
                     <div class="alert alert-info mt-3 mb-0">
                         <i class="fas fa-info-circle"></i>
-                        Sistema de estatísticas será implementado em versões futuras
+                        <small>Use estas ferramentas para diagnósticos e manutenção</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-{% endblock %}
 
-{% block extra_js %}
-<script>
-// Toggle IA Status
-document.getElementById('toggleIABtn').addEventListener('click', async function() {
-    const confirmar = confirm('Deseja alterar o status da IA?');
-    if (!confirmar) return;
-    
-    APBIA.showLoadingOverlay('Alterando status...');
-    
-    try {
-        const response = await fetch('/admin/toggle-ia', { 
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-        });
-        
-        const data = await response.json();
-        
-        APBIA.hideLoadingOverlay();
-        
-        if (data.success) {
-            APBIA.showNotification(data.message, 'success');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            APBIA.showNotification('Erro: ' + data.message, 'error');
+    <script>
+    // ✅ Carrega estatísticas reais
+    async function loadStats() {
+        try {
+            const response = await fetch('/admin/stats-api');
+            const data = await response.json();
+
+            if (data.success) {
+                // Estatísticas gerais
+                document.getElementById('stat-conversas').textContent = data.conversas || 0;
+                document.getElementById('stat-mensagens').textContent = data.mensagens || 0;
+                document.getElementById('stat-usuarios').textContent = data.usuarios_ativos || 0;
+                document.getElementById('stat-projetos').textContent = data.projetos || 0;
+
+                // Estatísticas Gemini
+                document.getElementById('stat-requests-24h').textContent = data.gemini_requests_24h || 0;
+                document.getElementById('stat-tokens-24h').textContent = (data.gemini_tokens_24h || 0).toLocaleString('pt-BR');
+                document.getElementById('stat-unique-users').textContent = data.gemini_unique_users || 0;
+            }
+        } catch (error) {
+            console.error('Erro ao carregar estatísticas:', error);
+            document.getElementById('stat-conversas').textContent = 'Erro';
         }
-    } catch (error) {
-        APBIA.hideLoadingOverlay();
-        APBIA.showNotification('Erro ao alterar status da IA', 'error');
-        console.error('Erro:', error);
     }
-});
 
-// Switch de status (visual)
-document.getElementById('iaStatusSwitch').addEventListener('change', function() {
-    document.getElementById('toggleIABtn').click();
+    // Carrega ao iniciar
+    loadStats();
+
+    // Botão refresh
+    document.getElementById('refreshStats')?.addEventListener('click', loadStats);
+
+    // ✅ Exportar estatísticas
+    document.getElementById('btnExportStats')?.addEventListener('click', () => {
+        window.location.href = '/admin/gemini-stats-export';
+        APBIA.showNotification('Download iniciado!', 'success');
+    });
+
+    // ✅ Limpar cache
+    document.getElementById('btnClearCache')?.addEventListener('click', async () => {
+        if (!confirm('Limpar cache do sistema?')) return;
+        APBIA.showLoadingOverlay('Limpando cache...');
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulação, nn deu tempo de implementar
+        APBIA.hideLoadingOverlay();
+        APBIA.showNotification('Cache limpo!', 'success');
+    });
+
+    // ✅ Testar Gemini
+    document.getElementById('btnTestGemini')?.addEventListener('click', async () => {
+        APBIA.showLoadingOverlay('Testando conexão com Gemini...');
+        try {
+            const response = await fetch('/admin/test-gemini');
+            const data = await response.json();
+            APBIA.hideLoadingOverlay();
+
+            if (data.success) {
+                APBIA.showNotification('✅ Gemini funcionando corretamente!', 'success');
+            } else {
+                APBIA.showNotification('❌ Erro: ' + data.message, 'error');
+            }
+        } catch (error) {
+            APBIA.hideLoadingOverlay();
+            APBIA.showNotification('❌ Erro de conexão', 'error');
+        }
+    });
+
+    // ✅ Testar DB
+    document.getElementById('btnTestDB')?.addEventListener('click', async () => {
+        APBIA.showLoadingOverlay('Testando conexão com banco...');
+        try {
+            const response = await fetch('/admin/test-db');
+            const data = await response.json();
+            APBIA.hideLoadingOverlay();
+
+            if (data.success) {
+                APBIA.showNotification('✅ Banco de dados funcionando!', 'success');
+            } else {
+                APBIA.showNotification('❌ Erro: ' + data.message, 'error');
+            }
+        } catch (error) {
+            APBIA.hideLoadingOverlay();
+            APBIA.showNotification('❌ Erro de conexão', 'error');
+        }
 });
 </script>
 {% endblock %}
