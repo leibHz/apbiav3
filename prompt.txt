@@ -1,6 +1,14 @@
 ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira pode revisar ele e corrigr os bugs que achar por favor?
 
-pode rervisar e corrigir os bugs que achar por favor? depois, vc pode ver que a assosiação entre oriaentadores e participantes (seus orientados) é feita de forma manual no banco de dados, pode arrumar iosso e fazer ele ser feito pelo painel adiministrativo por favor?
+pode rervisar e corrigir os bugs que achar por favor? esta dando um erro quando envio uma mensagem como pode ver pelas prints, arrume ele por favor
+os logs do erro: ❌ Erro: Traceback (most recent call last):
+  File "C:\Users\Aluno\Desktop\apbia\apbiav3\controllers\chat_controller.py", line 230, in send_message
+    logger.info(f"🔧 Ferramentas usadas: {ferramentas_usadas}")
+    ^^^^^^
+NameError: name 'logger' is not defined
+
+2025-11-05 15:11:53 | INFO | APBIA | _log_with_context:116 | ❌ RESPONSE | endpoint=chat.send_message | status=500 | duration=4910.67ms | method=POST | path=/chat/send | ip=127.0.0.1
+127.0.0.1 - - [05/Nov/2025 15:11:53] "POST /chat/send HTTP/1.1" 500 -
 
 o sql do banco de dados caso precise
 -- WARNING: This schema is for context only and is not meant to be run.

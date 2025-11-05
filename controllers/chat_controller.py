@@ -13,6 +13,7 @@ import os
 import uuid
 from datetime import datetime
 from utils.rate_limiter import rate_limiter
+from utils.advanced_logger import logger
 
 chat_bp = Blueprint('chat', __name__)
 dao = SupabaseDAO()
