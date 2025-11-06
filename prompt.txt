@@ -1,6 +1,8 @@
 ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira pode revisar ele e corrigr os bugs que achar por favor?
 
-pode rervisar e corrigir os bugs que achar por favor? preciso tambem que termine de implementar a tela de configurações do adiministrador que esta com algumas partes faltando, tambem preciso que revise o contador de tokens pois tenho quase certeza que esta contando os tokens errado (mandie um "oi" e bateu 1k de tokens, isso nn esta certo)
+pode rervisar e corrigir os bugs que achar por favor? preciso tambem que termine de implementar a tela de configurações do adiministrador que esta com alguns bugs, como o exportar configuraçoies como json que nn esta funcionando (aparece que ele foi exportado com susseso, mas o download do arquivo nn é inciado), e remover o botão de limpar cache pois nn ascho ele nessesario
+
+preciso tambem separar o css e javascript em arquivos separados, algumas paginas html do meu site tao com o JS e o CSS juntos no mesmo arquvio, oq atrapalha a organização, separe tudo em arquivos separados por favor
 
 o sql do banco de dados caso precise
 -- WARNING: This schema is for context only and is not meant to be run.

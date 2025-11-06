@@ -7,6 +7,8 @@ from services.gemini_stats import gemini_stats  # ✅ CORREÇÃO
 from utils.advanced_logger import logger  # ✅ ADICIONE ESTA LINHA
 from datetime import datetime  # ✅ ADICIONE ESTA LINHA TAMBÉM (você usa no código)
 import traceback  
+import json
+
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 dao = SupabaseDAO()
@@ -380,31 +382,30 @@ def gemini_stats_all_users():
 @admin_required
 def gemini_stats_export():
     """
-    Exporta todas as estatísticas em JSON
+    ✅ CORRIGIDO: Exporta estatísticas em JSON com headers corretos
     """
     try:
         export_data = gemini_stats.export_stats()
         
-        from flask import Response
-        import json
+        # Gera nome do arquivo com timestamp
+        filename = f'gemini_stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
         
-        # Gera arquivo JSON para download
-        json_data = json.dumps(export_data, indent=2, ensure_ascii=False)
-        
+        # ✅ CORREÇÃO: Usar Response com headers corretos
         return Response(
-            json_data,
+            export_data,
             mimetype='application/json',
             headers={
-                'Content-Disposition': f'attachment; filename=gemini_stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
+                'Content-Disposition': f'attachment; filename={filename}',
+                'Content-Type': 'application/json; charset=utf-8'
             }
         )
         
     except Exception as e:
+        logger.error(f"❌ Erro ao exportar estatísticas: {e}")
         return jsonify({
             'error': True,
-            'message': f'Erro ao exportar estatísticas: {str(e)}'
+            'message': f'Erro ao exportar: {str(e)}'
         }), 500
-
 
 @admin_bp.route('/gemini-stats-reset/<int:user_id>', methods=['POST'])
 @admin_required

@@ -2,6 +2,10 @@
 
 {% block title %}Configurações - APBIA{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_config.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row mb-4">
@@ -138,32 +142,32 @@
             </div>
         </div>
         
-        <!-- Backup e Manutenção -->
+        <!-- ✅ Ferramentas de Manutenção (SEM botão de limpar cache) -->
         <div class="col-lg-6 mb-4">
             <div class="card">
                 <div class="card-header bg-warning">
-                    <i class="fas fa-tools"></i> Manutenção
+                    <i class="fas fa-tools"></i> Ferramentas de Manutenção
                 </div>
                 <div class="card-body">
-                    <h6>Ações de Manutenção</h6>
-                    
+                    <h6>Diagnósticos e Testes</h6>
+
                     <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary" disabled>
-                            <i class="fas fa-database"></i> Backup do Banco de Dados
+                        <button class="btn btn-outline-primary" id="btnExportStats">
+                            <i class="fas fa-download"></i> Exportar Estatísticas (JSON)
                         </button>
-                        
-                        <button class="btn btn-outline-info" disabled>
-                            <i class="fas fa-broom"></i> Limpar Logs Antigos
+
+                        <button class="btn btn-outline-success" id="btnTestGemini">
+                            <i class="fas fa-robot"></i> Testar Conexão Gemini
                         </button>
-                        
-                        <button class="btn btn-outline-secondary" disabled>
-                            <i class="fas fa-sync"></i> Verificar Atualizações
+
+                        <button class="btn btn-outline-secondary" id="btnTestDB">
+                            <i class="fas fa-database"></i> Testar Conexão Banco de Dados
                         </button>
                     </div>
-                    
+
                     <div class="alert alert-info mt-3 mb-0">
                         <i class="fas fa-info-circle"></i>
-                        <small>Funcionalidades em desenvolvimento</small>
+                        <small>Use estas ferramentas para verificar o status do sistema</small>
                     </div>
                 </div>
             </div>
@@ -217,7 +221,7 @@
 
                     <hr>
 
-                    <!-- ✅ NOVO: Estatísticas Gemini -->
+                    <!-- Estatísticas Gemini -->
                     <div class="row text-center">
                         <div class="col-12 mb-3">
                             <h6><i class="fas fa-robot"></i> Uso do Gemini (Últimas 24h)</h6>
@@ -256,125 +260,10 @@
                 </div>
             </div>
         </div>
-
-        <!-- ✅ NOVO: Ações de Manutenção Funcionais -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header bg-warning">
-                    <i class="fas fa-tools"></i> Manutenção
-                </div>
-                <div class="card-body">
-                    <h6>Ações de Manutenção</h6>
-
-                    <div class="d-grid gap-2">
-                        <button class="btn btn-outline-primary" id="btnExportStats">
-                            <i class="fas fa-download"></i> Exportar Estatísticas (JSON)
-                        </button>
-
-                        <button class="btn btn-outline-info" id="btnClearCache">
-                            <i class="fas fa-broom"></i> Limpar Cache do Sistema
-                        </button>
-
-                        <button class="btn btn-outline-success" id="btnTestGemini">
-                            <i class="fas fa-robot"></i> Testar Conexão Gemini
-                        </button>
-
-                        <button class="btn btn-outline-secondary" id="btnTestDB">
-                            <i class="fas fa-database"></i> Testar Conexão Banco de Dados
-                        </button>
-                    </div>
-
-                    <div class="alert alert-info mt-3 mb-0">
-                        <i class="fas fa-info-circle"></i>
-                        <small>Use estas ferramentas para diagnósticos e manutenção</small>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
+</div>
+{% endblock %}
 
-    <script>
-    // ✅ Carrega estatísticas reais
-    async function loadStats() {
-        try {
-            const response = await fetch('/admin/stats-api');
-            const data = await response.json();
-
-            if (data.success) {
-                // Estatísticas gerais
-                document.getElementById('stat-conversas').textContent = data.conversas || 0;
-                document.getElementById('stat-mensagens').textContent = data.mensagens || 0;
-                document.getElementById('stat-usuarios').textContent = data.usuarios_ativos || 0;
-                document.getElementById('stat-projetos').textContent = data.projetos || 0;
-
-                // Estatísticas Gemini
-                document.getElementById('stat-requests-24h').textContent = data.gemini_requests_24h || 0;
-                document.getElementById('stat-tokens-24h').textContent = (data.gemini_tokens_24h || 0).toLocaleString('pt-BR');
-                document.getElementById('stat-unique-users').textContent = data.gemini_unique_users || 0;
-            }
-        } catch (error) {
-            console.error('Erro ao carregar estatísticas:', error);
-            document.getElementById('stat-conversas').textContent = 'Erro';
-        }
-    }
-
-    // Carrega ao iniciar
-    loadStats();
-
-    // Botão refresh
-    document.getElementById('refreshStats')?.addEventListener('click', loadStats);
-
-    // ✅ Exportar estatísticas
-    document.getElementById('btnExportStats')?.addEventListener('click', () => {
-        window.location.href = '/admin/gemini-stats-export';
-        APBIA.showNotification('Download iniciado!', 'success');
-    });
-
-    // ✅ Limpar cache
-    document.getElementById('btnClearCache')?.addEventListener('click', async () => {
-        if (!confirm('Limpar cache do sistema?')) return;
-        APBIA.showLoadingOverlay('Limpando cache...');
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulação, nn deu tempo de implementar
-        APBIA.hideLoadingOverlay();
-        APBIA.showNotification('Cache limpo!', 'success');
-    });
-
-    // ✅ Testar Gemini
-    document.getElementById('btnTestGemini')?.addEventListener('click', async () => {
-        APBIA.showLoadingOverlay('Testando conexão com Gemini...');
-        try {
-            const response = await fetch('/admin/test-gemini');
-            const data = await response.json();
-            APBIA.hideLoadingOverlay();
-
-            if (data.success) {
-                APBIA.showNotification('✅ Gemini funcionando corretamente!', 'success');
-            } else {
-                APBIA.showNotification('❌ Erro: ' + data.message, 'error');
-            }
-        } catch (error) {
-            APBIA.hideLoadingOverlay();
-            APBIA.showNotification('❌ Erro de conexão', 'error');
-        }
-    });
-
-    // ✅ Testar DB
-    document.getElementById('btnTestDB')?.addEventListener('click', async () => {
-        APBIA.showLoadingOverlay('Testando conexão com banco...');
-        try {
-            const response = await fetch('/admin/test-db');
-            const data = await response.json();
-            APBIA.hideLoadingOverlay();
-
-            if (data.success) {
-                APBIA.showNotification('✅ Banco de dados funcionando!', 'success');
-            } else {
-                APBIA.showNotification('❌ Erro: ' + data.message, 'error');
-            }
-        } catch (error) {
-            APBIA.hideLoadingOverlay();
-            APBIA.showNotification('❌ Erro de conexão', 'error');
-        }
-});
-</script>
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin_config.js') }}"></script>
 {% endblock %}
