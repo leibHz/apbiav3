@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, Response
 from flask_login import login_required, current_user
 from functools import wraps
 from dao.dao import SupabaseDAO
