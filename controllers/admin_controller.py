@@ -252,7 +252,7 @@ def gemini_stats_page():
     return render_template('admin/gemini_stats.html')
 
 
-@admin_bp.route('/gemini-stats-api')
+@admin_bp.route('/gemini-stats-export')
 @admin_required
 def gemini_stats_export():
     """
