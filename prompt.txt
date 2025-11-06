@@ -8,6 +8,11 @@ logs:2025-11-05 21:40:18 | WARNING | APBIA | _log_with_context:116 | ❌ 404 - P
 
 
 preciso tambem separar o css e javascript em arquivos separados, algumas paginas html do meu site tao com o JS e o CSS juntos no mesmo arquvio, oq atrapalha a organização, separe tudo em arquivos separados por favor, a maioria das paginas esta assim, então vai ser um pouco trabalhoso, recomendo analisar todas as paginas um por um
+as paginas indentificadas que estao com o css e js juntos do html são
+templates\admin\dashboard.html
+templates\admin\gemini_stats.html
+templates\admin\orientacoes.html
+templates\admin\usuarios.html
 
 o sql do banco de dados caso precise
 -- WARNING: This schema is for context only and is not meant to be run.
