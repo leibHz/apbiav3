@@ -624,3 +624,83 @@ def test_db():
             'success': False,
             'message': f'Erro: {str(e)}'
         }), 500
+
+@admin_bp.route('/gemini-stats-api')
+@admin_required
+def gemini_stats_api():
+    """
+    API JSON para estatísticas do Gemini em tempo real
+    """
+    try:
+        from services.gemini_stats import gemini_stats
+        
+        # Pega estatísticas globais
+        global_stats = gemini_stats.get_global_stats()
+        
+        # Pega informações de limites
+        limits_info = gemini_stats.get_limits_info()
+        
+        # Calcula uso atual vs limites
+        rpm_current = global_stats.get('requests_minute', 0)
+        rpm_limit = limits_info['limits']['rpm']
+        rpm_percent = int((rpm_current / rpm_limit) * 100)
+        rpm_remaining = max(0, rpm_limit - rpm_current)
+        
+        tpm_current = global_stats.get('tokens_minute', 0)
+        tpm_limit = limits_info['limits']['tpm']
+        tpm_percent = int((tpm_current / tpm_limit) * 100)
+        tpm_remaining = max(0, tpm_limit - tpm_current)
+        
+        rpd_current = global_stats.get('requests_today', 0)
+        rpd_limit = limits_info['limits']['rpd']
+        rpd_percent = int((rpd_current / rpd_limit) * 100)
+        rpd_remaining = max(0, rpd_limit - rpd_current)
+        
+        search_current = global_stats.get('searches_today', 0)
+        search_limit = limits_info['limits']['google_search_rpd']
+        search_percent = int((search_current / search_limit) * 100)
+        search_remaining = max(0, search_limit - search_current)
+        
+        return jsonify({
+            'success': True,
+            'global': {
+                # RPM
+                'requests_minute': rpm_current,
+                'rpm_limit': rpm_limit,
+                'rpm_percent': rpm_percent,
+                'rpm_remaining': rpm_remaining,
+                
+                # TPM
+                'tokens_minute': tpm_current,
+                'tpm_limit': tpm_limit,
+                'tpm_percent': tpm_percent,
+                'tpm_remaining': tpm_remaining,
+                
+                # RPD
+                'requests_today': rpd_current,
+                'rpd_limit': rpd_limit,
+                'rpd_percent': rpd_percent,
+                'rpd_remaining': rpd_remaining,
+                
+                # Search
+                'searches_today': search_current,
+                'search_limit': search_limit,
+                'search_percent': search_percent,
+                'search_remaining': search_remaining,
+                
+                # Outros
+                'unique_users_24h': global_stats.get('unique_users_24h', 0),
+                'requests_24h': global_stats.get('requests_24h', 0),
+                'tokens_24h': global_stats.get('tokens_24h', 0),
+            },
+            'limits': limits_info
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao buscar estatísticas Gemini: {e}")
+        logger.error(traceback.format_exc())
+        return jsonify({
+            'success': False,
+            'error': True,
+            'message': str(e)
+        }), 500
