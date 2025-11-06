@@ -254,79 +254,50 @@ def gemini_stats_page():
 
 @admin_bp.route('/gemini-stats-api')
 @admin_required
-def gemini_stats_api():
+def gemini_stats_export():
     """
-    API JSON para retornar estatísticas do Gemini
+    Exporta estatísticas em JSON (CORRIGIDO)
     """
     try:
-        from datetime import datetime
-        
-        # ✅ CORREÇÃO: Obtém estatísticas globais diretas
+        # Obtém dados das estatísticas
         global_stats = gemini_stats.get_global_stats()
+        all_users_stats = gemini_stats.get_all_users_stats()
+        limits_info = gemini_stats.get_limits_info()
         
-        # ✅ Calcula estatísticas por minuto/dia
-        now = datetime.now()
+        # Monta estrutura JSON
+        export_data = {
+            'timestamp': datetime.now().isoformat(),
+            'global': global_stats,
+            'limits': limits_info,
+            'users': all_users_stats,
+            'total_users': len(all_users_stats)
+        }
         
-        # Limpa dados antigos
-        gemini_stats._cleanup_old_data(None, now)
+        # Converte para JSON string
+        json_string = json.dumps(export_data, indent=2, ensure_ascii=False)
         
-        # Soma requests de todos os usuários (último minuto)
-        total_rpm = 0
-        total_tpm = 0
-        for user_id in gemini_stats.requests_minute.keys():
-            total_rpm += len(gemini_stats.requests_minute[user_id])
-            total_tpm += sum(tokens for _, tokens in gemini_stats.requests_minute[user_id])
+        # Gera nome do arquivo
+        filename = f'gemini_stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
         
-        # Soma requests do dia
-        total_rpd = 0
-        for user_id in gemini_stats.requests_day.keys():
-            total_rpd += len(gemini_stats.requests_day[user_id])
-        
-        # Soma buscas do dia
-        total_searches = 0
-        for user_id in gemini_stats.searches_day.keys():
-            total_searches += len(gemini_stats.searches_day[user_id])
-        
-        # ✅ Retorna dados estruturados
-        return jsonify({
-            'success': True,
-            'global': {
-                # Minuto
-                'requests_minute': total_rpm,
-                'rpm_limit': gemini_stats.RPM_LIMIT,
-                'rpm_remaining': max(0, gemini_stats.RPM_LIMIT - total_rpm),
-                
-                'tokens_minute': total_tpm,
-                'tpm_limit': gemini_stats.TPM_LIMIT,
-                'tpm_remaining': max(0, gemini_stats.TPM_LIMIT - total_tpm),
-                
-                # Dia
-                'requests_today': total_rpd,
-                'rpd_limit': gemini_stats.RPD_LIMIT,
-                'rpd_remaining': max(0, gemini_stats.RPD_LIMIT - total_rpd),
-                
-                # Buscas
-                'searches_today': total_searches,
-                'search_limit': gemini_stats.SEARCH_RPD_LIMIT,
-                'search_remaining': max(0, gemini_stats.SEARCH_RPD_LIMIT - total_searches),
-                
-                # Histórico (últimas 24h)
-                'requests_24h': global_stats.get('requests_24h', 0),
-                'tokens_24h': global_stats.get('tokens_24h', 0),
-                'unique_users_24h': global_stats.get('unique_users_24h', 0),
-                'avg_tokens_per_request': global_stats.get('avg_tokens_per_request', 0),
-            },
-            'timestamp': now.isoformat()
-        })
+        # ✅ CORREÇÃO PRINCIPAL: Retorna Response correto
+        return Response(
+            json_string,
+            mimetype='application/json',
+            headers={
+                'Content-Disposition': f'attachment; filename={filename}',
+                'Content-Type': 'application/json; charset=utf-8',
+                'Cache-Control': 'no-cache'
+            }
+        )
         
     except Exception as e:
-        logger.error(f"❌ Erro ao obter estatísticas Gemini: {e}")
+        logger.error(f"❌ Erro ao exportar estatísticas: {e}")
         logger.error(traceback.format_exc())
-        
         return jsonify({
             'error': True,
-            'message': f'Erro ao obter estatísticas: {str(e)}'
+            'message': f'Erro ao exportar: {str(e)}'
         }), 500
+
 
 @admin_bp.route('/gemini-stats-user/<int:user_id>')
 @admin_required
@@ -375,36 +346,6 @@ def gemini_stats_all_users():
         return jsonify({
             'error': True,
             'message': f'Erro ao obter estatísticas: {str(e)}'
-        }), 500
-
-
-@admin_bp.route('/gemini-stats-export')
-@admin_required
-def gemini_stats_export():
-    """
-    ✅ CORRIGIDO: Exporta estatísticas em JSON com headers corretos
-    """
-    try:
-        export_data = gemini_stats.export_stats()
-        
-        # Gera nome do arquivo com timestamp
-        filename = f'gemini_stats_{datetime.now().strftime("%Y%m%d_%H%M%S")}.json'
-        
-        # ✅ CORREÇÃO: Usar Response com headers corretos
-        return Response(
-            export_data,
-            mimetype='application/json',
-            headers={
-                'Content-Disposition': f'attachment; filename={filename}',
-                'Content-Type': 'application/json; charset=utf-8'
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"❌ Erro ao exportar estatísticas: {e}")
-        return jsonify({
-            'error': True,
-            'message': f'Erro ao exportar: {str(e)}'
         }), 500
 
 @admin_bp.route('/gemini-stats-reset/<int:user_id>', methods=['POST'])
@@ -564,27 +505,24 @@ def remover_orientacao():
 @admin_required
 def stats_api():
     """
-    API que retorna estatísticas do sistema
+    API que retorna estatísticas do sistema em tempo real
     """
     try:
         # Conta conversas totais
         chats_result = dao.supabase.table('chats').select('id', count='exact').execute()
-        total_chats = chats_result.count if hasattr(chats_result, 'count') else 0
+        total_chats = chats_result.count if hasattr(chats_result, 'count') else len(chats_result.data)
         
         # Conta mensagens totais
         msgs_result = dao.supabase.table('mensagens').select('id', count='exact').execute()
-        total_mensagens = msgs_result.count if hasattr(msgs_result, 'count') else 0
+        total_mensagens = msgs_result.count if hasattr(msgs_result, 'count') else len(msgs_result.data)
         
         # Conta usuários ativos (com chats)
-        usuarios_com_chats = dao.supabase.table('chats')\
-            .select('usuario_id')\
-            .execute()
-        
+        usuarios_com_chats = dao.supabase.table('chats').select('usuario_id').execute()
         usuarios_unicos = len(set(row['usuario_id'] for row in usuarios_com_chats.data)) if usuarios_com_chats.data else 0
         
         # Conta projetos
         projetos_result = dao.supabase.table('projetos').select('id', count='exact').execute()
-        total_projetos = projetos_result.count if hasattr(projetos_result, 'count') else 0
+        total_projetos = projetos_result.count if hasattr(projetos_result, 'count') else len(projetos_result.data)
         
         # Estatísticas Gemini (últimas 24h)
         gemini_global = gemini_stats.get_global_stats()
@@ -602,20 +540,25 @@ def stats_api():
         
     except Exception as e:
         logger.error(f"Erro ao obter estatísticas: {e}")
+        logger.error(traceback.format_exc())
         return jsonify({
+            'success': False,
             'error': True,
             'message': str(e)
         }), 500
+
 
 
 @admin_bp.route('/test-gemini')
 @admin_required
 def test_gemini():
     """
-    Testa conexão com Gemini API
+    Testa conexão com Gemini API (CORRIGIDO)
     """
     try:
         from services.gemini_service import GeminiService
+        
+        logger.info("🧪 Testando conexão com Gemini...")
         
         gemini = GeminiService()
         
@@ -623,23 +566,30 @@ def test_gemini():
         response = gemini.chat(
             "Teste de conexão. Responda apenas: OK",
             tipo_usuario='participante',
-            usar_contexto_bragantec=False
+            usar_contexto_bragantec=False,
+            usar_pesquisa=False,
+            usar_code_execution=False
         )
         
         if response.get('error'):
+            logger.error(f"❌ Teste falhou: {response.get('response')}")
             return jsonify({
                 'success': False,
                 'message': response.get('response', 'Erro desconhecido')
-            })
+            }), 500
+        
+        logger.info(f"✅ Teste bem-sucedido: {response.get('response')}")
         
         return jsonify({
             'success': True,
-            'message': 'Gemini funcionando corretamente',
-            'response': response.get('response', '')
+            'message': 'Gemini funcionando corretamente! ✓',
+            'response': response.get('response', ''),
+            'model': 'gemini-2.5-flash'
         })
         
     except Exception as e:
-        logger.error(f"Erro ao testar Gemini: {e}")
+        logger.error(f"❌ Erro ao testar Gemini: {e}")
+        logger.error(traceback.format_exc())
         return jsonify({
             'success': False,
             'message': f'Erro: {str(e)}'

@@ -1,11 +1,16 @@
 // =============================================
-// APBIA - Admin Configurações JavaScript
+// APBIA - Admin Configurações JavaScript (CORRIGIDO)
 // =============================================
 
-// Carrega estatísticas reais
+// ✅ Carrega estatísticas reais
 async function loadStats() {
     try {
         const response = await fetch('/admin/stats-api');
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        
         const data = await response.json();
 
         if (data.success) {
@@ -19,11 +24,21 @@ async function loadStats() {
             document.getElementById('stat-requests-24h').textContent = data.gemini_requests_24h || 0;
             document.getElementById('stat-tokens-24h').textContent = (data.gemini_tokens_24h || 0).toLocaleString('pt-BR');
             document.getElementById('stat-unique-users').textContent = data.gemini_unique_users || 0;
+        } else {
+            console.error('Erro ao carregar stats:', data);
+            showErrorInStats();
         }
     } catch (error) {
         console.error('Erro ao carregar estatísticas:', error);
-        document.getElementById('stat-conversas').textContent = 'Erro';
+        showErrorInStats();
     }
+}
+
+function showErrorInStats() {
+    document.getElementById('stat-conversas').textContent = 'Erro';
+    document.getElementById('stat-mensagens').textContent = 'Erro';
+    document.getElementById('stat-usuarios').textContent = 'Erro';
+    document.getElementById('stat-projetos').textContent = 'Erro';
 }
 
 // Toggle IA Status
@@ -47,19 +62,20 @@ document.getElementById('toggleIABtn')?.addEventListener('click', async function
     } catch (error) {
         APBIA.hideLoadingOverlay();
         APBIA.showNotification('Erro ao alterar status da IA', 'error');
+        console.error('Erro:', error);
     }
 });
 
-// ✅ Exportar estatísticas (CORRIGIDO)
+// ✅ CORRIGIDO: Exportar estatísticas
 document.getElementById('btnExportStats')?.addEventListener('click', async function() {
     try {
         APBIA.showLoadingOverlay('Preparando exportação...');
         
-        // Faz requisição e aguarda resposta
+        // Faz requisição
         const response = await fetch('/admin/gemini-stats-export');
         
         if (!response.ok) {
-            throw new Error('Erro ao exportar');
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         // Obtém o blob (arquivo)
@@ -70,9 +86,9 @@ document.getElementById('btnExportStats')?.addEventListener('click', async funct
         let filename = 'gemini_stats.json';
         
         if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
-            if (filenameMatch) {
-                filename = filenameMatch[1];
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1].replace(/['"]/g, '');
             }
         }
         
@@ -100,7 +116,7 @@ document.getElementById('btnExportStats')?.addEventListener('click', async funct
     }
 });
 
-// Testar Gemini
+// ✅ CORRIGIDO: Testar Gemini
 document.getElementById('btnTestGemini')?.addEventListener('click', async function() {
     APBIA.showLoadingOverlay('Testando conexão com Gemini...');
     
@@ -111,17 +127,19 @@ document.getElementById('btnTestGemini')?.addEventListener('click', async functi
         APBIA.hideLoadingOverlay();
 
         if (data.success) {
-            APBIA.showNotification('✅ Gemini funcionando corretamente!', 'success');
+            APBIA.showNotification('✅ ' + data.message, 'success');
+            console.log('Resposta Gemini:', data.response);
         } else {
             APBIA.showNotification('❌ Erro: ' + data.message, 'error');
         }
     } catch (error) {
         APBIA.hideLoadingOverlay();
-        APBIA.showNotification('❌ Erro de conexão', 'error');
+        APBIA.showNotification('❌ Erro de conexão: ' + error.message, 'error');
+        console.error('Erro:', error);
     }
 });
 
-// Testar DB
+// ✅ CORRIGIDO: Testar DB
 document.getElementById('btnTestDB')?.addEventListener('click', async function() {
     APBIA.showLoadingOverlay('Testando conexão com banco...');
     
@@ -132,13 +150,14 @@ document.getElementById('btnTestDB')?.addEventListener('click', async function()
         APBIA.hideLoadingOverlay();
 
         if (data.success) {
-            APBIA.showNotification('✅ Banco de dados funcionando!', 'success');
+            APBIA.showNotification('✅ ' + data.message, 'success');
         } else {
             APBIA.showNotification('❌ Erro: ' + data.message, 'error');
         }
     } catch (error) {
         APBIA.hideLoadingOverlay();
-        APBIA.showNotification('❌ Erro de conexão', 'error');
+        APBIA.showNotification('❌ Erro de conexão: ' + error.message, 'error');
+        console.error('Erro:', error);
     }
 });
 
@@ -148,10 +167,12 @@ document.getElementById('refreshStats')?.addEventListener('click', function() {
     loadStats();
 });
 
-// Carrega estatísticas ao iniciar
-loadStats();
+// ✅ Carrega estatísticas ao iniciar
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    
+    // Atualiza automaticamente a cada 30 segundos
+    setInterval(loadStats, 30000);
+});
 
-// Atualiza automaticamente a cada 30 segundos
-setInterval(loadStats, 30000);
-
-console.log('✅ admin_config.js carregado');
+console.log('✅ admin_config.js carregado (CORRIGIDO)');

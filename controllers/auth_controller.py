@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from flask_login import login_user, logout_user, login_required
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask_login import login_user, logout_user, login_required, current_user
 from dao.dao import SupabaseDAO
 
 auth_bp = Blueprint('auth', __name__)
