@@ -1,0 +1,134 @@
+/* =============================================
+   APBIA - Admin Dashboard CSS
+   ============================================= */
+
+/* Cards de estatísticas com efeito hover */
+.row.g-4 .card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.row.g-4 .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Ícones com opacidade */
+.opacity-50 {
+    opacity: 0.5;
+}
+
+/* Animação dos cards de estatísticas */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.row.g-4 .col-md-3 {
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.row.g-4 .col-md-3:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.row.g-4 .col-md-3:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.row.g-4 .col-md-3:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.row.g-4 .col-md-3:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+/* Botões de ação rápida */
+.d-flex.flex-wrap.gap-2 .btn {
+    transition: all 0.3s ease;
+}
+
+.d-flex.flex-wrap.gap-2 .btn:hover {
+    transform: translateX(5px);
+}
+
+/* Tabela responsiva */
+.table-hover tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 200, 83, 0.1);
+}
+
+/* Badges com animação */
+.badge {
+    transition: transform 0.2s ease;
+}
+
+.badge:hover {
+    transform: scale(1.1);
+}
+
+/* Modal de adicionar usuário */
+#addUserModal .modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+#addUserModal .modal-header {
+    background: linear-gradient(135deg, #00C853 0%, #1DB954 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+}
+
+/* Formulário dentro do modal */
+#addUserForm .form-control,
+#addUserForm .form-select {
+    border-radius: 8px;
+    border: 2px solid #e0e0e0;
+    transition: border-color 0.3s ease;
+}
+
+#addUserForm .form-control:focus,
+#addUserForm .form-select:focus {
+    border-color: #00C853;
+    box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.1);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .row.g-4 .col-md-3 {
+        margin-bottom: 1rem;
+    }
+    
+    .d-flex.flex-wrap.gap-2 {
+        flex-direction: column;
+    }
+    
+    .d-flex.flex-wrap.gap-2 .btn {
+        width: 100%;
+    }
+}
+
+/* Animação do botão de toggle IA */
+#toggleIABtn {
+    transition: all 0.3s ease;
+}
+
+#toggleIABtn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* Card header customizado */
+.card-header.bg-dark {
+    background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%) !important;
+}

@@ -2,6 +2,10 @@
 
 {% block title %}Gerenciar Orientações - APBIA{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_orientacoes.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row mb-4">
@@ -124,7 +128,7 @@
                             {% endfor %}
                         </select>
                         
-                        <div class="alert alert-info mt-3" style="display:none;" id="projetoInfo">
+                        <div class="alert alert-info mt-3 projeto-info-alert" id="projetoInfo">
                             <strong>Projeto selecionado:</strong>
                             <p class="mb-0 mt-2" id="projetoNome"></p>
                             <small class="text-muted" id="projetoCategoria"></small>
@@ -132,7 +136,7 @@
                     </div>
                     
                     <!-- Passo 2: Selecionar Orientador -->
-                    <div class="mb-4" id="passo2" style="display:none;">
+                    <div class="mb-4 passo-hidden" id="passo2">
                         <h6 class="mb-3"><i class="fas fa-chalkboard-teacher"></i> 2. Selecione o Orientador</h6>
                         <select class="form-select" id="orientadorSelect" required>
                             <option value="">Escolha um orientador...</option>
@@ -145,7 +149,7 @@
                     </div>
                     
                     <!-- Passo 3: Selecionar Participantes -->
-                    <div class="mb-4" id="passo3" style="display:none;">
+                    <div class="mb-4 passo-hidden" id="passo3">
                         <h6 class="mb-3"><i class="fas fa-users"></i> 3. Selecione os Participantes</h6>
                         <p class="text-muted small">Participantes que já estão neste projeto:</p>
                         
@@ -175,174 +179,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-// Seleção de projeto
-document.getElementById('projetoSelect').addEventListener('change', function() {
-    const projetoId = this.value;
-    
-    if (projetoId) {
-        const option = this.options[this.selectedIndex];
-        const nome = option.dataset.nome;
-        const categoria = option.dataset.categoria;
-        
-        document.getElementById('projetoNome').textContent = nome;
-        document.getElementById('projetoCategoria').textContent = `Categoria: ${categoria}`;
-        document.getElementById('projetoInfo').style.display = 'block';
-        document.getElementById('passo2').style.display = 'block';
-        
-        // Carrega participantes do projeto
-        carregarParticipantesProjeto(projetoId);
-    } else {
-        document.getElementById('projetoInfo').style.display = 'none';
-        document.getElementById('passo2').style.display = 'none';
-        document.getElementById('passo3').style.display = 'none';
-    }
-});
-
-// Seleção de orientador
-document.getElementById('orientadorSelect').addEventListener('change', function() {
-    if (this.value) {
-        document.getElementById('passo3').style.display = 'block';
-    } else {
-        document.getElementById('passo3').style.display = 'none';
-    }
-});
-
-// Carregar participantes do projeto
-async function carregarParticipantesProjeto(projetoId) {
-    try {
-        const response = await fetch(`/admin/projeto/${projetoId}/participantes`);
-        const data = await response.json();
-        
-        const lista = document.getElementById('participantesLista');
-        lista.innerHTML = '';
-        
-        if (data.participantes && data.participantes.length > 0) {
-            data.participantes.forEach(p => {
-                lista.innerHTML += `
-                    <div class="list-group-item">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong>${p.nome_completo}</strong>
-                                <br>
-                                <small class="text-muted">${p.email} | BP: ${p.numero_inscricao}</small>
-                            </div>
-                            <span class="badge bg-success">
-                                <i class="fas fa-check"></i> No projeto
-                            </span>
-                        </div>
-                    </div>
-                `;
-            });
-        } else {
-            lista.innerHTML = `
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Este projeto ainda não tem participantes associados.
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Erro ao carregar participantes:', error);
-    }
-}
-
-// Confirmar orientação
-document.getElementById('btnConfirmarOrientacao').addEventListener('click', async function() {
-    const projetoId = document.getElementById('projetoSelect').value;
-    const orientadorId = document.getElementById('orientadorSelect').value;
-    
-    if (!projetoId || !orientadorId) {
-        APBIA.showNotification('Selecione projeto e orientador', 'error');
-        return;
-    }
-    
-    if (!confirm('Confirma a criação desta orientação?')) return;
-    
-    APBIA.showLoadingOverlay('Criando orientação...');
-    
-    try {
-        const response = await fetch('/admin/orientacoes/criar', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                projeto_id: parseInt(projetoId),
-                orientador_id: parseInt(orientadorId)
-            })
-        });
-        
-        const data = await response.json();
-        
-        APBIA.hideLoadingOverlay();
-        
-        if (data.success) {
-            APBIA.showNotification(data.message, 'success');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            APBIA.showNotification('Erro: ' + data.message, 'error');
-        }
-    } catch (error) {
-        APBIA.hideLoadingOverlay();
-        APBIA.showNotification('Erro ao criar orientação', 'error');
-        console.error(error);
-    }
-});
-
-// Remover orientação
-document.querySelectorAll('.remover-orientacao').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        if (!confirm('Remover esta orientação?')) return;
-        
-        const orientadorId = this.dataset.orientadorId;
-        const projetoId = this.dataset.projetoId;
-        
-        try {
-            const response = await fetch('/admin/orientacoes/remover', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    orientador_id: parseInt(orientadorId),
-                    projeto_id: parseInt(projetoId)
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                APBIA.showNotification(data.message, 'success');
-                this.closest('tr').remove();
-            } else {
-                APBIA.showNotification('Erro: ' + data.message, 'error');
-            }
-        } catch (error) {
-            APBIA.showNotification('Erro ao remover orientação', 'error');
-        }
-    });
-});
-
-// Filtros
-document.getElementById('filtroOrientador').addEventListener('change', filtrarTabela);
-document.getElementById('filtroProjeto').addEventListener('change', filtrarTabela);
-
-function filtrarTabela() {
-    const orientadorId = document.getElementById('filtroOrientador').value;
-    const projetoId = document.getElementById('filtroProjeto').value;
-    
-    const rows = document.querySelectorAll('#tabelaOrientacoes tbody tr');
-    
-    rows.forEach(row => {
-        let mostrar = true;
-        
-        if (orientadorId && !row.textContent.includes(orientadorId)) {
-            mostrar = false;
-        }
-        
-        if (projetoId && !row.textContent.includes(projetoId)) {
-            mostrar = false;
-        }
-        
-        row.style.display = mostrar ? '' : 'none';
-    });
-}
-</script>
+<script src="{{ url_for('static', filename='js/admin_orientacoes.js') }}"></script>
 {% endblock %}

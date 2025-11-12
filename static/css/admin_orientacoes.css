@@ -1,0 +1,116 @@
+/* =============================================
+   APBIA - Admin Orientações CSS
+   ============================================= */
+
+/* Elementos ocultos por padrão */
+.projeto-info-alert {
+    display: none;
+}
+
+.passo-hidden {
+    display: none;
+}
+
+/* Animações de transição */
+.fade-in {
+    animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Hover effects para tabela */
+#tabelaOrientacoes tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#tabelaOrientacoes tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* Botões de ação */
+.remover-orientacao {
+    transition: all 0.2s ease;
+}
+
+.remover-orientacao:hover {
+    transform: scale(1.1);
+}
+
+/* Modal */
+.modal-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+}
+
+.modal-header .btn-close {
+    filter: brightness(0) invert(1);
+}
+
+/* Passos do formulário */
+.mb-4 h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+/* Lista de participantes */
+#participantesLista .list-group-item {
+    border-left: 3px solid #28a745;
+    transition: all 0.2s ease;
+}
+
+#participantesLista .list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(5px);
+}
+
+/* Badges */
+.badge {
+    font-weight: 600;
+    padding: 0.4em 0.8em;
+}
+
+/* Filtros */
+.form-select {
+    transition: border-color 0.2s ease;
+}
+
+.form-select:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Card de orientações */
+.card {
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+    
+    #tabelaOrientacoes th,
+    #tabelaOrientacoes td {
+        padding: 0.5rem;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+    }
+}

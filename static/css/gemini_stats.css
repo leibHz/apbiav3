@@ -1,0 +1,117 @@
+/* =============================================
+   APBIA - Gemini Stats CSS
+   Estilos para página de estatísticas do Gemini
+   ============================================= */
+
+/* Cards de limites */
+.card.border-primary,
+.card.border-info,
+.card.border-success,
+.card.border-warning {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card.border-primary:hover,
+.card.border-info:hover,
+.card.border-success:hover,
+.card.border-warning:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Ícones nos cards */
+.card-body .fa-3x {
+    transition: transform 0.3s ease;
+}
+
+.card:hover .card-body .fa-3x {
+    transform: scale(1.1);
+}
+
+/* Barras de progresso */
+.progress {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+/* Animação de spinner */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.spinner-border {
+    animation: spin 1s linear infinite;
+}
+
+/* Alertas de limite */
+#limit-alerts .alert {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tabela de informações */
+.table-borderless td {
+    padding: 0.5rem 0;
+}
+
+.table-borderless td:first-child {
+    color: var(--text-secondary);
+    width: 40%;
+}
+
+.table-borderless td:last-child {
+    font-weight: 500;
+}
+
+/* Badges personalizados */
+.badge {
+    padding: 0.4em 0.8em;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Canvas do gráfico */
+#usageChart {
+    max-height: 400px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .col-md-3 {
+        margin-bottom: 1rem;
+    }
+    
+    .card-body h3 {
+        font-size: 1.5rem;
+    }
+    
+    .fa-3x {
+        font-size: 2rem !important;
+    }
+}
+
+/* Estados de carga */
+.opacity-50 {
+    opacity: 0.5;
+}
+
+/* Efeito hover nos botões */
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.4);
+}

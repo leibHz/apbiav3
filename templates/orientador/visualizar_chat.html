@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block title %}Chat de {{ orientado.nome_completo }} - APBIA{% endblock %}
+
+{% block extra_css %}
+<style>
+.message-container {
+    border: 1px solid #dee2e6;
+    border-radius: 12px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background: white;
+}
+
+.message-user {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-left: 4px solid #2196F3;
+}
+
+.message-assistant {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    border-left: 4px solid #9C27B0;
+}
+
+.ferramenta-badge {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+}
+
+.nota-orientador {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 10px;
+}
+
+.nota-form {
+    background: #f8f9fa;
+    border: 2px dashed #6c757d;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('orientador.dashboard') }}">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('orientador.visualizar_orientado', participante_id=orientado.id) }}">
+                    {{ orientado.nome_completo }}
+                </a>
+            </li>
+            <li class="breadcrumb-item active">{{ chat.titulo }}</li>
+        </ol>
+    </nav>
+    
+    <!-- Header do Chat -->
+    <div class="row mb-4">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="mb-1">
+                                <i class="fas fa-comments"></i> {{ chat.titulo }}
+                            </h3>
+                            <div class="d-flex gap-3 mt-2">
+                                <span class="text-muted">
+                                    <i class="fas fa-user-graduate"></i> 
+                                    {{ orientado.nome_completo }}
+                                </span>
+                                {% if orientado.apelido %}
+                                <span class="badge bg-secondary">
+                                    <i class="fas fa-smile"></i> {{ orientado.apelido }}
+                                </span>
+                                {% endif %}
+                                <span class="text-muted">
+                                    <i class="far fa-calendar"></i> 
+                                    {{ chat.data_criacao.strftime('%d/%m/%Y %H:%M') if chat.data_criacao else '' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('orientador.visualizar_orientado', participante_id=orientado.id) }}" 
+                               class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Voltar
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mensagens do Chat -->
+    <div class="row">
+        <div class="col">
+            {% if mensagens %}
+                {% for msg in mensagens %}
+                <div class="message-container message-{{ msg.role }}">
+                    <!-- Cabeçalho da Mensagem -->
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <strong>
+                                {% if msg.role == 'user' %}
+                                    <i class="fas fa-user text-primary"></i> 
+                                    {{ orientado.nome_completo }}
+                                {% else %}
+                                    <i class="fas fa-robot text-success"></i> 
+                                    Assistente IA
+                                {% endif %}
+                            </strong>
+                            <small class="text-muted ms-2">
+                                {{ msg.data_envio.strftime('%d/%m/%Y %H:%M') if msg.data_envio else '' }}
+                            </small>
+                        </div>
+                        
+                        <!-- Badges de Ferramentas Usadas -->
+                        {% if msg.role == 'model' and msg.get('ferramentas') %}
+                        <div class="d-flex gap-2">
+                            {% if msg.ferramentas.get('google_search') %}
+                            <span class="badge bg-success ferramenta-badge" title="Google Search foi usado">
+                                <i class="fas fa-search"></i> Google Search
+                            </span>
+                            {% endif %}
+                            
+                            {% if msg.ferramentas.get('contexto_bragantec') %}
+                            <span class="badge bg-warning text-dark ferramenta-badge" title="Modo Bragantec ativo">
+                                <i class="fas fa-book"></i> Modo Bragantec
+                            </span>
+                            {% endif %}
+                            
+                            {% if msg.ferramentas.get('code_execution') %}
+                            <span class="badge bg-info ferramenta-badge" title="Código Python executado">
+                                <i class="fas fa-code"></i> Code Execution
+                            </span>
+                            {% endif %}
+                            
+                            {% if msg.ferramentas.get('url_context') %}
+                            <span class="badge bg-secondary ferramenta-badge" title="Análise de URL">
+                                <i class="fas fa-link"></i> URL Context
+                            </span>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Conteúdo da Mensagem -->
+                    <div class="message-content">
+                        {{ msg.conteudo|replace('\n', '<br>')|safe }}
+                    </div>
+                    
+                    <!-- Arquivo anexado (se houver) -->
+                    {% if msg.get('arquivo') %}
+                    <div class="alert alert-secondary mt-3 mb-0">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <i class="fas fa-paperclip"></i>
+                                <strong>{{ msg.arquivo.nome }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ msg.arquivo.tipo }} • 
+                                    {{ (msg.arquivo.tamanho / 1024 / 1024)|round(2) }} MB
+                                </small>
+                            </div>
+                            {% if msg.arquivo.url %}
+                            <a href="{{ msg.arquivo.url }}" 
+                               class="btn btn-sm btn-outline-primary" 
+                               target="_blank">
+                                <i class="fas fa-eye"></i> Ver
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Thinking Process (se houver) -->
+                    {% if msg.thinking_process %}
+                    <div class="alert alert-light border mt-3">
+                        <details>
+                            <summary class="cursor-pointer">
+                                <i class="fas fa-brain text-primary"></i>
+                                <strong>Processo de Pensamento da IA</strong>
+                            </summary>
+                            <div class="mt-2">
+                                {{ msg.thinking_process|replace('\n', '<br>')|safe }}
+                            </div>
+                        </details>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- NOTAS DO ORIENTADOR (apenas para respostas da IA) -->
+                    {% if msg.role == 'model' %}
+                    <div class="mt-3">
+                        <strong class="text-muted">
+                            <i class="fas fa-sticky-note"></i> Notas do Orientador:
+                        </strong>
+                        
+                        <!-- Notas Existentes -->
+                        {% if msg.get('notas') %}
+                            {% for nota in msg.notas %}
+                            <div class="nota-orientador">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <strong>{{ nota.usuarios.nome_completo if nota.get('usuarios') else 'Orientador' }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ nota.data_criacao.strftime('%d/%m/%Y %H:%M') if nota.data_criacao else '' }}
+                                        </small>
+                                    </div>
+                                    {% if nota.orientador_id == current_user.id %}
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary editar-nota" 
+                                                data-nota-id="{{ nota.id }}"
+                                                data-nota-texto="{{ nota.nota }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger deletar-nota" 
+                                                data-nota-id="{{ nota.id }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <p class="mb-0">{{ nota.nota }}</p>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                        
+                        <!-- Formulário para Nova Nota -->
+                        <div class="nota-form mt-2">
+                            <form class="form-adicionar-nota" data-mensagem-id="{{ msg.id }}">
+                                <div class="mb-2">
+                                    <textarea class="form-control form-control-sm" 
+                                              rows="3" 
+                                              placeholder="Adicione uma nota sobre esta resposta da IA..."
+                                              required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-plus"></i> Adicionar Nota
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h5>Nenhuma mensagem ainda</h5>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Adicionar nota
+document.querySelectorAll('.form-adicionar-nota').forEach(form => {
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const mensagemId = this.dataset.mensagemId;
+        const textarea = this.querySelector('textarea');
+        const nota = textarea.value.trim();
+        
+        if (!nota) return;
+        
+        APBIA.showLoadingOverlay('Adicionando nota...');
+        
+        try {
+            const response = await fetch('/orientador/adicionar-nota', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    mensagem_id: parseInt(mensagemId),
+                    nota: nota
+                })
+            });
+            
+            const data = await response.json();
+            
+            APBIA.hideLoadingOverlay();
+            
+            if (data.success) {
+                APBIA.showNotification('Nota adicionada!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                APBIA.showNotification('Erro: ' + data.message, 'error');
+            }
+        } catch (error) {
+            APBIA.hideLoadingOverlay();
+            APBIA.showNotification('Erro ao adicionar nota', 'error');
+            console.error(error);
+        }
+    });
+});
+
+// Editar nota
+document.querySelectorAll('.editar-nota').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        const notaId = this.dataset.notaId;
+        const notaTexto = this.dataset.notaTexto;
+        
+        const novoTexto = prompt('Editar nota:', notaTexto);
+        
+        if (!novoTexto || novoTexto === notaTexto) return;
+        
+        try {
+            const response = await fetch(`/orientador/editar-nota/${notaId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nota: novoTexto })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                APBIA.showNotification('Nota atualizada!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                APBIA.showNotification('Erro: ' + data.message, 'error');
+            }
+        } catch (error) {
+            APBIA.showNotification('Erro ao editar nota', 'error');
+        }
+    });
+});
+
+// Deletar nota
+document.querySelectorAll('.deletar-nota').forEach(btn => {
+    btn.addEventListener('click', async function() {
+        if (!confirm('Deseja realmente deletar esta nota?')) return;
+        
+        const notaId = this.dataset.notaId;
+        
+        try {
+            const response = await fetch(`/orientador/deletar-nota/${notaId}`, {
+                method: 'DELETE'
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                APBIA.showNotification('Nota deletada!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                APBIA.showNotification('Erro: ' + data.message, 'error');
+            }
+        } catch (error) {
+            APBIA.showNotification('Erro ao deletar nota', 'error');
+        }
+    });
+});
+</script>
+{% endblock %}
