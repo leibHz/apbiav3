@@ -1,0 +1,6 @@
+adicionar usuarios nn funciona devido ao BP (regex)
+
+boostrap entrando em conflito, remover o boostrap é nessesario
+
+usuario vistante nn ta como deveria (prioridade)
+
