@@ -12,6 +12,7 @@ from flask import request, g
 import time
 import traceback
 from colorama import Fore, Back, Style, init
+from flask_login import current_user
 
 # Inicializa colorama
 init(autoreset=True)
@@ -230,7 +231,6 @@ def log_route(func):
         path = request.path
         
         # User info
-        from flask_login import current_user
         user = current_user.nome_completo if hasattr(current_user, 'nome_completo') and current_user.is_authenticated else None
         
         logger.log_request(endpoint, method, path, user)
@@ -286,7 +286,6 @@ def setup_request_logging(app):
         g.start_time = time.time()
         
         # User info
-        from flask_login import current_user
         user = current_user.nome_completo if hasattr(current_user, 'nome_completo') and current_user.is_authenticated else "Anonymous"
         
         logger.log_request(
