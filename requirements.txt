@@ -19,7 +19,6 @@ bcrypt==4.1.2
 # BANCO DE DADOS
 # ===================================
 supabase==2.22.2
-supabase-auth==2.24.0
 
 # ===================================
 # GOOGLE GEMINI - BIBLIOTECA CORRETA
