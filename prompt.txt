@@ -2,7 +2,8 @@ ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de p
 
 preciso separar o css e javascript em arquivos separados, algumas paginas html do meu site tao com o JS e o CSS juntos no mesmo arquvio, oq atrapalha a organização, separe tudo em arquivos separados por favor, a maioria das paginas esta assim, então vai ser um pouco trabalhoso, recomendo analisar todas as paginas um por um
 as paginas indentificadas que estao com o css e js juntos do html são
-templates\orientador\dashboard.html
+templates\login.html
+templates\perfil.html
 
 separe em HTML, CSS e JS
 

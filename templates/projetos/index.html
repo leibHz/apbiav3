@@ -2,6 +2,10 @@
 
 {% block title %}Meus Projetos - APBIA{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/projetos.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row mb-4">
@@ -57,15 +61,18 @@
                         </small>
                         <div class="btn-group">
                             <a href="{{ url_for('project.editar', projeto_id=projeto.id) }}" 
-                               class="btn btn-sm btn-outline-primary">
+                               class="btn btn-sm btn-outline-primary"
+                               title="Editar projeto">
                                 <i class="fas fa-edit"></i>
                             </a>
                             <button class="btn btn-sm btn-outline-success gerar-pdf" 
-                                    data-projeto-id="{{ projeto.id }}">
+                                    data-projeto-id="{{ projeto.id }}"
+                                    title="Gerar PDF">
                                 <i class="fas fa-file-pdf"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger deletar-projeto" 
-                                    data-projeto-id="{{ projeto.id }}">
+                                    data-projeto-id="{{ projeto.id }}"
+                                    title="Deletar projeto">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
@@ -89,54 +96,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-// Gerar PDF
-document.querySelectorAll('.gerar-pdf').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        const projetoId = this.dataset.projetoId;
-        
-        APBIA.showLoadingOverlay('Gerando PDF...');
-        
-        try {
-            // Download direto
-            window.location.href = `/projetos/gerar-pdf/${projetoId}`;
-            
-            setTimeout(() => {
-                APBIA.hideLoadingOverlay();
-                APBIA.showNotification('PDF gerado com sucesso!', 'success');
-            }, 2000);
-            
-        } catch (error) {
-            APBIA.hideLoadingOverlay();
-            APBIA.showNotification('Erro ao gerar PDF', 'error');
-        }
-    });
-});
-
-// Deletar projeto
-document.querySelectorAll('.deletar-projeto').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        if (!confirm('Deseja realmente deletar este projeto?')) return;
-        
-        const projetoId = this.dataset.projetoId;
-        
-        try {
-            const response = await fetch(`/projetos/deletar/${projetoId}`, {
-                method: 'DELETE'
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                APBIA.showNotification('Projeto deletado!', 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                APBIA.showNotification('Erro ao deletar', 'error');
-            }
-        } catch (error) {
-            APBIA.showNotification('Erro ao deletar projeto', 'error');
-        }
-    });
-});
-</script>
+<script src="{{ url_for('static', filename='js/projetos_index.js') }}"></script>
 {% endblock %}

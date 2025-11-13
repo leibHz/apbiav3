@@ -14,6 +14,7 @@
     
     <!-- CSS Customizado -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -62,30 +63,6 @@
                             </span>
                         </a>
                     </li>
-                    <script>
-                    // Atualiza badge de estatísticas na navbar
-                    async function updateStatsBadge() {
-                        try {
-                            const response = await fetch('/admin/gemini-stats-api');
-                            const data = await response.json();
-                            const badge = document.getElementById('gemini-stats-badge');
-                            
-                            if (badge) {
-                                const requests24h = data.global.requests_24h || 0;
-                                badge.textContent = requests24h;
-                                badge.title = `${requests24h} requisições (24h)`;
-                            }
-                        } catch (error) {
-                            console.error('Erro ao atualizar badge de stats:', error);
-                        }
-                    }
-
-                    // Atualiza a cada 30 segundos
-                    if (document.getElementById('gemini-stats-badge')) {
-                        updateStatsBadge();
-                        setInterval(updateStatsBadge, 30000);
-                    }
-                    </script>
                     {% endif %}
                 </ul>
                 
@@ -155,6 +132,7 @@
     
     <!-- JavaScript Principal -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/base.js') }}"></script>
     
     {% block extra_js %}{% endblock %}
 </body>

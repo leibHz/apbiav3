@@ -1,0 +1,53 @@
+/* =============================================
+   APBIA - Base CSS (Extraído de base.html)
+   Estilos globais para badges, navbar stats, etc.
+   ============================================= */
+
+/* Badge de estatísticas no navbar */
+.navbar .position-relative .badge {
+    font-size: 0.7rem;
+}
+
+/* Animação de loading nos badges */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.fa-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Melhorias nos dropdowns */
+.dropdown-menu {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.dropdown-item {
+    transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: rgba(0, 200, 83, 0.1);
+}
+
+/* Footer fixo no bottom */
+footer {
+    margin-top: auto;
+}
+
+/* Responsividade do navbar */
+@media (max-width: 768px) {
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+    
+    .navbar-nav {
+        margin-top: 1rem;
+    }
+}

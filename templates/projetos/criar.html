@@ -3,55 +3,7 @@
 {% block title %}Novo Projeto - APBIA{% endblock %}
 
 {% block extra_css %}
-<style>
-.ia-assistant {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 1000;
-}
-
-.campo-grupo {
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 20px;
-    margin-bottom: 20px;
-    background: white;
-}
-
-.campo-header {
-    display: flex;
-    justify-content: between;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.btn-ia-autocompletar {
-    font-size: 0.85rem;
-}
-
-.loading-spinner {
-    display: none;
-}
-
-/* ✅ NOVO: Estilo para alerta de Modo Bragantec */
-.bragantec-alert {
-    background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
-    border: 2px solid #ffc107;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
-    animation: pulse-warning 2s infinite;
-}
-
-@keyframes pulse-warning {
-    0%, 100% {
-        box-shadow: 0 4px 15px rgba(255, 193, 7, 0.3);
-    }
-    50% {
-        box-shadow: 0 4px 20px rgba(255, 193, 7, 0.5);
-    }
-}
-</style>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/projetos_criar.css') }}">
 {% endblock %}
 
 {% block content %}
@@ -69,7 +21,7 @@
         </div>
     </div>
     
-    <!-- ✅ NOVO: Alerta sobre Modo Bragantec Automático -->
+    <!-- Alerta sobre Modo Bragantec Automático -->
     <div class="row mb-4">
         <div class="col">
             <div class="alert bragantec-alert">
@@ -359,11 +311,11 @@
     </form>
 </div>
 
-<!-- ✅ ATUALIZADO: Loading Overlay com mensagem sobre análise de vencedores -->
-<div id="loadingIA" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999;">
+<!-- Loading Overlay -->
+<div id="loadingIA">
     <div class="d-flex justify-content-center align-items-center h-100">
         <div class="text-center text-white">
-            <div class="spinner-border mb-3" style="width: 4rem; height: 4rem; border-width: 0.5rem;"></div>
+            <div class="spinner-border mb-3"></div>
             <h3 class="mb-2">
                 <i class="fas fa-brain"></i> IA Analisando Projetos Vencedores...
             </h3>

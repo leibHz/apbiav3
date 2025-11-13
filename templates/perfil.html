@@ -2,6 +2,10 @@
 
 {% block title %}Meu Perfil - APBIA{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/perfil.css') }}">
+{% endblock %}
+
 {% block content %}
 <div class="container py-4">
     <div class="row mb-4">
@@ -16,12 +20,12 @@
     <div class="row">
         <!-- Informações do Perfil -->
         <div class="col-md-8">
-            <div class="card mb-4">
+            <div class="card perfil-card mb-4">
                 <div class="card-header">
                     <i class="fas fa-id-card"></i> Informações Pessoais
                 </div>
                 <div class="card-body">
-                    <form id="formPerfil">
+                    <form id="formPerfil" class="perfil-form">
                         <div class="mb-3">
                             <label class="form-label">Nome Completo *</label>
                             <input type="text" 
@@ -35,7 +39,7 @@
                         <div class="mb-3">
                             <label class="form-label">
                                 <i class="fas fa-smile"></i> Apelido
-                                <span class="badge bg-success ms-2">Novo!</span>
+                                <span class="apelido-badge ms-2">Novo!</span>
                             </label>
                             <input type="text" 
                                    class="form-control" 
@@ -81,7 +85,7 @@
                                    disabled>
                         </div>
                         
-                        <div class="d-flex justify-content-end gap-2">
+                        <div class="btn-group-perfil">
                             <button type="button" class="btn btn-secondary" onclick="location.reload()">
                                 <i class="fas fa-times"></i> Cancelar
                             </button>
@@ -94,12 +98,12 @@
             </div>
             
             <!-- Alterar Senha -->
-            <div class="card">
+            <div class="card perfil-card">
                 <div class="card-header">
                     <i class="fas fa-lock"></i> Alterar Senha
                 </div>
                 <div class="card-body">
-                    <form id="formSenha">
+                    <form id="formSenha" class="perfil-form">
                         <div class="mb-3">
                             <label class="form-label">Senha Atual *</label>
                             <input type="password" 
@@ -142,7 +146,7 @@
         
         <!-- Informações da Conta -->
         <div class="col-md-4">
-            <div class="card mb-4">
+            <div class="card perfil-card info-card mb-4">
                 <div class="card-header">
                     <i class="fas fa-info-circle"></i> Informações da Conta
                 </div>
@@ -159,8 +163,8 @@
                 </div>
             </div>
             
-            <div class="card border-warning">
-                <div class="card-header bg-warning">
+            <div class="card perfil-card dica-card">
+                <div class="card-header">
                     <i class="fas fa-lightbulb"></i> Dica sobre Apelidos
                 </div>
                 <div class="card-body">
@@ -186,75 +190,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script>
-// Salvar perfil
-document.getElementById('formPerfil').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
-    
-    APBIA.showLoadingOverlay('Salvando perfil...');
-    
-    try {
-        const response = await fetch('{{ url_for("auth.perfil") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        APBIA.hideLoadingOverlay();
-        
-        if (result.success) {
-            APBIA.showNotification(result.message, 'success');
-            setTimeout(() => location.reload(), 1500);
-        } else {
-            APBIA.showNotification('Erro: ' + result.message, 'error');
-        }
-    } catch (error) {
-        APBIA.hideLoadingOverlay();
-        APBIA.showNotification('Erro ao salvar perfil', 'error');
-    }
-});
-
-// Alterar senha
-document.getElementById('formSenha').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData);
-    
-    // Valida senhas
-    if (data.nova_senha !== data.confirmar_senha) {
-        APBIA.showNotification('As senhas não coincidem', 'error');
-        return;
-    }
-    
-    APBIA.showLoadingOverlay('Alterando senha...');
-    
-    try {
-        const response = await fetch('{{ url_for("auth.alterar_senha") }}', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        
-        const result = await response.json();
-        
-        APBIA.hideLoadingOverlay();
-        
-        if (result.success) {
-            APBIA.showNotification(result.message, 'success');
-            this.reset();
-        } else {
-            APBIA.showNotification('Erro: ' + result.message, 'error');
-        }
-    } catch (error) {
-        APBIA.hideLoadingOverlay();
-        APBIA.showNotification('Erro ao alterar senha', 'error');
-    }
-});
-</script>
+<script src="{{ url_for('static', filename='js/perfil.js') }}"></script>
 {% endblock %}
