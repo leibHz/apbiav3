@@ -1,9 +1,6 @@
 ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira.
 
-preciso separar o css e javascript em arquivos separados, algumas paginas html do meu site tao com o JS e o CSS juntos no mesmo arquvio, oq atrapalha a organização, separe tudo em arquivos separados por favor, a maioria das paginas esta assim, então vai ser um pouco trabalhoso, recomendo analisar todas as paginas um por um
-as paginas indentificadas que estao com o css e js juntos do html são
-templates\login.html
-templates\perfil.html
+preciso saber quais opaginas estao usando o boostrap, pois eu irei remover ele, pode fazer essa verificação pra mim por favor? analise a pasta static/css e templates/ que é onde esta op frontend e os arquivos do css e html
 
 separe em HTML, CSS e JS
 
