@@ -1,16 +1,5 @@
 # APBIA - .gitignore
 
-# Ambiente Virtual Python
-venv/
-env/
-ENV/
-.venv
-
-# Variáveis de ambiente - NUNCA COMITAR!
-.env
-.env.local
-.env.*.local
-
 # Arquivos Python
 __pycache__/
 *.py[cod]
