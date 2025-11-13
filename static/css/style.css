@@ -1,15 +1,15 @@
 /* ============================================
    APBIA - TEMA ESCURO VERDE MODERNO
-   Design responsivo e acessível
+   Design responsivo e acessível - MELHORADO
    ============================================ */
 
 :root {
     /* Cores principais - VERDE ESCURO */
-    --primary-color: #00C853;
-    --primary-dark: #00A344;
-    --primary-light: #5EFC82;
+    --primary-color: #00E676; /* Verde mais claro para melhor contraste */
+    --primary-dark: #00C853;
+    --primary-light: #69F0AE;
     
-    --secondary-color: #1DB954;
+    --secondary-color: #00E676;
     --accent-color: #76FF03;
     
     /* Tons de cinza escuro */
@@ -22,22 +22,22 @@
     --border-color: #30363D;
     --border-light: #21262D;
     
-    /* Texto */
-    --text-primary: #E6EDF3;
-    --text-secondary: #8B949E;
-    --text-muted: #6E7681;
+    /* Texto - MELHORADO */
+    --text-primary: #FFFFFF; /* Branco puro para melhor contraste */
+    --text-secondary: #C9D1D9; /* Cinza mais claro */
+    --text-muted: #8B949E;
     
     /* Estados */
-    --success: #3FB950;
-    --warning: #D29922;
-    --error: #F85149;
-    --info: #58A6FF;
+    --success: #4ADE80; /* Verde mais claro */
+    --warning: #FCD34D; /* Amarelo mais claro */
+    --error: #FF5555; /* Vermelho mais claro */
+    --info: #60A5FA; /* Azul mais claro */
     
     /* Sombras */
     --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
     --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
-    --shadow-glow: 0 0 20px rgba(0, 200, 83, 0.3);
+    --shadow-glow: 0 0 20px rgba(0, 230, 118, 0.4);
     
     /* Transições */
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -78,17 +78,18 @@ main {
 .navbar {
     background: linear-gradient(135deg, var(--bg-darker) 0%, var(--bg-card) 100%) !important;
     border-bottom: 2px solid var(--primary-color);
-    box-shadow: 0 2px 10px rgba(0, 200, 83, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 230, 118, 0.3);
     backdrop-filter: blur(10px);
 }
 
 .navbar-brand {
     font-weight: 800;
     font-size: 1.5rem;
-    color: var(--primary-dark) !important;
+    color: var(--primary-color) !important;
     text-transform: uppercase;
     letter-spacing: 1px;
     transition: var(--transition);
+    text-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
 }
 
 .navbar-brand:hover {
@@ -136,6 +137,7 @@ main {
     box-shadow: var(--shadow-md);
     transition: var(--transition);
     overflow: hidden;
+    color: var(--text-primary);
 }
 
 .card:hover {
@@ -146,8 +148,8 @@ main {
 
 .card-header {
     background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary-color) 100%);
-    color: white;
-    font-weight: 600;
+    color: #000000 !important; /* PRETO para máximo contraste */
+    font-weight: 700;
     border-bottom: none;
     padding: 1rem 1.5rem;
 }
@@ -189,35 +191,39 @@ main {
 
 .btn-primary {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    color: white;
-    box-shadow: 0 4px 15px rgba(0, 200, 83, 0.3);
+    color: #000000 !important; /* PRETO para máximo contraste */
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);
 }
 
 .btn-primary:hover {
     background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
     box-shadow: var(--shadow-glow);
     transform: translateY(-2px);
+    color: #000000 !important;
 }
 
 .btn-success {
     background: var(--success);
-    color: white;
+    color: #000000 !important; /* PRETO para máximo contraste */
+    font-weight: 700;
 }
 
 .btn-success:hover {
-    background: #2EA043;
-    box-shadow: 0 4px 15px rgba(63, 185, 80, 0.4);
+    background: #22C55E;
+    box-shadow: 0 4px 15px rgba(74, 222, 128, 0.5);
+    color: #000000 !important;
 }
 
 .btn-outline-primary {
     border: 2px solid var(--primary-color);
     color: var(--primary-color);
     background: transparent;
+    font-weight: 700;
 }
 
 .btn-outline-primary:hover {
     background: var(--primary-color);
-    color: white;
+    color: #000000 !important;
     box-shadow: var(--shadow-glow);
 }
 
@@ -237,7 +243,7 @@ main {
 .form-control:focus, .form-select:focus {
     background: var(--bg-card);
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.1);
+    box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.2);
     color: var(--text-primary);
 }
 
@@ -246,13 +252,13 @@ main {
 }
 
 .form-label {
-    color: var(--text-secondary);
-    font-weight: 600;
+    color: var(--text-primary);
+    font-weight: 700;
     margin-bottom: 0.5rem;
 }
 
 /* ============================================
-   CHAT - DESIGN MODERNO
+   CHAT - DESIGN MODERNO MELHORADO
    ============================================ */
 
 #chatContainer {
@@ -294,11 +300,12 @@ main {
 
 .message.user {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-    color: white;
+    color: #000000 !important; /* PRETO para máximo contraste */
+    font-weight: 600;
     margin-left: auto;
     text-align: right;
     border-bottom-right-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0, 200, 83, 0.3);
+    box-shadow: 0 2px 10px rgba(0, 230, 118, 0.4);
 }
 
 .message.assistant {
@@ -306,15 +313,98 @@ main {
     border: 1px solid var(--border-color);
     margin-right: auto;
     border-bottom-left-radius: 4px;
+    color: var(--text-primary);
 }
 
 .message .timestamp {
     font-size: 0.75rem;
-    opacity: 0.7;
+    opacity: 0.8;
     margin-top: 5px;
+    color: inherit;
 }
 
-/* Badge de thinking */
+/* ============================================
+   TOGGLES E INDICADORES - MELHORADOS
+   ============================================ */
+
+/* Container de toggle Google Search */
+.search-toggle-container,
+.toggle-container {
+    background: rgba(0, 230, 118, 0.1) !important;
+    border: 2px solid var(--primary-color) !important;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+/* Container de toggle Bragantec */
+.bragantec-toggle-container {
+    background: rgba(252, 211, 77, 0.15) !important;
+    border: 2px solid var(--warning) !important;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+}
+
+.toggle-container .form-check-input {
+    cursor: pointer;
+    width: 3rem;
+    height: 1.5rem;
+}
+
+.toggle-container .form-check-input:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Labels dos toggles - BRANCO */
+.toggle-container .form-check-label,
+.search-toggle-container .form-check-label,
+.bragantec-toggle-container .form-check-label {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Texto de ajuda - MELHORADO */
+.toggle-container small,
+.search-toggle-container small,
+.bragantec-toggle-container small {
+    color: #E5E5E5 !important;
+    font-weight: 600;
+}
+
+/* Indicadores de status - MELHORADOS */
+#searchStatusIndicator,
+#bragantecStatusIndicator {
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+    font-weight: 700 !important;
+    color: #FFFFFF !important;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+#searchStatusIndicator i,
+#bragantecStatusIndicator i {
+    margin-right: 6px;
+    font-size: 1.1em;
+}
+
+/* Estado ativo do Google Search */
+#searchStatusIndicator .text-success {
+    color: var(--success) !important;
+    filter: brightness(1.3);
+}
+
+/* Estado ativo do Bragantec */
+#bragantecStatusIndicator .text-warning {
+    color: var(--warning) !important;
+    filter: brightness(1.3);
+}
+
+/* Alerta Modo Bragantec - MELHORADO */
 .alert-light {
     background: var(--bg-card) !important;
     border: 1px solid var(--border-color) !important;
@@ -340,6 +430,7 @@ main {
     padding: 12px;
     margin-bottom: 8px;
     border: 1px solid var(--border-light);
+    color: var(--text-primary);
 }
 
 .chat-item:hover {
@@ -348,7 +439,7 @@ main {
 }
 
 .chat-item.active {
-    background: linear-gradient(135deg, rgba(0, 200, 83, 0.1) 0%, rgba(29, 185, 84, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 200, 83, 0.2) 100%);
     border-left: 3px solid var(--primary-color);
 }
 
@@ -375,43 +466,62 @@ main {
 }
 
 /* ============================================
-   BADGES
+   BADGES - MELHORADOS
    ============================================ */
 
 .badge {
-    font-weight: 600;
-    padding: 0.4em 0.8em;
+    font-weight: 700;
+    padding: 0.5em 0.9em;
     border-radius: 6px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .bg-success {
     background: var(--success) !important;
+    color: #000000 !important;
 }
 
 .bg-primary {
     background: var(--primary-color) !important;
+    color: #000000 !important;
 }
 
 .bg-info {
     background: var(--info) !important;
+    color: #000000 !important;
 }
 
 .bg-warning {
     background: var(--warning) !important;
+    color: #000000 !important;
 }
 
 .bg-danger {
     background: var(--error) !important;
+    color: #FFFFFF !important;
+}
+
+.text-success {
+    color: var(--success) !important;
+}
+
+.text-warning {
+    color: var(--warning) !important;
+}
+
+.text-info {
+    color: var(--info) !important;
 }
 
 /* ============================================
-   ALERTS
+   ALERTS - MELHORADOS
    ============================================ */
 
 .alert {
     border-radius: 8px;
-    border: none;
+    border: 2px solid;
     animation: slideDown 0.3s ease-out;
+    font-weight: 600;
 }
 
 @keyframes slideDown {
@@ -426,27 +536,27 @@ main {
 }
 
 .alert-success {
-    background: rgba(63, 185, 80, 0.15);
-    border-left: 4px solid var(--success);
-    color: #5EFC82;
+    background: rgba(74, 222, 128, 0.2);
+    border-color: var(--success);
+    color: #FFFFFF !important;
 }
 
 .alert-info {
-    background: rgba(88, 166, 255, 0.15);
-    border-left: 4px solid var(--info);
-    color: #79C0FF;
+    background: rgba(96, 165, 250, 0.2);
+    border-color: var(--info);
+    color: #FFFFFF !important;
 }
 
 .alert-warning {
-    background: rgba(210, 153, 34, 0.15);
-    border-left: 4px solid var(--warning);
-    color: #E3B341;
+    background: rgba(252, 211, 77, 0.2);
+    border-color: var(--warning);
+    color: #FFFFFF !important;
 }
 
 .alert-danger {
-    background: rgba(248, 81, 73, 0.15);
-    border-left: 4px solid var(--error);
-    color: #FF7B72;
+    background: rgba(255, 85, 85, 0.2);
+    border-color: var(--error);
+    color: #FFFFFF !important;
 }
 
 /* ============================================
@@ -482,11 +592,13 @@ main {
 .thinking-indicator {
     display: none;
     padding: 12px 20px;
-    background: linear-gradient(135deg, rgba(0, 200, 83, 0.1) 0%, rgba(29, 185, 84, 0.1) 100%);
-    border: 1px solid var(--primary-color);
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 200, 83, 0.2) 100%);
+    border: 2px solid var(--primary-color);
     border-radius: 8px;
     margin: 10px 0;
     animation: pulse 1.5s infinite;
+    color: var(--text-primary);
+    font-weight: 700;
 }
 
 @keyframes pulse {
@@ -510,7 +622,7 @@ footer {
 }
 
 /* ============================================
-   UTILITIES
+   UTILITIES - MELHORADOS
    ============================================ */
 
 .text-muted {
@@ -607,15 +719,6 @@ footer {
         opacity: 1;
         transform: translateX(0);
     }
-}
-
-/* ============================================
-   MODO CLARO (OPCIONAL)
-   ============================================ */
-
-@media (prefers-color-scheme: light) {
-    /* Usuários que preferem modo claro podem ter um override aqui */
-    /* Mas o tema padrão será sempre escuro */
 }
 
 /* ============================================

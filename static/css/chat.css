@@ -1,6 +1,6 @@
 /* =============================================
-   APBIA - Chat CSS (Extraído de chat.html)
-   Estilos para interface de chat
+   APBIA - Chat CSS MELHORADO
+   Estilos para interface de chat com ALTO CONTRASTE
    ============================================= */
 
 /* Container principal do chat */
@@ -15,7 +15,7 @@
     flex: 1;
     overflow-y: auto;
     padding: 20px;
-    background-color: #f8f9fa;
+    background-color: #0D1117;
 }
 
 /* Mensagens */
@@ -38,112 +38,198 @@
     }
 }
 
-/* Mensagem do usuário */
+/* Mensagem do usuário - VERDE NEON COM TEXTO PRETO */
 .message.user {
-    background-color: #007bff;
-    color: white;
+    background: linear-gradient(135deg, #00E676 0%, #00C853 100%);
+    color: #000000 !important;
+    font-weight: 700;
     margin-left: auto;
     text-align: right;
+    border: 2px solid #00E676;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.5);
 }
 
 /* Mensagem do assistente */
 .message.assistant {
-    background-color: white;
-    border: 1px solid #dee2e6;
+    background-color: #161B22;
+    border: 2px solid #30363D;
     margin-right: auto;
+    color: #FFFFFF;
 }
 
 /* Timestamp nas mensagens */
 .message .timestamp {
     font-size: 0.75rem;
-    opacity: 0.7;
+    opacity: 0.8;
     margin-top: 5px;
+    font-weight: 600;
 }
 
 /* Input de chat */
 #chatInput {
     border-radius: 25px;
+    background: #161B22;
+    border: 2px solid #30363D;
+    color: #FFFFFF;
 }
 
-/* Indicador de pensamento */
+#chatInput:focus {
+    border-color: #00E676;
+    box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.2);
+}
+
+/* Indicador de pensamento - MELHORADO */
 .thinking-indicator {
     display: none;
-    padding: 10px;
-    background-color: #fff3cd;
-    border: 1px solid #ffc107;
+    padding: 12px 20px;
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 200, 83, 0.2) 100%);
+    border: 2px solid #00E676;
     border-radius: 8px;
     margin: 10px 0;
+    color: #FFFFFF;
+    font-weight: 700;
 }
 
 /* Sidebar de histórico */
 .sidebar {
     height: calc(100vh - 100px);
     overflow-y: auto;
-    border-right: 1px solid #dee2e6;
+    border-right: 1px solid #30363D;
+    background: #161B22;
 }
 
 /* Itens de chat no histórico */
 .chat-item {
     cursor: pointer;
     transition: background-color 0.2s;
+    color: #FFFFFF;
 }
 
 .chat-item:hover {
-    background-color: #f8f9fa;
+    background-color: #1C2128;
 }
 
 .chat-item.active {
-    background-color: #e7f3ff;
-    border-left: 3px solid #007bff;
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 200, 83, 0.2) 100%);
+    border-left: 3px solid #00E676;
 }
 
-/* Container de toggle de pesquisa */
+/* ============================================
+   TOGGLES E INDICADORES - ALTO CONTRASTE
+   ============================================ */
+
+/* Container de toggle de pesquisa - VERDE NEON */
 .search-toggle-container {
-    background: #e7f3ff;
-    padding: 8px 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.15) 0%, rgba(0, 200, 83, 0.15) 100%) !important;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 2px solid #00E676 !important;
+    box-shadow: 0 2px 10px rgba(0, 230, 118, 0.3);
 }
 
-/* Container de toggle Bragantec */
+/* Container de toggle Bragantec - AMARELO NEON */
 .bragantec-toggle-container {
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    padding: 10px 12px;
-    border-radius: 8px;
-    margin-bottom: 10px;
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%) !important;
+    border: 2px solid #FCD34D !important;
+    padding: 12px 16px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 10px rgba(252, 211, 77, 0.4);
 }
 
 /* Container genérico de toggle */
 .toggle-container {
-    background: #f8f9fa;
-    padding: 8px 12px;
+    background: rgba(48, 54, 61, 0.3);
+    padding: 10px 14px;
     border-radius: 8px;
-    margin-bottom: 10px;
-    border: 1px solid #dee2e6;
+    margin-bottom: 12px;
+    border: 2px solid #30363D;
 }
 
 .toggle-container .form-check-input {
     cursor: pointer;
+    width: 3rem;
+    height: 1.5rem;
 }
 
 .toggle-container .form-check-input:checked {
-    background-color: #00C853;
-    border-color: #00C853;
+    background-color: #00E676;
+    border-color: #00E676;
+    box-shadow: 0 0 10px rgba(0, 230, 118, 0.5);
 }
 
-/* Indicadores de status */
+/* Labels - BRANCO COM SOMBRA */
+.search-toggle-container .form-check-label,
+.bragantec-toggle-container .form-check-label,
+.toggle-container .form-check-label {
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    font-size: 0.95rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    letter-spacing: 0.3px;
+}
+
+/* Texto pequeno - BRANCO */
+.search-toggle-container small,
+.bragantec-toggle-container small,
+.toggle-container small {
+    color: #E5E5E5 !important;
+    font-weight: 600;
+    display: block;
+    margin-top: 4px;
+}
+
+/* ============================================
+   INDICADORES DE STATUS - REDESENHADOS
+   ============================================ */
+
 #searchStatusIndicator,
 #bragantecStatusIndicator {
-    font-size: 0.85rem;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.05);
+    font-size: 0.9rem;
+    padding: 8px 14px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.5);
+    font-weight: 700 !important;
+    border: 2px solid;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
-#searchStatusIndicator i,
-#bragantecStatusIndicator i {
-    margin-right: 4px;
+/* Google Search - VERDE NEON quando ativo */
+#searchStatusIndicator {
+    border-color: #00E676;
+    color: #FFFFFF !important;
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 200, 83, 0.2) 100%);
+}
+
+#searchStatusIndicator i.text-success {
+    color: #00E676 !important;
+    font-size: 1.2em;
+    filter: drop-shadow(0 0 5px rgba(0, 230, 118, 0.8));
+}
+
+#searchStatusIndicator i.text-muted {
+    color: #6E7681 !important;
+}
+
+/* Bragantec - AMARELO NEON quando ativo */
+#bragantecStatusIndicator {
+    border-color: #FCD34D;
+    color: #FFFFFF !important;
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%);
+}
+
+#bragantecStatusIndicator i.text-warning {
+    color: #FCD34D !important;
+    font-size: 1.2em;
+    filter: drop-shadow(0 0 5px rgba(252, 211, 77, 0.8));
+}
+
+#bragantecStatusIndicator i.text-muted {
+    color: #6E7681 !important;
 }
 
 /* Input de arquivo oculto */
@@ -160,7 +246,41 @@
     transform: scale(1.05);
 }
 
-/* Responsividade */
+/* ============================================
+   ALERTAS DENTRO DO CHAT - MELHORADOS
+   ============================================ */
+
+.alert-light {
+    background: #161B22 !important;
+    border: 2px solid #30363D !important;
+    color: #FFFFFF !important;
+}
+
+.alert-warning {
+    background: linear-gradient(135deg, rgba(252, 211, 77, 0.2) 0%, rgba(251, 191, 36, 0.2) 100%) !important;
+    border: 2px solid #FCD34D !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, rgba(0, 230, 118, 0.2) 0%, rgba(0, 200, 83, 0.2) 100%) !important;
+    border: 2px solid #00E676 !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, rgba(96, 165, 250, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%) !important;
+    border: 2px solid #60A5FA !important;
+    color: #FFFFFF !important;
+    font-weight: 600;
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
 @media (max-width: 768px) {
     #chatContainer {
         height: calc(100vh - 300px);
@@ -174,8 +294,14 @@
         height: auto;
         max-height: 300px;
         border-right: none;
-        border-bottom: 1px solid #dee2e6;
+        border-bottom: 1px solid #30363D;
         margin-bottom: 20px;
+    }
+    
+    #searchStatusIndicator,
+    #bragantecStatusIndicator {
+        font-size: 0.85rem;
+        padding: 6px 10px;
     }
 }
 
@@ -188,34 +314,48 @@
         max-width: 95%;
         padding: 10px 12px;
     }
+    
+    .search-toggle-container,
+    .bragantec-toggle-container {
+        padding: 10px 12px;
+    }
 }
 
-/* Scrollbar customizada para área de mensagens */
+/* ============================================
+   SCROLLBAR CUSTOMIZADA
+   ============================================ */
+
 #chatMessages::-webkit-scrollbar {
     width: 8px;
 }
 
 #chatMessages::-webkit-scrollbar-track {
-    background: #f1f1f1;
+    background: #0D1117;
     border-radius: 10px;
 }
 
 #chatMessages::-webkit-scrollbar-thumb {
-    background: #888;
+    background: #30363D;
     border-radius: 10px;
+    border: 2px solid #0D1117;
 }
 
 #chatMessages::-webkit-scrollbar-thumb:hover {
-    background: #555;
+    background: #00E676;
 }
 
-/* Welcome message */
+/* ============================================
+   WELCOME MESSAGE
+   ============================================ */
+
 #welcomeMessage {
     animation: fadeIn 0.5s ease-in;
+    color: #FFFFFF;
 }
 
 #welcomeMessage i {
-    color: var(--primary-color, #00C853);
+    color: #00E676;
+    filter: drop-shadow(0 0 10px rgba(0, 230, 118, 0.5));
 }
 
 /* Alert dentro do welcome */
