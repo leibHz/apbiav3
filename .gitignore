@@ -1,6 +1,7 @@
 # APBIA - .gitignore
 
 # Arquivos Python
+venv/
 __pycache__/
 *.py[cod]
 *$py.class
