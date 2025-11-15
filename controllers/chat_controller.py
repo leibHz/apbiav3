@@ -84,7 +84,7 @@ def index():
     chats = dao.listar_chats_por_usuario(current_user.id)
     
     tipo_usuario = 'participante' if current_user.is_participante() else \
-                   'orientador' if current_user.is_orientador() else 'visitante'
+                   'orientador' if current_user.is_orientador() else None
     
     return render_template('chat.html', 
                          chats=chats, 
@@ -128,8 +128,6 @@ def send_message():
             tipo_usuario = 'participante'
         elif current_user.is_orientador():
             tipo_usuario = 'orientador'
-        else:
-            tipo_usuario = 'visitante'
 
         # Cria chat se não existir
         if not chat_id:
@@ -308,7 +306,7 @@ def upload_file():
         file.save(temp_path)
         
         tipo_usuario = 'participante' if current_user.is_participante() else \
-                       'orientador' if current_user.is_orientador() else 'visitante'
+                       'orientador' if current_user.is_orientador() else None
         
         # ✅ 2. Processa arquivo com Gemini
         print(f"📁 Processando arquivo: {temp_filename}")
@@ -556,7 +554,7 @@ def analyze_url():
     
     try:
         tipo_usuario = 'participante' if current_user.is_participante() else \
-                       'orientador' if current_user.is_orientador() else 'visitante'
+                       'orientador' if current_user.is_orientador() else None
         
         print(f"🌐 Analisando URL: {url}")
         

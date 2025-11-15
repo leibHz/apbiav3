@@ -7,26 +7,25 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="row mb-4">
-        <div class="col">
-            <h2>
-                <i class="fas fa-user-circle"></i> Meu Perfil
-            </h2>
-            <p class="text-muted">Gerencie suas informações pessoais</p>
-        </div>
+<div class="perfil-container">
+    <div class="perfil-header">
+        <h2>
+            <i class="fas fa-user-circle"></i> Meu Perfil
+        </h2>
+        <p>Gerencie suas informações pessoais</p>
     </div>
     
-    <div class="row">
-        <!-- Informações do Perfil -->
-        <div class="col-md-8">
-            <div class="card perfil-card mb-4">
-                <div class="card-header">
+    <div class="perfil-layout">
+        <!-- Coluna principal -->
+        <div class="perfil-main">
+            <!-- Informações do Perfil -->
+            <div class="perfil-card">
+                <div class="perfil-card-header">
                     <i class="fas fa-id-card"></i> Informações Pessoais
                 </div>
-                <div class="card-body">
+                <div class="perfil-card-body">
                     <form id="formPerfil" class="perfil-form">
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">Nome Completo *</label>
                             <input type="text" 
                                    class="form-control" 
@@ -36,10 +35,10 @@
                                    required>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">
                                 <i class="fas fa-smile"></i> Apelido
-                                <span class="apelido-badge ms-2">Novo!</span>
+                                <span class="apelido-badge">Novo!</span>
                             </label>
                             <input type="text" 
                                    class="form-control" 
@@ -48,7 +47,7 @@
                                    value="{{ usuario.apelido or '' }}" 
                                    maxlength="50"
                                    placeholder="Como você gostaria de ser chamado pela IA?">
-                            <small class="text-muted">
+                            <small class="form-text">
                                 <i class="fas fa-info-circle"></i>
                                 A IA usará este apelido para se referir a você, tornando a conversa mais pessoal! 
                                 <br>
@@ -56,7 +55,7 @@
                             </small>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">Email *</label>
                             <input type="email" 
                                    class="form-control" 
@@ -66,18 +65,18 @@
                                    required>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">BP (Número de Inscrição)</label>
                             <input type="text" 
                                    class="form-control" 
                                    value="{{ usuario.numero_inscricao or 'Não informado' }}" 
                                    disabled>
-                            <small class="text-muted">
+                            <small class="form-text">
                                 Para alterar o BP, contate o administrador
                             </small>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">Tipo de Usuário</label>
                             <input type="text" 
                                    class="form-control" 
@@ -98,13 +97,13 @@
             </div>
             
             <!-- Alterar Senha -->
-            <div class="card perfil-card">
-                <div class="card-header">
+            <div class="perfil-card">
+                <div class="perfil-card-header">
                     <i class="fas fa-lock"></i> Alterar Senha
                 </div>
-                <div class="card-body">
+                <div class="perfil-card-body">
                     <form id="formSenha" class="perfil-form">
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">Senha Atual *</label>
                             <input type="password" 
                                    class="form-control" 
@@ -113,7 +112,7 @@
                                    required>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">Nova Senha *</label>
                             <input type="password" 
                                    class="form-control" 
@@ -121,10 +120,10 @@
                                    name="nova_senha"
                                    minlength="6"
                                    required>
-                            <small class="text-muted">Mínimo 6 caracteres</small>
+                            <small class="form-text">Mínimo 6 caracteres</small>
                         </div>
                         
-                        <div class="mb-3">
+                        <div class="form-group">
                             <label class="form-label">Confirmar Nova Senha *</label>
                             <input type="password" 
                                    class="form-control" 
@@ -134,7 +133,7 @@
                                    required>
                         </div>
                         
-                        <div class="d-flex justify-content-end">
+                        <div style="display: flex; justify-content: flex-end;">
                             <button type="submit" class="btn btn-warning">
                                 <i class="fas fa-key"></i> Alterar Senha
                             </button>
@@ -144,32 +143,34 @@
             </div>
         </div>
         
-        <!-- Informações da Conta -->
-        <div class="col-md-4">
-            <div class="card perfil-card info-card mb-4">
-                <div class="card-header">
+        <!-- Sidebar -->
+        <div class="perfil-sidebar">
+            <!-- Informações da Conta -->
+            <div class="perfil-card info-card">
+                <div class="perfil-card-header">
                     <i class="fas fa-info-circle"></i> Informações da Conta
                 </div>
-                <div class="card-body">
+                <div class="perfil-card-body">
                     <p><strong>Data de Cadastro:</strong></p>
-                    <p class="text-muted">
+                    <p>
                         {{ usuario.data_criacao.strftime('%d/%m/%Y') if usuario.data_criacao else 'Não disponível' }}
                     </p>
                     
                     <p><strong>Última Atualização:</strong></p>
-                    <p class="text-muted">
+                    <p>
                         {{ usuario.data_atualizacao.strftime('%d/%m/%Y') if usuario.data_atualizacao else 'Não disponível' }}
                     </p>
                 </div>
             </div>
             
-            <div class="card perfil-card dica-card">
-                <div class="card-header">
+            <!-- Dica sobre Apelidos -->
+            <div class="perfil-card dica-card">
+                <div class="perfil-card-header">
                     <i class="fas fa-lightbulb"></i> Dica sobre Apelidos
                 </div>
-                <div class="card-body">
-                    <p class="mb-2"><strong>Por que usar um apelido?</strong></p>
-                    <ul class="mb-0">
+                <div class="perfil-card-body">
+                    <p><strong>Por que usar um apelido?</strong></p>
+                    <ul>
                         <li>Torna a conversa mais natural</li>
                         <li>A IA cria uma conexão mais próxima</li>
                         <li>Personaliza sua experiência</li>
@@ -178,8 +179,8 @@
                     
                     <hr>
                     
-                    <p class="mb-1"><strong>Exemplos:</strong></p>
-                    <small class="text-muted">
+                    <p><strong>Exemplos:</strong></p>
+                    <small>
                         João, Maria, Prof. Silva, Dr. Santos, etc.
                     </small>
                 </div>

@@ -160,8 +160,7 @@ def get_user_type_name(tipo_id):
     tipos = {
         1: 'Administrador',
         2: 'Participante',
-        3: 'Orientador',
-        4: 'Visitante'
+        3: 'Orientador'
     }
     return tipos.get(tipo_id, 'Desconhecido')
 
@@ -338,8 +337,7 @@ def get_user_type_name(tipo_id):
     tipos = {
         1: 'Administrador',
         2: 'Participante',
-        3: 'Orientador',
-        4: 'Visitante'
+        3: 'Orientador'
     }
     return tipos.get(tipo_id, 'Desconhecido')
 
@@ -357,8 +355,7 @@ def get_user_type_badge(tipo_id):
     badges = {
         1: 'bg-danger',
         2: 'bg-success',
-        3: 'bg-info',
-        4: 'bg-secondary'
+        3: 'bg-info'
     }
     return badges.get(tipo_id, 'bg-secondary')
 

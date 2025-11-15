@@ -2,8 +2,6 @@ adicionar usuarios nn funciona devido ao BP (regex)
 
 boostrap entrando em conflito, remover o boostrap é nessesario
 
-usuario vistante nn ta como deveria (prioridade)
-
 navbar-brand em dois arquivos styles diferentes(ver isso dps)
 
 alguns textos com a mesma cor do fundo (arrumar isso)

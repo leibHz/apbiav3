@@ -1,6 +1,14 @@
 ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira.
 
-preciso que verifique o usuario visitante, ele é pra ser um usuario nn cadastrado, mas que acessa apenas o CHAT da IA com o modo bragantec e google serach, sem nemhuma outroa coisa, verifique se isso esta de acordo
+houve uma ideia descartada, que vc remova TODO o boostrap presente no codigo, acha que pode fazer isso por favor?
+
+então,  quero remover ele pois acho que o css puro dara mais liberdade, o prazo é de 1 semana, e o mobile é o menor dos problemas sinceramente
+
+eu quero que vc remova o boostrap, mais seja gradualmente pra nn exceder seu limite de tokens, tipo, faça os arquivos menores primeiro, dois arquvios por mensagem,
+
+eu nn falei isso antes mas é pra re-estilaizar ele pra ficar o mais proximo de como tava ta? as cores vc pode ver no css mas basicamente é um "modo escuro com a cor principal sendo verde neon e branco, pode fazer isso por favor claude?
+
+lembre-se de manter o padrão que ja esta, com o jinja 2 e etc, basicamente nn é pra mudar NADA do html, mude apenas a ESTILIZAÇÂO dele, entendeu?
 
 o sql do banco de dados caso precise
 -- WARNING: This schema is for context only and is not meant to be run.

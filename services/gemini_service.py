@@ -100,7 +100,7 @@ class GeminiService:
         System instructions OTIMIZADAS com/sem contexto Bragantec E apelido
     
         Args:
-            tipo_usuario: 'participante', 'orientador' ou 'visitante'
+            tipo_usuario: 'participante', 'orientador'
             usar_contexto_bragantec: Se True, adiciona conhecimento da Bragantec
             apelido: Apelido do usuário (opcional)
         """
@@ -197,7 +197,7 @@ class GeminiService:
         
         Args:
         message: Mensagem do usuário
-        tipo_usuario: 'participante', 'orientador' ou 'visitante'
+        tipo_usuario: 'participante', 'orientador'
         history: Histórico de conversas
         usar_pesquisa: Habilita Google Search
         usar_code_execution: Habilita execução de código

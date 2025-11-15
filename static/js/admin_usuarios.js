@@ -87,7 +87,7 @@ document.querySelector('select[name="tipo_usuario_id"]')?.addEventListener('chan
         bpInput.required = true;
     } else {
         bpRequired.style.display = 'none';
-        bpHelp.textContent = 'Opcional para administradores e visitantes. Formato: BP12345678X';
+        bpHelp.textContent = 'Opcional para administradores. Formato: BP12345678X';
         bpHelp.classList.remove('text-danger');
         bpInput.required = false;
     }

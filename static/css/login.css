@@ -1,18 +1,29 @@
 /* =============================================
-   APBIA - Login CSS
+   APBIA - Login CSS (Sem Bootstrap)
    Estilos para a página de login
    ============================================= */
 
 /* Container principal */
-.min-vh-100 {
+.login-wrapper {
     min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.login-container {
+    width: 100%;
+    max-width: 500px;
 }
 
 /* Card de login */
 .login-card {
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    border: none;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
     border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    padding: 3rem;
 }
 
 /* Logo/Header */
@@ -25,11 +36,20 @@
     font-size: 4rem;
     color: var(--primary-color);
     margin-bottom: 1rem;
+    display: block;
+    filter: drop-shadow(0 0 10px rgba(0, 230, 118, 0.5));
 }
 
 .login-header h2 {
     font-weight: bold;
     margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-size: 2rem;
+}
+
+.login-header p {
+    color: var(--text-muted);
+    margin: 0;
 }
 
 /* Formulário */
@@ -37,9 +57,15 @@
     width: 100%;
 }
 
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
 .form-label {
     font-weight: 500;
     margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    display: block;
 }
 
 .form-label i {
@@ -47,9 +73,50 @@
     color: var(--primary-color);
 }
 
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-darker);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 230, 118, 0.2);
+    background: var(--bg-card);
+}
+
+.form-control::placeholder {
+    color: var(--text-muted);
+}
+
 /* Input BP */
 #bp {
     text-transform: uppercase;
+}
+
+/* Help text */
+.form-text {
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: block;
+}
+
+.text-muted {
+    color: var(--text-muted);
+}
+
+.text-success {
+    color: var(--success);
+}
+
+.text-danger {
+    color: var(--error);
 }
 
 /* Indicadores de validação */
@@ -79,6 +146,25 @@
     font-size: 1.1rem;
     font-weight: 600;
     border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #000000;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 230, 118, 0.6);
+}
+
+.btn-login:active {
+    transform: translateY(0);
 }
 
 /* Info adicional */
@@ -90,6 +176,12 @@
 .login-info small {
     display: block;
     color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.login-info i {
+    color: var(--primary-color);
+    margin-right: 0.25rem;
 }
 
 /* Link voltar */
@@ -102,6 +194,9 @@
     color: var(--text-secondary);
     text-decoration: none;
     transition: color 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .back-link a:hover {
@@ -110,7 +205,11 @@
 
 /* Responsividade */
 @media (max-width: 576px) {
-    .login-card .card-body {
+    .login-wrapper {
+        padding: 1rem;
+    }
+    
+    .login-card {
         padding: 2rem 1.5rem;
     }
     
@@ -118,7 +217,17 @@
         font-size: 3rem;
     }
     
+    .login-header h2 {
+        font-size: 1.5rem;
+    }
+    
     .btn-login {
         font-size: 1rem;
+    }
+}
+
+@media (max-width: 400px) {
+    .login-card {
+        padding: 1.5rem 1rem;
     }
 }

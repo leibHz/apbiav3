@@ -643,8 +643,7 @@ class SupabaseDAO:
             return [
                 TipoUsuario(id=1, nome='Administrador'),
                 TipoUsuario(id=2, nome='Participante'),
-                TipoUsuario(id=3, nome='Orientador'),
-                TipoUsuario(id=4, nome='Visitante')
+                TipoUsuario(id=3, nome='Orientador')
             ]
             
         except Exception as e:
@@ -653,8 +652,7 @@ class SupabaseDAO:
             return [
                 TipoUsuario(id=1, nome='Administrador'),
                 TipoUsuario(id=2, nome='Participante'),
-                TipoUsuario(id=3, nome='Orientador'),
-                TipoUsuario(id=4, nome='Visitante')
+                TipoUsuario(id=3, nome='Orientador')
             ]
     
     def buscar_tipo_usuario_por_id(self, tipo_id):

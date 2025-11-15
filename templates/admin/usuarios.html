@@ -39,7 +39,6 @@
                 <option value="1">Administrador</option>
                 <option value="2">Participante</option>
                 <option value="3">Orientador</option>
-                <option value="4">Visitante</option>
             </select>
         </div>
     </div>
@@ -80,10 +79,6 @@
                                 {% elif usuario.tipo_usuario_id == 3 %}
                                 <span class="badge bg-info">
                                     <i class="fas fa-chalkboard-teacher"></i> Orientador
-                                </span>
-                                {% else %}
-                                <span class="badge bg-secondary">
-                                    <i class="fas fa-user"></i> Visitante
                                 </span>
                                 {% endif %}
                             </td>

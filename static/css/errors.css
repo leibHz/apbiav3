@@ -1,0 +1,207 @@
+/* =============================================
+   APBIA - Errors CSS (Sem Bootstrap)
+   Estilos para páginas de erro 403, 404, 500
+   ============================================= */
+
+.error-container {
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.error-content {
+    max-width: 600px;
+    width: 100%;
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 5rem;
+    margin-bottom: 2rem;
+}
+
+.error-icon-danger {
+    color: var(--error);
+}
+
+.error-icon-muted {
+    color: var(--text-muted);
+}
+
+.error-code {
+    font-size: 6rem;
+    font-weight: bold;
+    margin: 0;
+    line-height: 1;
+}
+
+.error-code-danger {
+    color: var(--error);
+}
+
+.error-code-primary {
+    color: var(--primary-color);
+    text-shadow: 0 0 20px rgba(0, 230, 118, 0.5);
+}
+
+.error-title {
+    font-size: 2rem;
+    margin: 1rem 0;
+    color: var(--text-primary);
+}
+
+.error-message {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    margin-bottom: 2rem;
+}
+
+/* Info box (usado no 403) */
+.error-info {
+    background: rgba(252, 211, 77, 0.1);
+    border: 2px solid var(--warning);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.error-info i {
+    color: var(--warning);
+    margin-right: 0.5rem;
+}
+
+.error-info strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.error-list {
+    margin: 1rem 0 0 0;
+    padding-left: 1.5rem;
+    color: var(--text-secondary);
+}
+
+.error-list li {
+    margin-bottom: 0.5rem;
+}
+
+/* Alert box (usado no 500) */
+.error-alert {
+    background: rgba(96, 165, 250, 0.1);
+    border: 2px solid var(--info);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.error-alert i {
+    color: var(--info);
+    margin-right: 0.5rem;
+}
+
+.error-alert strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+/* Botões de ação */
+.error-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.error-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.error-actions .btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    color: #000000;
+    box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4);
+}
+
+.error-actions .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 230, 118, 0.6);
+}
+
+.error-actions .btn-outline {
+    background: transparent;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+.error-actions .btn-outline:hover {
+    background: var(--primary-color);
+    color: #000000;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .error-icon {
+        font-size: 3rem;
+    }
+    
+    .error-code {
+        font-size: 4rem;
+    }
+    
+    .error-title {
+        font-size: 1.5rem;
+    }
+    
+    .error-message {
+        font-size: 1rem;
+    }
+    
+    .error-info,
+    .error-alert {
+        padding: 1rem;
+    }
+    
+    .error-actions {
+        flex-direction: column;
+    }
+    
+    .error-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .error-container {
+        padding: 1rem;
+    }
+    
+    .error-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+    }
+    
+    .error-code {
+        font-size: 3rem;
+    }
+    
+    .error-title {
+        font-size: 1.25rem;
+    }
+}
