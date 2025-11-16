@@ -7,104 +7,107 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="chat-wrapper">
     {% if ia_offline %}
-    <div class="alert alert-warning text-center" role="alert">
-        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-        <h4>IA Temporariamente Offline</h4>
-        <p class="mb-0">O assistente está temporariamente desativado. Contate o administrador.</p>
+    <div style="text-align: center; padding: 3rem;">
+        <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: var(--warning); margin-bottom: 1rem;"></i>
+        <h4 style="color: var(--text-primary);">IA Temporariamente Offline</h4>
+        <p style="color: var(--text-secondary);">O assistente está temporariamente desativado. Contate o administrador.</p>
     </div>
     {% else %}
-    <div class="row">
+    <div class="chat-layout">
         <!-- Sidebar -->
-        <div class="col-md-3 sidebar">
-            <div class="d-grid mb-3">
-                <button class="btn btn-primary" id="newChatBtn">
+        <aside class="chat-sidebar">
+            <div class="chat-sidebar-header">
+                <button class="btn-new-chat" id="newChatBtn">
                     <i class="fas fa-plus"></i> Nova Conversa
                 </button>
             </div>
             
-            <!-- Toggle Google Search -->
-            <div class="toggle-container">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="searchToggle" checked>
-                    <label class="form-check-label" for="searchToggle">
-                        <small>
-                            <i class="fas fa-search"></i>
-                            <strong>Google Search</strong>
-                        </small>
-                    </label>
-                </div>
-                <small class="text-muted d-block mt-1">
-                    Busca informações atualizadas e cita fontes
-                </small>
-            </div>
-            
-            <!-- Toggle Modo Bragantec -->
-            <div class="bragantec-toggle-container">
-                <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="bragantecToggle">
-                    <label class="form-check-label" for="bragantecToggle">
-                        <small>
-                            <i class="fas fa-book"></i>
-                            <strong>Modo Bragantec</strong>
-                            <span class="badge bg-warning text-dark ms-1">⚠️</span>
-                        </small>
-                    </label>
-                </div>
-                <small class="text-muted d-block mt-1">
-                    <strong>⚠️ Consome MUITOS tokens!</strong><br>
-                    Ativa conhecimento histórico da Bragantec
-                </small>
-            </div>
-            
-            <h6 class="text-muted px-3">
+            <h6 class="sidebar-title">
                 <i class="fas fa-history"></i> Histórico
             </h6>
             
-            <div class="list-group" id="chatHistory">
+            <ul class="chat-history-list" id="chatHistory">
                 {% if chats %}
                     {% for chat in chats %}
-                    <div class="list-group-item chat-item" data-chat-id="{{ chat.id }}">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div class="flex-grow-1">
-                                <h6 class="mb-0">{{ chat.titulo }}</h6>
-                                <small class="text-muted">
+                    <li class="chat-item" data-chat-id="{{ chat.id }}">
+                        <div class="chat-item-header">
+                            <div style="flex: 1; min-width: 0;">
+                                <h6 class="chat-item-title">{{ chat.titulo }}</h6>
+                                <small class="chat-item-date">
                                     {{ chat.data_criacao.strftime('%d/%m/%Y %H:%M') if chat.data_criacao else '' }}
                                 </small>
                             </div>
-                            <button class="btn btn-sm btn-outline-danger delete-chat" 
+                            <button class="btn-delete-chat" 
                                     data-chat-id="{{ chat.id }}"
                                     title="Deletar conversa">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </div>
-                    </div>
+                    </li>
                     {% endfor %}
                 {% else %}
-                <p class="text-muted text-center px-3 py-3">
-                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                    Nenhum chat anterior
-                </p>
+                <div class="sidebar-empty">
+                    <i class="fas fa-inbox"></i>
+                    <p>Nenhum chat anterior</p>
+                </div>
                 {% endif %}
-            </div>
-        </div>
+            </ul>
+        </aside>
         
         <!-- Área Principal do Chat -->
-        <div class="col-md-9">
-            <div id="chatContainer" class="border rounded">
+        <main class="chat-main">
+            <div class="chat-container">
+                <!-- Controles (Toggles) -->
+                <div class="chat-controls">
+                    <!-- Toggle Google Search -->
+                    <div class="toggle-group search-toggle">
+                        <div class="toggle-label">
+                            <span class="toggle-title">
+                                <i class="fas fa-search"></i>
+                                Google Search
+                            </span>
+                            <small class="toggle-description">
+                                Busca informações atualizadas e cita fontes
+                            </small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="searchToggle" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    
+                    <!-- Toggle Modo Bragantec -->
+                    <div class="toggle-group bragantec-toggle">
+                        <div class="toggle-label">
+                            <span class="toggle-title">
+                                <i class="fas fa-book"></i>
+                                Modo Bragantec
+                                <span style="background: var(--warning); color: #000; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.75rem;">⚠️</span>
+                            </span>
+                            <small class="toggle-description">
+                                <strong>⚠️ Consome MUITOS tokens!</strong><br>
+                                Ativa conhecimento histórico da Bragantec
+                            </small>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="bragantecToggle">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
                 <!-- Mensagens -->
-                <div id="chatMessages">
-                    <div class="text-center text-muted py-5" id="welcomeMessage">
-                        <i class="fas fa-robot fa-4x mb-3"></i>
+                <div class="chat-messages" id="chatMessages">
+                    <div class="welcome-message" id="welcomeMessage">
+                        <i class="fas fa-robot"></i>
                         <h4>Olá, {{ current_user.nome_completo }}!</h4>
                         <p>Como posso ajudar você hoje com seu projeto da Bragantec?</p>
-                        <div class="mt-3">
-                            <div class="alert alert-warning d-inline-block">
-                                <i class="fas fa-lightbulb"></i>
-                                <strong>💡 DICA:</strong> O Modo Bragantec está <strong>desativado</strong> para economizar tokens.<br>
-                                Ative-o apenas quando precisar de conhecimento específico da Bragantec!
-                            </div>
+                        <div class="welcome-alert">
+                            <i class="fas fa-lightbulb"></i>
+                            <strong>💡 DICA:</strong> O Modo Bragantec está <strong>desativado</strong> para economizar tokens.<br>
+                            Ative-o apenas quando precisar de conhecimento específico da Bragantec!
                         </div>
                     </div>
                 </div>
@@ -116,44 +119,44 @@
                 </div>
                 
                 <!-- Input -->
-                <div class="p-3 bg-white border-top">
-                    <form id="chatForm" class="d-flex gap-2">
+                <div class="chat-input-area">
+                    <form class="chat-form" id="chatForm">
                         <input type="text" 
-                               class="form-control" 
+                               class="chat-input" 
                                id="chatInput" 
                                placeholder="Digite sua mensagem..."
                                autocomplete="off"
                                required>
                         
-                        <button type="button" class="btn btn-outline-secondary" id="uploadBtn" title="Anexar arquivo">
+                        <button type="button" class="btn-chat btn-upload" id="uploadBtn" title="Anexar arquivo">
                             <i class="fas fa-paperclip"></i>
                         </button>
                         
-                        <button type="submit" class="btn btn-primary px-4">
+                        <button type="submit" class="btn-chat btn-send">
                             <i class="fas fa-paper-plane"></i>
                         </button>
                     </form>
                     
-                    <input type="file" id="fileInput" class="d-none">
+                    <input type="file" id="fileInput" style="display: none;">
                     
                     <!-- Indicadores de Status -->
-                    <div class="d-flex justify-content-between mt-2">
-                        <small class="text-muted">
+                    <div class="status-indicators">
+                        <small style="color: var(--text-muted);">
                             <i class="fas fa-keyboard"></i>
                             Pressione Enter para enviar
                         </small>
-                        <div class="d-flex gap-3">
-                            <small id="searchStatusIndicator">
-                                <i class="fas fa-search text-success"></i> Pesquisa ativa
-                            </small>
-                            <small id="bragantecStatusIndicator">
-                                <i class="fas fa-book text-muted"></i> Modo Bragantec desativado
-                            </small>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <span class="status-indicator search active" id="searchStatusIndicator">
+                                <i class="fas fa-search"></i> Pesquisa ativa
+                            </span>
+                            <span class="status-indicator bragantec inactive" id="bragantecStatusIndicator">
+                                <i class="fas fa-book"></i> Modo Bragantec desativado
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </main>
     </div>
     {% endif %}
 </div>

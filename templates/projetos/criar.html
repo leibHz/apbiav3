@@ -7,64 +7,59 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
+<div class="criar-container">
     <!-- Header -->
-    <div class="row mb-4">
-        <div class="col">
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ url_for('project.index') }}">Projetos</a></li>
-                    <li class="breadcrumb-item active">Novo Projeto</li>
-                </ol>
-            </nav>
-            <h2><i class="fas fa-plus-circle"></i> Criar Novo Projeto</h2>
-        </div>
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('project.index') }}">Projetos</a></li>
+            <li class="breadcrumb-item">Novo Projeto</li>
+        </ol>
+    </nav>
+    
+    <div class="criar-header">
+        <h2><i class="fas fa-plus-circle"></i> Criar Novo Projeto</h2>
     </div>
     
     <!-- Alerta sobre Modo Bragantec Automático -->
-    <div class="row mb-4">
-        <div class="col">
-            <div class="alert bragantec-alert">
-                <div class="d-flex align-items-start">
-                    <div class="me-3">
-                        <i class="fas fa-robot fa-3x text-warning"></i>
-                    </div>
-                    <div class="flex-grow-1">
-                        <h5 class="mb-2">
-                            <i class="fas fa-magic"></i>
-                            <strong>Gerador de Ideias Baseado em Projetos Vencedores</strong>
-                        </h5>
-                        <p class="mb-2">
-                            A IA vai <strong>analisar TODAS as edições anteriores da Bragantec</strong> 
-                            (incluindo os cadernos de resumos completos) para criar <strong>4 ideias de projetos 
-                            com ALTO POTENCIAL DE VITÓRIA</strong>, uma para cada categoria.
-                        </p>
-                        <div class="alert alert-warning mb-2">
-                            <strong>⚠️ Como funciona:</strong>
-                            <ol class="mb-0 mt-2">
-                                <li><strong>Análise automática</strong> dos projetos vencedores anteriores</li>
-                                <li><strong>Identificação de padrões</strong> de sucesso (temas, abordagens, metodologias)</li>
-                                <li><strong>Criação de 4 novas ideias</strong> inspiradas nos vencedores (mas não cópias!)</li>
-                                <li><strong>Adequação aos critérios</strong> de avaliação da Bragantec 2025</li>
-                            </ol>
-                        </div>
-                        <div class="alert alert-info mb-0">
-                            <i class="fas fa-info-circle"></i>
-                            <strong>Modo Bragantec Automático:</strong> 
-                            Esta operação usa o histórico COMPLETO da Bragantec e pode consumir 
-                            <strong>~100k-200k tokens de contexto</strong>. O processo pode levar 
-                            <strong>20-40 segundos</strong>, mas garante ideias de alta qualidade baseadas em dados reais!
-                        </div>
-                    </div>
-                    <div>
-                        <button class="btn btn-warning btn-lg" id="btnGerarIdeias">
-                            <i class="fas fa-lightbulb"></i>
-                            <strong>Gerar Ideias</strong>
-                            <br>
-                            <small>Análise Completa</small>
-                        </button>
-                    </div>
+    <div class="bragantec-alert">
+        <div class="bragantec-alert-content">
+            <div>
+                <i class="fas fa-robot bragantec-alert-icon"></i>
+            </div>
+            <div class="bragantec-alert-text">
+                <h5>
+                    <i class="fas fa-magic"></i>
+                    <strong>Gerador de Ideias Baseado em Projetos Vencedores</strong>
+                </h5>
+                <p>
+                    A IA vai <strong>analisar TODAS as edições anteriores da Bragantec</strong> 
+                    (incluindo os cadernos de resumos completos) para criar <strong>4 ideias de projetos 
+                    com ALTO POTENCIAL DE VITÓRIA</strong>, uma para cada categoria.
+                </p>
+                <div class="alert-warning-box">
+                    <strong>⚠️ Como funciona:</strong>
+                    <ol>
+                        <li><strong>Análise automática</strong> dos projetos vencedores anteriores</li>
+                        <li><strong>Identificação de padrões</strong> de sucesso (temas, abordagens, metodologias)</li>
+                        <li><strong>Criação de 4 novas ideias</strong> inspiradas nos vencedores (mas não cópias!)</li>
+                        <li><strong>Adequação aos critérios</strong> de avaliação da Bragantec 2025</li>
+                    </ol>
                 </div>
+                <div class="alert-info-box">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>Modo Bragantec Automático:</strong> 
+                    Esta operação usa o histórico COMPLETO da Bragantec e pode consumir 
+                    <strong>~100k-200k tokens de contexto</strong>. O processo pode levar 
+                    <strong>20-40 segundos</strong>, mas garante ideias de alta qualidade baseadas em dados reais!
+                </div>
+            </div>
+            <div>
+                <button class="btn-gerar-ideias" id="btnGerarIdeias">
+                    <i class="fas fa-lightbulb"></i>
+                    <strong>Gerar Ideias</strong>
+                    <br>
+                    <small>Análise Completa</small>
+                </button>
             </div>
         </div>
     </div>
@@ -73,18 +68,18 @@
     <form id="formProjeto">
         <!-- Informações Básicas -->
         <div class="campo-grupo">
-            <h4 class="mb-3"><i class="fas fa-info-circle"></i> Informações Básicas</h4>
+            <h4><i class="fas fa-info-circle"></i> Informações Básicas</h4>
             
-            <div class="mb-3">
+            <div class="form-group">
                 <label class="form-label">Título do Projeto *</label>
                 <input type="text" class="form-control" id="nome" name="nome" required
                        placeholder="Ex: Sistema de Irrigação Inteligente com IoT">
-                <small class="text-muted">
+                <small class="form-text">
                     Deve ser simples, direto e atrativo
                 </small>
             </div>
             
-            <div class="mb-3">
+            <div class="form-group">
                 <label class="form-label">Categoria *</label>
                 <select class="form-select" id="categoria" name="categoria" required>
                     <option value="">Selecione uma categoria</option>
@@ -95,7 +90,7 @@
                 </select>
             </div>
             
-            <div class="mb-3">
+            <div class="form-group">
                 <label class="form-label">Ano da Edição</label>
                 <input type="number" class="form-control" id="ano_edicao" name="ano_edicao" 
                        value="2025" min="2025" max="2030">
@@ -106,18 +101,17 @@
         <div class="campo-grupo">
             <div class="campo-header">
                 <h5><i class="fas fa-file-alt"></i> Resumo</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary btn-ia-autocompletar" 
-                        data-campo="resumo">
+                <button type="button" class="btn-ia-autocompletar" data-campo="resumo">
                     <i class="fas fa-robot"></i> IA Autocompletar
                 </button>
             </div>
-            <textarea class="form-control" id="resumo" name="resumo" rows="5" 
+            <textarea class="form-textarea" id="resumo" name="resumo" rows="5" 
                       maxlength="300" placeholder="Máximo 300 palavras..."></textarea>
-            <div class="d-flex justify-content-between mt-1">
-                <small class="text-muted">
+            <div class="char-counter">
+                <small class="form-text">
                     Deve conter: Introdução, Objetivos, Métodos, Resultados esperados
                 </small>
-                <small id="resumo-count" class="text-muted">0/300</small>
+                <small id="resumo-count" class="form-text">0/300</small>
             </div>
         </div>
         
@@ -126,21 +120,20 @@
             <h5><i class="fas fa-tags"></i> Palavras-Chave</h5>
             <input type="text" class="form-control" id="palavras_chave" name="palavras_chave"
                    placeholder="Ex: IoT, Sustentabilidade, Agricultura">
-            <small class="text-muted">Três palavras-chave separadas por vírgula</small>
+            <small class="form-text">Três palavras-chave separadas por vírgula</small>
         </div>
         
         <!-- Introdução -->
         <div class="campo-grupo">
             <div class="campo-header">
                 <h5><i class="fas fa-book-open"></i> Introdução</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary btn-ia-autocompletar" 
-                        data-campo="introducao">
+                <button type="button" class="btn-ia-autocompletar" data-campo="introducao">
                     <i class="fas fa-robot"></i> IA Autocompletar
                 </button>
             </div>
-            <textarea class="form-control" id="introducao" name="introducao" rows="8"
+            <textarea class="form-textarea" id="introducao" name="introducao" rows="8"
                       placeholder="Apresente o tema, sua relevância e fundamentação teórica..."></textarea>
-            <small class="text-muted">
+            <small class="form-text">
                 Responda: Qual o problema? Por que é importante? O que já se sabe sobre o tema?
             </small>
         </div>
@@ -149,29 +142,28 @@
         <div class="campo-grupo">
             <div class="campo-header">
                 <h5><i class="fas fa-bullseye"></i> Objetivos</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary btn-ia-autocompletar" 
-                        data-campo="objetivos">
+                <button type="button" class="btn-ia-autocompletar" data-campo="objetivos">
                     <i class="fas fa-robot"></i> IA Autocompletar
                 </button>
             </div>
             
-            <div class="mb-3">
+            <div class="form-group">
                 <label class="form-label">Objetivo Geral</label>
-                <textarea class="form-control" id="objetivo_geral" name="objetivo_geral" rows="3"
+                <textarea class="form-textarea" id="objetivo_geral" name="objetivo_geral" rows="3"
                           placeholder="Descreva a finalidade principal do projeto..."></textarea>
-                <small class="text-muted">Use verbos no infinitivo: desenvolver, analisar, comparar...</small>
+                <small class="form-text">Use verbos no infinitivo: desenvolver, analisar, comparar...</small>
             </div>
             
-            <div class="mb-3">
+            <div class="form-group">
                 <label class="form-label">Objetivos Específicos</label>
-                <div id="objetivos-especificos-container">
-                    <div class="input-group mb-2">
-                        <span class="input-group-text">1.</span>
+                <div id="objetivos-especificos-container" class="objetivos-list">
+                    <div class="objetivo-item">
+                        <span>1.</span>
                         <input type="text" class="form-control objetivo-especifico" 
                                placeholder="Primeiro objetivo específico...">
                     </div>
                 </div>
-                <button type="button" class="btn btn-sm btn-outline-secondary" id="addObjetivo">
+                <button type="button" class="btn-adicionar" id="addObjetivo">
                     <i class="fas fa-plus"></i> Adicionar Objetivo
                 </button>
             </div>
@@ -181,14 +173,13 @@
         <div class="campo-grupo">
             <div class="campo-header">
                 <h5><i class="fas fa-microscope"></i> Metodologia</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary btn-ia-autocompletar" 
-                        data-campo="metodologia">
+                <button type="button" class="btn-ia-autocompletar" data-campo="metodologia">
                     <i class="fas fa-robot"></i> IA Autocompletar
                 </button>
             </div>
-            <textarea class="form-control" id="metodologia" name="metodologia" rows="8"
+            <textarea class="form-textarea" id="metodologia" name="metodologia" rows="8"
                       placeholder="Descreva materiais, métodos, procedimentos e equipamentos..."></textarea>
-            <small class="text-muted">
+            <small class="form-text">
                 Detalhe: tipo de pesquisa, dados a coletar, recursos necessários, como será desenvolvido
             </small>
         </div>
@@ -196,10 +187,10 @@
         <!-- Cronograma -->
         <div class="campo-grupo">
             <h5><i class="fas fa-calendar-alt"></i> Cronograma</h5>
-            <p class="text-muted">Distribua as etapas do projeto ao longo do tempo</p>
+            <p class="form-text">Distribua as etapas do projeto ao longo do tempo</p>
             <div class="table-responsive">
-                <table class="table table-bordered" id="cronogramaTable">
-                    <thead class="table-light">
+                <table class="cronograma-table" id="cronogramaTable">
+                    <thead>
                         <tr>
                             <th>Etapa</th>
                             <th>Mar</th><th>Abr</th><th>Mai</th><th>Jun</th>
@@ -209,19 +200,18 @@
                     </thead>
                     <tbody id="cronogramaBody">
                         <tr>
-                            <td><input type="text" class="form-control form-control-sm" 
-                                       placeholder="Ex: Definição do tema"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
-                            <td><input type="checkbox" class="form-check-input"></td>
+                            <td><input type="text" placeholder="Ex: Definição do tema"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
+                            <td><input type="checkbox"></td>
                             <td>
-                                <button type="button" class="btn btn-sm btn-danger remove-etapa">
+                                <button type="button" class="btn-remover-etapa remove-etapa">
                                     <i class="fas fa-times"></i>
                                 </button>
                             </td>
@@ -229,7 +219,7 @@
                     </tbody>
                 </table>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="addEtapa">
+            <button type="button" class="btn-adicionar" id="addEtapa">
                 <i class="fas fa-plus"></i> Adicionar Etapa
             </button>
         </div>
@@ -238,26 +228,25 @@
         <div class="campo-grupo">
             <div class="campo-header">
                 <h5><i class="fas fa-chart-line"></i> Resultados Esperados</h5>
-                <button type="button" class="btn btn-sm btn-outline-primary btn-ia-autocompletar" 
-                        data-campo="resultados_esperados">
+                <button type="button" class="btn-ia-autocompletar" data-campo="resultados_esperados">
                     <i class="fas fa-robot"></i> IA Autocompletar
                 </button>
             </div>
-            <textarea class="form-control" id="resultados_esperados" name="resultados_esperados" rows="6"
+            <textarea class="form-textarea" id="resultados_esperados" name="resultados_esperados" rows="6"
                       placeholder="Quais as expectativas e implicações do projeto quando finalizado?"></textarea>
         </div>
         
         <!-- Referências -->
         <div class="campo-grupo">
             <h5><i class="fas fa-book"></i> Referências Bibliográficas</h5>
-            <textarea class="form-control" id="referencias_bibliograficas" 
+            <textarea class="form-textarea" id="referencias_bibliograficas" 
                       name="referencias_bibliograficas" rows="6"
                       placeholder="Liste todas as fontes consultadas (livros, sites, artigos, etc.) seguindo normas ABNT"></textarea>
         </div>
         
         <!-- Continuação de Projeto Anterior -->
         <div class="campo-grupo">
-            <div class="form-check mb-3">
+            <div class="form-check">
                 <input class="form-check-input" type="checkbox" id="eh_continuacao" name="eh_continuacao">
                 <label class="form-check-label" for="eh_continuacao">
                     <strong>Este projeto é continuação de um projeto anterior?</strong>
@@ -265,25 +254,25 @@
             </div>
             
             <div id="continuacao-fields" style="display: none;">
-                <div class="mb-3">
+                <div class="form-group">
                     <label class="form-label">Título do Projeto Anterior</label>
                     <input type="text" class="form-control" id="projeto_anterior_titulo" 
                            name="projeto_anterior_titulo">
                 </div>
                 
-                <div class="mb-3">
+                <div class="form-group">
                     <label class="form-label">Resumo do Projeto Anterior</label>
-                    <textarea class="form-control" id="projeto_anterior_resumo" 
+                    <textarea class="form-textarea" id="projeto_anterior_resumo" 
                               name="projeto_anterior_resumo" rows="4"></textarea>
                 </div>
                 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
                         <label class="form-label">Data de Início</label>
                         <input type="date" class="form-control" id="projeto_anterior_inicio" 
                                name="projeto_anterior_inicio">
                     </div>
-                    <div class="col-md-6 mb-3">
+                    <div class="form-group">
                         <label class="form-label">Data de Término</label>
                         <input type="date" class="form-control" id="projeto_anterior_termino" 
                                name="projeto_anterior_termino">
@@ -294,15 +283,15 @@
         
         <!-- Botões de Ação -->
         <div class="campo-grupo">
-            <div class="d-flex justify-content-between">
-                <a href="{{ url_for('project.index') }}" class="btn btn-outline-secondary">
+            <div class="acoes-finais">
+                <a href="{{ url_for('project.index') }}" class="btn btn-cancelar">
                     <i class="fas fa-times"></i> Cancelar
                 </a>
-                <div>
-                    <button type="submit" class="btn btn-primary me-2" data-status="rascunho">
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <button type="submit" class="btn btn-rascunho" data-status="rascunho">
                         <i class="fas fa-save"></i> Salvar Rascunho
                     </button>
-                    <button type="submit" class="btn btn-success" data-status="em_andamento">
+                    <button type="submit" class="btn btn-salvar" data-status="em_andamento">
                         <i class="fas fa-check"></i> Salvar e Continuar
                     </button>
                 </div>
@@ -313,41 +302,36 @@
 
 <!-- Loading Overlay -->
 <div id="loadingIA">
-    <div class="d-flex justify-content-center align-items-center h-100">
-        <div class="text-center text-white">
-            <div class="spinner-border mb-3"></div>
-            <h3 class="mb-2">
-                <i class="fas fa-brain"></i> IA Analisando Projetos Vencedores...
-            </h3>
-            <p id="loadingMessage" class="lead">Processando histórico completo da Bragantec...</p>
-            <div class="mt-3">
-                <small class="text-muted">
-                    <i class="fas fa-clock"></i> Isso pode levar 20-40 segundos<br>
-                    <i class="fas fa-database"></i> Analisando ~100k-200k tokens de contexto
-                </small>
-            </div>
+    <div class="loading-content">
+        <div class="spinner"></div>
+        <h3><i class="fas fa-brain"></i> IA Analisando Projetos Vencedores...</h3>
+        <p id="loadingMessage">Processando histórico completo da Bragantec...</p>
+        <div style="margin-top: 1rem;">
+            <small style="color: var(--text-muted);">
+                <i class="fas fa-clock"></i> Isso pode levar 20-40 segundos<br>
+                <i class="fas fa-database"></i> Analisando ~100k-200k tokens de contexto
+            </small>
         </div>
     </div>
 </div>
 
 <!-- Modal de Ideias Geradas -->
-<div class="modal fade" id="modalIdeias" tabindex="-1">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title">
-                    <i class="fas fa-trophy"></i> 
-                    <strong>Ideias Baseadas em Projetos Vencedores</strong>
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body" id="ideiasContent">
-                <!-- Conteúdo será preenchido dinamicamente -->
-            </div>
+<div id="modalIdeias" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 10000; overflow-y: auto;">
+    <div style="max-width: 1200px; margin: 2rem auto; background: var(--bg-card); border-radius: 12px; border: 2px solid var(--warning);">
+        <div style="background: var(--warning); color: #000; padding: 1.5rem; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;">
+            <h3 style="margin: 0;">
+                <i class="fas fa-trophy"></i> 
+                <strong>Ideias Baseadas em Projetos Vencedores</strong>
+            </h3>
+            <button onclick="document.getElementById('modalIdeias').style.display='none'" style="background: none; border: none; color: #000; font-size: 1.5rem; cursor: pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div id="ideiasContent" style="padding: 2rem;">
+            <!-- Conteúdo será preenchido dinamicamente -->
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}

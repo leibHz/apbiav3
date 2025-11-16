@@ -1,17 +1,15 @@
 /* =============================================
-   APBIA - Admin Orientações CSS
+   APBIA - Admin Orientações CSS (Sem Bootstrap)
+   Reutiliza estilos de admin_usuarios.css
    ============================================= */
 
-/* Elementos ocultos por padrão */
-.projeto-info-alert {
-    display: none;
-}
+@import url('admin_usuarios.css');
 
+/* Ajustes específicos para orientações */
 .passo-hidden {
     display: none;
 }
 
-/* Animações de transição */
 .fade-in {
     animation: fadeIn 0.3s ease-in;
 }
@@ -27,90 +25,79 @@
     }
 }
 
-/* Hover effects para tabela */
-#tabelaOrientacoes tbody tr {
-    transition: background-color 0.2s ease;
+/* Info de projeto */
+.projeto-info-box {
+    background: rgba(0, 230, 118, 0.1);
+    border: 2px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 1rem 0;
 }
 
-#tabelaOrientacoes tbody tr:hover {
-    background-color: #f8f9fa;
+.projeto-info-box strong {
+    color: var(--text-primary);
+    display: block;
+    margin-bottom: 0.5rem;
 }
 
-/* Botões de ação */
-.remover-orientacao {
-    transition: all 0.2s ease;
+.projeto-info-box p {
+    color: var(--text-secondary);
+    margin: 0;
 }
 
-.remover-orientacao:hover {
-    transform: scale(1.1);
-}
-
-/* Modal */
-.modal-header {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-    color: white;
-}
-
-.modal-header .btn-close {
-    filter: brightness(0) invert(1);
-}
-
-/* Passos do formulário */
-.mb-4 h6 {
-    color: #495057;
-    font-weight: 600;
+.projeto-info-box small {
+    color: var(--text-muted);
 }
 
 /* Lista de participantes */
-#participantesLista .list-group-item {
-    border-left: 3px solid #28a745;
-    transition: all 0.2s ease;
+.participantes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-#participantesLista .list-group-item:hover {
-    background-color: #f8f9fa;
+.participante-item {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid var(--primary-color);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.participante-item:hover {
+    background: var(--bg-hover);
     transform: translateX(5px);
 }
 
-/* Badges */
-.badge {
-    font-weight: 600;
-    padding: 0.4em 0.8em;
+.participante-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-/* Filtros */
-.form-select {
-    transition: border-color 0.2s ease;
+.participante-info strong {
+    color: var(--text-primary);
 }
 
-.form-select:focus {
-    border-color: #28a745;
-    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+.participante-info small {
+    color: var(--text-muted);
+    display: block;
 }
 
-/* Card de orientações */
-.card {
+/* Botão remover orientação */
+.btn-remover {
+    background: var(--error);
+    color: #FFFFFF;
     border: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.3s ease;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
-.card:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-/* Responsividade */
-@media (max-width: 768px) {
-    .table-responsive {
-        font-size: 0.9rem;
-    }
-    
-    #tabelaOrientacoes th,
-    #tabelaOrientacoes td {
-        padding: 0.5rem;
-    }
-    
-    .badge {
-        font-size: 0.75rem;
-    }
+.btn-remover:hover {
+    background: #CC0000;
+    transform: scale(1.1);
 }
