@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block title %}{{ chat.titulo }} - APBIA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orientador_visualizar.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/orientador_chat.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="chat-visualizar-container">
+    <!-- Breadcrumb -->
+    <nav>
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('orientador.dashboard') }}">Dashboard</a>
+            </li>
+            <li class="breadcrumb-item">
+                <a href="{{ url_for('orientador.visualizar_orientado', participante_id=orientado.id) }}">
+                    {{ orientado.nome_completo }}
+                </a>
+            </li>
+            <li class="breadcrumb-item">{{ chat.titulo }}</li>
+        </ol>
+    </nav>
+    
+    <!-- Header -->
+    <div class="chat-header-card">
+        <div class="chat-header-content">
+            <div class="chat-header-info">
+                <h3>
+                    <i class="fas fa-comment-dots"></i> {{ chat.titulo }}
+                </h3>
+                <div class="chat-header-meta">
+                    <span>
+                        <i class="fas fa-user-graduate"></i> {{ orientado.nome_completo }}
+                    </span>
+                    <span style="margin: 0 1rem;">•</span>
+                    <span>
+                        <i class="far fa-calendar"></i> 
+                        {{ chat.data_criacao.strftime('%d/%m/%Y %H:%M') if chat.data_criacao else '' }}
+                    </span>
+                </div>
+            </div>
+            <div>
+                <a href="{{ url_for('orientador.visualizar_orientado', participante_id=orientado.id) }}" 
+                   class="btn btn-voltar">
+                    <i class="fas fa-arrow-left"></i> Voltar
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Mensagens -->
+    <div class="messages-container" id="messagesContainer">
+        {% if mensagens %}
+            {% for msg in mensagens %}
+            <div class="message {{ msg.role }}">
+                <div class="message-content">
+                    {{ msg.conteudo }}
+                </div>
+                <div class="timestamp">
+                    {{ msg.timestamp.strftime('%H:%M') if msg.timestamp else '' }}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            <i class="fas fa-inbox" style="font-size: 3rem; display: block; margin-bottom: 1rem; opacity: 0.3;"></i>
+            <h5 style="color: var(--text-primary);">Nenhuma mensagem nesta conversa</h5>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Notas do Orientador -->
+    <div class="notas-section">
+        <div class="notas-header">
+            <h5>
+                <i class="fas fa-sticky-note"></i> Notas do Orientador
+            </h5>
+        </div>
+        <form id="formNotas" onsubmit="salvarNotas(event)">
+            <textarea class="notas-textarea" 
+                      id="notasTextarea" 
+                      name="notas"
+                      placeholder="Adicione suas observações sobre esta conversa...">{{ chat.notas_orientador or '' }}</textarea>
+            <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+                <button type="submit" class="btn btn-salvar">
+                    <i class="fas fa-save"></i> Salvar Notas
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Scroll automático para o fim das mensagens
+document.addEventListener('DOMContentLoaded', function() {
+    const container = document.getElementById('messagesContainer');
+    if (container) {
+        container.scrollTop = container.scrollHeight;
+    }
+});
+
+// Salvar notas
+async function salvarNotas(event) {
+    event.preventDefault();
+    
+    const notas = document.getElementById('notasTextarea').value;
+    const chatId = {{ chat.id }};
+    
+    if (!window.APBIA) {
+        alert('Erro: funções globais não carregadas');
+        return;
+    }
+    
+    APBIA.showLoadingOverlay('Salvando notas...');
+    
+    try {
+        const response = await fetch(`/orientador/chat/${chatId}/notas`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ notas: notas })
+        });
+        
+        const data = await response.json();
+        
+        APBIA.hideLoadingOverlay();
+        
+        if (data.success) {
+            APBIA.showNotification('Notas salvas com sucesso!', 'success');
+        } else {
+            APBIA.showNotification('Erro ao salvar notas: ' + (data.message || ''), 'error');
+        }
+    } catch (error) {
+        APBIA.hideLoadingOverlay();
+        APBIA.showNotification('Erro ao salvar notas', 'error');
+        console.error('Erro:', error);
+    }
+}
+</script>
+{% endblock %}
