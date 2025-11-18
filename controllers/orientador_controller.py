@@ -1,10 +1,3 @@
-"""
-Controller para funcionalidades exclusivas de Orientadores
-- Visualizar chats de orientados
-- Adicionar notas nas respostas da IA
-- Acompanhar uso de ferramentas (Google Search, Modo Bragantec)
-"""
-
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for
 from flask_login import login_required, current_user
 from functools import wraps

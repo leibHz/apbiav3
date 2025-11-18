@@ -1,8 +1,3 @@
-"""
-Chat Controller COM HISTÓRICO MULTIMODAL PERSISTENTE
-✅ INTEGRADO COM BANCO DE DADOS (tabela arquivos_chat)
-"""
-
 from flask import Blueprint, render_template, request, jsonify, session, send_file
 from flask_login import login_required, current_user
 from dao.dao import SupabaseDAO
@@ -22,9 +17,6 @@ gemini = GeminiService()
 # ✅ Diretório para arquivos permanentes
 CHAT_FILES_DIR = os.path.join(Config.UPLOAD_FOLDER, 'chat_files')
 os.makedirs(CHAT_FILES_DIR, exist_ok=True)
-
-
-# ✅ SUBSTITUA A FUNÇÃO _save_chat_file_to_disk
 
 def _save_chat_file_to_disk(file, user_id, chat_id):
     """Salva arquivo com proteção contra race conditions"""

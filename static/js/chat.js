@@ -7,7 +7,7 @@ let usarContextoBragantec = false; // ✅ NOVO: Modo Bragantec desativado por pa
 document.addEventListener('DOMContentLoaded', function() {
     initializeChatHandlers();
     loadSearchPreference();
-    loadBragantecPreference(); // ✅ NOVO
+    loadBragantecPreference();
 });
 
 function initializeChatHandlers() {
@@ -45,7 +45,6 @@ function initializeChatHandlers() {
             usarPesquisaGoogle = this.checked;
             localStorage.setItem('apbia_usar_pesquisa', usarPesquisaGoogle);
             
-            // ✅ Atualiza indicador visual
             updateSearchIndicator();
             
             const msg = usarPesquisaGoogle ? 
@@ -63,7 +62,6 @@ function initializeChatHandlers() {
             usarContextoBragantec = this.checked;
             localStorage.setItem('apbia_usar_bragantec', usarContextoBragantec);
             
-            // ✅ Atualiza indicador visual
             updateBragantecIndicator();
             
             const msg = usarContextoBragantec ? 
@@ -76,14 +74,15 @@ function initializeChatHandlers() {
     // Itens do histórico
     document.querySelectorAll('.chat-item').forEach(item => {
         item.addEventListener('click', function(e) {
-            if (!e.target.classList.contains('delete-chat')) {
+            if (!e.target.classList.contains('delete-chat') && 
+                !e.target.closest('.btn-delete-chat')) {
                 loadChat(this.dataset.chatId);
             }
         });
     });
     
-    // Botões de deletar chat
-    document.querySelectorAll('.delete-chat').forEach(btn => {
+    // ✅ CORRIGIDO: Botões de deletar chat
+    document.querySelectorAll('.btn-delete-chat').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
             deleteChat(this.dataset.chatId);
@@ -92,7 +91,6 @@ function initializeChatHandlers() {
 }
 
 function loadSearchPreference() {
-    // Carrega preferência de pesquisa do localStorage
     const saved = localStorage.getItem('apbia_usar_pesquisa');
     if (saved !== null) {
         usarPesquisaGoogle = saved === 'true';
@@ -104,7 +102,6 @@ function loadSearchPreference() {
     updateSearchIndicator();
 }
 
-// ✅ NOVO: Carrega preferência do Modo Bragantec
 function loadBragantecPreference() {
     const saved = localStorage.getItem('apbia_usar_bragantec');
     if (saved !== null) {
@@ -117,7 +114,6 @@ function loadBragantecPreference() {
     updateBragantecIndicator();
 }
 
-// ✅ NOVO: Atualiza indicador visual do Google Search
 function updateSearchIndicator() {
     const indicator = document.getElementById('searchStatusIndicator');
     if (indicator) {
@@ -129,7 +125,6 @@ function updateSearchIndicator() {
     }
 }
 
-// ✅ NOVO: Atualiza indicador visual do Modo Bragantec
 function updateBragantecIndicator() {
     const indicator = document.getElementById('bragantecStatusIndicator');
     if (indicator) {
@@ -169,16 +164,27 @@ async function handleSendMessage(e) {
                 chat_id: currentChatId,
                 usar_pesquisa: usarPesquisaGoogle,
                 usar_code_execution: true,
-                usar_contexto_bragantec: usarContextoBragantec  // ✅ CORRIGIDO: Agora envia corretamente
+                usar_contexto_bragantec: usarContextoBragantec
             })
         });
+        
+        // ✅ CORRIGIDO: Verifica se a resposta foi OK
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
         
         const data = await response.json();
         
         showThinking(false);
         
+        // ✅ CORRIGIDO: Só mostra erro se realmente houver erro
+        if (data.error) {
+            showError(data.message || 'Erro ao processar mensagem');
+            return;
+        }
+        
         if (data.success) {
-            // NOVO: Armazena uso de tokens
+            // Log de tokens (se disponível)
             if (data.tokens_input || data.tokens_output) {
                 window.lastTokenUsage = {
                     input: data.tokens_input,
@@ -186,7 +192,7 @@ async function handleSendMessage(e) {
                 };
             }
             
-            // NOVO: Alerta se consumo muito alto
+            // Alerta se consumo muito alto
             if (data.tokens_input && data.tokens_input > 100000) {
                 APBIA.showNotification(
                     `⚠️ Alto consumo de tokens: ${data.tokens_input.toLocaleString('pt-BR')} tokens de entrada!\n` +
@@ -195,15 +201,7 @@ async function handleSendMessage(e) {
                 );
             }
             
-            // Log para debug
-            console.log('📦 Resposta recebida:', {
-                code_executed: data.code_executed,
-                code_results: data.code_results,
-                search_used: data.search_used,
-                thinking: data.thinking_process ? 'sim' : 'não'
-            });
-            
-            // Adiciona resposta da IA com TODOS os dados
+            // Adiciona resposta da IA
             addMessageToChat(
                 'assistant', 
                 data.response, 
@@ -212,38 +210,38 @@ async function handleSendMessage(e) {
                 data.code_results
             );
             
-            // Atualiza ID do chat se for novo SEM recarregar a página
+            // ✅ CORRIGIDO: Só mostra aviso se for REALMENTE uma nova conversa
             if (data.chat_id && !currentChatId) {
                 currentChatId = data.chat_id;
                 addChatToSidebar(data.chat_id, message);
-                APBIA.showNotification('Nova conversa iniciada!', 'success');
+                // ✅ Aviso mais discreto
+                console.log('✅ Nova conversa criada:', data.chat_id);
+            } else if (data.chat_id) {
+                // Atualiza ID se mudou
+                currentChatId = data.chat_id;
             }
-        } else {
-            showError(data.message || 'Erro ao processar mensagem');
         }
         
     } catch (error) {
         showThinking(false);
-        showError('Erro de conexão. Tente novamente.');
-        console.error('Erro:', error);
+        // ✅ CORRIGIDO: Mensagem de erro mais clara
+        console.error('❌ Erro na requisição:', error);
+        showError('Erro ao enviar mensagem. Verifique sua conexão e tente novamente.');
     }
 }
 
 function addChatToSidebar(chatId, firstMessage) {
-    /**
-     * Adiciona chat na sidebar sem recarregar página
-     */
     const chatHistory = document.getElementById('chatHistory');
     
     // Remove mensagem "Nenhum chat anterior" se existir
-    const emptyMessage = chatHistory.querySelector('p.text-muted');
+    const emptyMessage = chatHistory.querySelector('.sidebar-empty');
     if (emptyMessage) {
         emptyMessage.remove();
     }
     
     // Cria elemento do chat
-    const chatItem = document.createElement('div');
-    chatItem.className = 'list-group-item chat-item active';
+    const chatItem = document.createElement('li');
+    chatItem.className = 'chat-item active';
     chatItem.dataset.chatId = chatId;
     
     const now = new Date();
@@ -255,18 +253,17 @@ function addChatToSidebar(chatId, firstMessage) {
         minute: '2-digit'
     });
     
-    // Gera título baseado na primeira mensagem
     const title = firstMessage.length > 40 ? 
         firstMessage.substring(0, 40) + '...' : 
         firstMessage;
     
     chatItem.innerHTML = `
-        <div class="d-flex justify-content-between align-items-center">
-            <div class="flex-grow-1">
-                <h6 class="mb-0">${title}</h6>
-                <small class="text-muted">${timeStr}</small>
+        <div class="chat-item-header">
+            <div style="flex: 1; min-width: 0;">
+                <h6 class="chat-item-title">${title}</h6>
+                <small class="chat-item-date">${timeStr}</small>
             </div>
-            <button class="btn btn-sm btn-outline-danger delete-chat" 
+            <button class="btn-delete-chat" 
                     data-chat-id="${chatId}"
                     title="Deletar conversa">
                 <i class="fas fa-trash"></i>
@@ -279,12 +276,13 @@ function addChatToSidebar(chatId, firstMessage) {
     
     // Adiciona handlers
     chatItem.addEventListener('click', function(e) {
-        if (!e.target.classList.contains('delete-chat')) {
+        if (!e.target.classList.contains('btn-delete-chat') && 
+            !e.target.closest('.btn-delete-chat')) {
             loadChat(this.dataset.chatId);
         }
     });
     
-    chatItem.querySelector('.delete-chat').addEventListener('click', function(e) {
+    chatItem.querySelector('.btn-delete-chat').addEventListener('click', function(e) {
         e.stopPropagation();
         deleteChat(this.dataset.chatId);
     });
@@ -298,7 +296,6 @@ function addChatToSidebar(chatId, firstMessage) {
 }
 
 function addMessageToChat(role, content, thinking = null, searchUsed = false, codeResults = null, arquivo = null) {
-    // ✅ ATUALIZADO: Adiciona mensagem COM SUPORTE A ARQUIVO
     const messagesContainer = document.getElementById('chatMessages');
     
     // Remove mensagem de boas-vindas
@@ -311,13 +308,12 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role} fade-in`;
     
-    // ✅ NOVO: Badge de arquivo anexado
+    // Badge de arquivo anexado
     if (arquivo) {
         const fileBadge = document.createElement('div');
         fileBadge.className = 'alert alert-secondary border mb-2';
         fileBadge.style.background = '#f8f9fa';
         
-        // Ícone baseado no tipo
         let icon = 'fa-file';
         if (arquivo.tipo && arquivo.tipo.startsWith('image/')) {
             icon = 'fa-image';
@@ -329,7 +325,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
             icon = 'fa-file-pdf';
         }
         
-        // Formata tamanho
         const tamanhoMB = (arquivo.tamanho / (1024 * 1024)).toFixed(2);
         
         fileBadge.innerHTML = `
@@ -379,7 +374,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         
         messageDiv.appendChild(thinkingBadge);
         
-        // Toggle para mostrar/ocultar
         thinkingBadge.querySelector('.toggle-thinking').addEventListener('click', function() {
             const content = thinkingBadge.querySelector('.thinking-content');
             const icon = this.querySelector('i');
@@ -398,8 +392,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     
     // Badge de Code Execution
     if (role === 'assistant' && codeResults && Array.isArray(codeResults) && codeResults.length > 0) {
-        console.log('🐍 Renderizando code execution:', codeResults);
-        
         const codeBadge = document.createElement('div');
         codeBadge.className = 'alert alert-dark border mb-2';
         codeBadge.style.background = '#1e1e1e';
@@ -421,7 +413,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         
         messageDiv.appendChild(codeBadge);
         
-        // Toggle para mostrar/ocultar código
         codeBadge.querySelector('.toggle-code').addEventListener('click', function() {
             const content = codeBadge.querySelector('.code-content');
             const icon = this.querySelector('i');
@@ -456,7 +447,7 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         messageDiv.appendChild(searchBadge);
     }
     
-    // NOVO: Badge de consumo de tokens (se disponível)
+    // Badge de consumo de tokens
     if (role === 'assistant' && window.lastTokenUsage) {
         const tokenBadge = document.createElement('div');
         tokenBadge.className = 'mt-2';
@@ -465,7 +456,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         const outputTokens = window.lastTokenUsage.output || 0;
         const totalTokens = inputTokens + outputTokens;
         
-        // Alerta visual se consumo muito alto
         const alertClass = inputTokens > 100000 ? 'bg-danger' : 
                           inputTokens > 50000 ? 'bg-warning' : 'bg-info';
         
@@ -479,8 +469,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
         `;
         
         messageDiv.appendChild(tokenBadge);
-        
-        // Limpa para próxima mensagem
         delete window.lastTokenUsage;
     }
     
@@ -494,8 +482,6 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     messageDiv.appendChild(timestamp);
     
     messagesContainer.appendChild(messageDiv);
-    
-    // Scroll para o fim
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
@@ -545,14 +531,9 @@ function formatMessageContent(content) {
     div.textContent = content;
     let html = div.innerHTML;
     
-    // Converte quebras de linha
     html = html.replace(/\n/g, '<br>');
-    
-    // Detecta e formata listas
     html = html.replace(/^- (.+)$/gm, '• $1');
     html = html.replace(/^\d+\. (.+)$/gm, '<strong>$&</strong>');
-    
-    // Formata código inline (entre ``)
     html = html.replace(/`([^`]+)`/g, '<code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-family: monospace;">$1</code>');
     
     return html;
@@ -585,7 +566,7 @@ async function createNewChat() {
             currentChatId = data.chat.id;
             clearChatMessages();
             addChatToSidebar(data.chat.id, titulo);
-            APBIA.showNotification('Nova conversa criada!', 'success');
+            console.log('✅ Nova conversa criada:', data.chat.id);
         } else {
             showError(data.message || 'Erro ao criar chat');
         }
@@ -609,26 +590,23 @@ async function deleteChat(chatId) {
         if (data.success) {
             APBIA.showNotification('Conversa deletada', 'success');
             
-            // Remove da sidebar
             const chatItem = document.querySelector(`[data-chat-id="${chatId}"]`);
             if (chatItem) {
                 chatItem.remove();
             }
             
-            // Se era o chat atual, limpa
             if (currentChatId === parseInt(chatId)) {
                 currentChatId = null;
                 clearChatMessages();
             }
             
-            // Verifica se não há mais chats
             const chatHistory = document.getElementById('chatHistory');
             if (chatHistory.children.length === 0) {
                 chatHistory.innerHTML = `
-                    <p class="text-muted text-center px-3 py-3">
-                        <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                        Nenhum chat anterior
-                    </p>
+                    <div class="sidebar-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Nenhum chat anterior</p>
+                    </div>
                 `;
             }
         } else {
@@ -642,7 +620,6 @@ async function deleteChat(chatId) {
 }
 
 async function loadChat(chatId) {
-    // ✅ ATUALIZADO: Carrega histórico COM ARQUIVOS
     currentChatId = parseInt(chatId);
     
     APBIA.showLoadingOverlay('Carregando histórico...');
@@ -654,28 +631,25 @@ async function loadChat(chatId) {
         APBIA.hideLoadingOverlay();
         
         if (data.success) {
-            // Limpa mensagens atuais
             clearChatMessages();
             
-            // ✅ Adiciona mensagens do histórico COM ARQUIVOS
             data.mensagens.forEach(msg => {
                 addMessageToChat(
                     msg.role, 
                     msg.conteudo, 
                     msg.thinking_process,
-                    false,  // search_used
-                    null,   // code_results
-                    msg.arquivo  // ✅ NOVO: Dados do arquivo
+                    false,
+                    null,
+                    msg.arquivo
                 );
             });
             
-            // Marca chat como ativo na sidebar
             document.querySelectorAll('.chat-item').forEach(item => {
                 item.classList.remove('active');
             });
             document.querySelector(`[data-chat-id="${chatId}"]`)?.classList.add('active');
             
-            APBIA.showNotification('Histórico carregado!', 'success');
+            console.log('✅ Histórico carregado');
         } else {
             showError(data.message || 'Erro ao carregar histórico');
         }
@@ -688,11 +662,9 @@ async function loadChat(chatId) {
 }
 
 async function handleFileUpload(e) {
-    // ✅ ATUALIZADO: Upload com informações do arquivo na resposta
     const file = e.target.files[0];
     if (!file) return;
     
-    // ✅ Validação de tamanho (16MB)
     const maxSize = 16 * 1024 * 1024;
     if (file.size > maxSize) {
         APBIA.showNotification('Arquivo muito grande! Máximo: 16MB', 'error');
@@ -718,7 +690,6 @@ async function handleFileUpload(e) {
         showThinking(false);
         
         if (data.success) {
-            // ✅ Adiciona mensagem do usuário COM dados do arquivo
             addMessageToChat('user', `Analise este arquivo`, null, false, null, {
                 nome: data.file_info.name,
                 tipo: data.file_info.type,
@@ -726,7 +697,6 @@ async function handleFileUpload(e) {
                 url: data.file_info.url
             });
             
-            // Adiciona resposta da IA
             addMessageToChat('assistant', data.response, data.thinking_process);
             
             APBIA.showNotification('Arquivo processado com sucesso!', 'success');
@@ -740,15 +710,14 @@ async function handleFileUpload(e) {
         console.error('Erro:', error);
     }
     
-    // Limpa input
     e.target.value = '';
 }
 
 function clearChatMessages() {
     const messagesContainer = document.getElementById('chatMessages');
     messagesContainer.innerHTML = `
-        <div class="text-center text-muted py-5" id="welcomeMessage">
-            <i class="fas fa-robot fa-4x mb-3"></i>
+        <div class="welcome-message" id="welcomeMessage">
+            <i class="fas fa-robot"></i>
             <h4>Continue sua conversa</h4>
             <p>Digite uma mensagem para continuar.</p>
         </div>
@@ -770,5 +739,4 @@ document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
     }
 });
 
-// ✅ ADICIONAR: Log de inicialização
-console.log('✅ chat.js carregado - Suporte a histórico multimodal ativo');
+console.log('✅ chat.js carregado - Avisos corrigidos');

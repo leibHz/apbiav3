@@ -3,10 +3,11 @@ from config import Config
 from models.models import Usuario, Projeto, Chat
 import bcrypt
 from utils.advanced_logger import logger, log_database_operation
+from utils.helpers import validate_bp, format_bp
 class SupabaseDAO:
     # Data Access Object para Supabase
     
-    def __init__(self):
+    def __init__(self): 
         logger.info("🗄️ Inicializando SupabaseDAO...")
         try:
             self.supabase: Client = create_client(
@@ -23,7 +24,6 @@ class SupabaseDAO:
     def criar_usuario(self, nome_completo, email, senha, tipo_usuario_id, numero_inscricao=None):
         """Cria um novo usuário"""
         logger.info(f"👤 Criando usuário: {email} (Tipo: {tipo_usuario_id})")
-        from utils.helpers import validate_bp, format_bp
         
         # Valida BP se for participante ou orientador
         if tipo_usuario_id in [2, 3]:  # Participante ou Orientador

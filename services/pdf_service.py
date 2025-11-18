@@ -1,8 +1,3 @@
-"""
-Serviço de Geração de PDF para Projetos da Bragantec
-Baseado no template oficial com cabeçalho vermelho
-"""
-
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import cm, mm
 from reportlab.lib import colors
@@ -10,8 +5,12 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY, TA_LEFT
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Image
 from reportlab.pdfgen import canvas
+from svglib.svglib import svg2rlg
+from reportlab.graphics import renderPDF
 from io import BytesIO
 from datetime import datetime
+from utils.advanced_logger import logger
+import os
 
 class BragantecPDFGenerator:
     """Gerador de PDF no formato oficial da Bragantec"""
@@ -23,12 +22,16 @@ class BragantecPDFGenerator:
         self.width, self.height = A4
         
         # Cores do template Bragantec
-        self.cor_cabecalho = colors.HexColor('#E74C3C')  # Vermelho Bragantec
+        self.cor_cabecalho = colors.HexColor("#8A0E00")  # Vermelho Bragantec
         self.cor_texto_destaque = colors.HexColor('#C0392B')  # Vermelho escuro
-        self.cor_bordas = colors.HexColor('#34495E')  # Cinza azulado
+        self.cor_bordas = colors.HexColor("#263544")  # Cinza azulado
+        
+        logger.info(f"📄 Inicializando gerador de PDF para projeto: {projeto.nome}")
         
     def gerar(self):
         """Gera o PDF completo e retorna o buffer"""
+        logger.info("🔨 Construindo estrutura do PDF")
+        
         doc = SimpleDocTemplate(
             self.buffer,
             pagesize=A4,
@@ -112,10 +115,13 @@ class BragantecPDFGenerator:
         story.append(Spacer(1, 0.5*cm))
         story.append(self._criar_declaracao_final())
         
+        logger.info("📝 Gerando documento PDF")
+        
         # Gera PDF
         doc.build(story, onFirstPage=self._add_header, onLaterPages=self._add_header)
         
         self.buffer.seek(0)
+        logger.info("✅ PDF gerado com sucesso")
         return self.buffer
     
     def criar_estilos(self):
@@ -186,40 +192,79 @@ class BragantecPDFGenerator:
         )
     
     def _add_header(self, canvas, doc):
-        """Adiciona cabeçalho vermelho com logo em todas as páginas"""
+
         canvas.saveState()
         
         # Retângulo vermelho no topo
         canvas.setFillColor(self.cor_cabecalho)
         canvas.rect(0, self.height - 2*cm, self.width, 2*cm, fill=1, stroke=0)
         
-        # Logo da Bragantec (se existir)
-        try:
-            from reportlab.graphics import renderPDF
-            from svglib.svglib import svg2rlg
-            
-            logo = svg2rlg('static/img/logo_bragantec.svg')
-            if logo:
-                logo.width = 4*cm
-                logo.height = 1.5*cm
-                logo.scale(0.8, 0.8)
-                renderPDF.draw(logo, canvas, 1.5*cm, self.height - 1.8*cm)
-        except:
-            # Fallback: texto se logo não disponível
+       
+        svg_path = 'static/img/logo_bragantec.svg'
+        logo_loaded = False
+        
+        if os.path.exists(svg_path):
+            try:
+                logger.debug(f"📸 Carregando logo SVG: {svg_path}")
+                
+                drawing = svg2rlg(svg_path)
+                
+                if drawing:
+                    drawing.width = 0.08*cm   # Reduzido de 4cm para 3cm
+                    drawing.height = 0.3*cm  # Reduzido de 1.5cm para 1cm
+                    drawing.scale(0.16, 0.16)  # Scale reduzido de 0.8 para 0.6
+                    
+                    # Largura total da página A4 = 21cm
+                    x_centered = (self.width - drawing.width) / 2
+                    y_position = self.height - 1.5*cm  # Posição vertical
+                    
+                    logger.debug(f"📐 Posição calculada - X: {x_centered}, Y: {y_position}")
+                    logger.debug(f"📏 Dimensões - Largura: {drawing.width}, Altura: {drawing.height}")
+                    
+                    # Desenha logo centralizado
+                    renderPDF.draw(drawing, canvas, x_centered, y_position)
+                    
+                    logger.info("✅ Logo SVG carregado, redimensionado e centralizado")
+                    logo_loaded = True
+                    
+            except ImportError:
+                logger.error("❌ Biblioteca svglib não instalada! Execute: pip install svglib")
+            except Exception as e:
+                logger.error(f"❌ Erro ao carregar SVG: {e}")
+                import traceback
+                logger.error(traceback.format_exc())
+        else:
+            logger.error(f"❌ Arquivo SVG não encontrado: {svg_path}")
+            logger.error(f"💡 Crie o arquivo em: {os.path.abspath(svg_path)}")
+        
+        # ✅ Fallback apenas se SVG falhou
+        if not logo_loaded:
+            logger.warning("⚠️ Usando texto como fallback (SVG não carregado)")
             canvas.setFillColor(colors.white)
             canvas.setFont('Helvetica-Bold', 18)
-            canvas.drawString(2*cm, self.height - 1.3*cm, "BRAGANTEC")
+            
+            # Texto centralizado
+            text = "BRAGANTEC"
+            text_width = canvas.stringWidth(text, 'Helvetica-Bold', 18)
+            x_centered = (self.width - text_width) / 2
+            
+            canvas.drawString(x_centered, self.height - 1.3*cm, text)
         
-        # Subtítulo
+        # Subtítulo centralizado
         canvas.setFillColor(colors.white)
-        canvas.setFont('Helvetica', 10)
-        canvas.drawCentredString(self.width/2, self.height - 1.7*cm, 
-                                "13ª Feira de Ciências - IFSP Bragança Paulista")
+        canvas.setFont('Helvetica', 9)  # Fonte um pouco menor
+        subtitle = "13ª Feira de Ciências - IFSP Bragança Paulista"
+        subtitle_width = canvas.stringWidth(subtitle, 'Helvetica', 9)
+        x_centered_subtitle = (self.width - subtitle_width) / 2
+        canvas.drawString(x_centered_subtitle, self.height - 1.85*cm, subtitle)
         
-        # Número da página (rodapé)
+        # Número da página (rodapé centralizado)
         canvas.setFillColor(colors.black)
         canvas.setFont('Helvetica', 9)
-        canvas.drawCentredString(self.width/2, 1*cm, f"Página {doc.page}")
+        page_text = f"Página {doc.page}"
+        page_width = canvas.stringWidth(page_text, 'Helvetica', 9)
+        x_centered_page = (self.width - page_width) / 2
+        canvas.drawString(x_centered_page, 1*cm, page_text)
         
         canvas.restoreState()
     

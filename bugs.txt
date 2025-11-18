@@ -1,14 +1,73 @@
-adicionar usuarios nn funciona devido ao BP (regex)
+erro de avisos em varias paginas (tirar print)
 
-erro ao mandar msg pra ia
+pagina nn recarrega automaticamente
 
-❌ Erro: Traceback (most recent call last):
-  File "C:\xampp\htdocs\APBIA\apbia\apbiav3\controllers\chat_controller.py", line 192, in send_message
-    tipo_usuario=tipo_usuario,
-                 ^^^^^^^^^^^^
-UnboundLocalError: cannot access local variable 'tipo_usuario' where it is not associated with a value
+tudo deu certo mais ao clicar em aplicar ideia, aparece isso 
 
-2025-11-17 22:31:49 | INFO | APBIA | _log_with_context:117 | ❌ RESPONSE | endpoint=chat.send_message | status=500 | duration=957.82ms | method=POST | path=/chat/send | ip=127.0.0.1
-127.0.0.1 - - [17/Nov/2025 22:31:49] "POST /chat/send HTTP/1.1" 500 -
 
-alguns textos com a mesma cor do fundo (arrumar isso)
+
+
+
+🔔 Notificação [success]: ✅ Ideia aplicada! Revise o conteúdo gerado.
+
+installHook.js:1 Erro ao usar ideia: ReferenceError: bootstrap is not defined
+
+    at Object.showNotification (main.js:138:21)
+
+    at showNotification (projetos.js:72:15)
+
+    at preencherComIdeia (projetos.js:459:5)
+
+    at HTMLButtonElement.<anonymous> (projetos.js:428:17)
+
+  
+
+
+
+e ao usar o autocompletar tambem
+
+
+
+🔔 Notificação [success]: Conteúdo gerado! Revise e ajuste
+
+installHook.js:1 ❌ ERRO na requisição: ReferenceError: bootstrap is not defined
+
+    at Object.showNotification (main.js:138:21)
+
+    at showNotification (projetos.js:72:15)
+
+    at HTMLButtonElement.handleAutocompletar (projetos.js:286:13)
+
+
+
+entretabnto, mesmo com os erros, tudo funciona, porem ao criar projetos
+
+erro ao criar projeto
+
+ [PROJECT_CONTROLLER] === CRIAR PROJETO ===
+🔵 [PROJECT_CONTROLLER] Dados recebidos
+   data_keys: ['nome', 'categoria', 'ano_edicao', 'resumo', 'palavras_chave', 'introducao', 'objetivo_geral', 'objetivos_especificos', 'metodologia', 'cronograma', 'resultados_esperados', 'referencias_bibliograficas', 'eh_continuacao', 'projeto_anterior_titulo', 'projeto_anterior_resumo', 'projeto_anterior_inicio', 'projeto_anterior_termino', 'status']
+🔵 [PROJECT_CONTROLLER] Criando projeto no banco...
+❌ [PROJECT_CONTROLLER] Erro ao criar projeto
+   Erro: {'message': 'invalid input syntax for type date: ""', 'code': '22007', 'hint': None, 'details': None}
+   Traceback:
+Traceback (most recent call last):
+  File "C:\xampp\htdocs\APBIA\apbia\apbiav3\controllers\project_controller.py", line 82, in criar
+    projeto = dao.criar_projeto_completo(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\APBIA\apbia\apbiav3\dao\dao.py", line 126, in criar_projeto_completo
+    result = self.supabase.table('projetos').insert(data).execute()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\xampp\htdocs\APBIA\apbia\apbiav3\venv\Lib\site-packages\postgrest\_sync\request_builder.py", line 53, in execute
+    raise APIError(dict(json_obj))
+postgrest.exceptions.APIError: {'message': 'invalid input syntax for type date: ""', 'code': '22007', 'hint': None, 'details': None}
+2025-11-18 17:48:09 | INFO | APBIA | _log_with_context:117 | ❌ RESPONSE | endpoint=project.criar | status=500 | duration=461.79ms | method=POST | path=/projetos/criar | ip=127.0.0.1
+127.0.0.1 - - [18/Nov/2025 17:48:09] "POST /projetos/criar HTTP/1.1" 500 -
+|
+
+remova os consoles log do projetos.js e substitua os logs do project controller pelo advenced looger tambem
+
+
+fica aparecendo essa mensagens de abixo da tela, e elas nn somem dps de um tempo coisa que era pra aconytecer, e nn estao tipo notificaçao como era pra ser
+
+vou masndar o projeto completo dessa vez pra vc analisar tudo dessa vez

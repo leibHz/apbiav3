@@ -67,7 +67,6 @@ def logout():
     logout_user()
     session.clear()
     flash('Você saiu da sua conta', 'info')
-    # ✅ CORRIGIDO: url_for correto
     return redirect(url_for('index'))
 
 

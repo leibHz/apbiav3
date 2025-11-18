@@ -3,9 +3,9 @@ from flask_login import login_required, current_user
 from functools import wraps
 from dao.dao import SupabaseDAO
 from config import Config
-from services.gemini_stats import gemini_stats  # ✅ CORREÇÃO
-from utils.advanced_logger import logger  # ✅ ADICIONE ESTA LINHA
-from datetime import datetime  # ✅ ADICIONE ESTA LINHA TAMBÉM (você usa no código)
+from services.gemini_stats import gemini_stats  
+from utils.advanced_logger import logger
+from datetime import datetime 
 import traceback  
 import json
 
@@ -256,7 +256,7 @@ def gemini_stats_page():
 @admin_required
 def gemini_stats_export():
     """
-    Exporta estatísticas em JSON (CORRIGIDO)
+    Exporta estatísticas em JSON
     """
     try:
         # Obtém dados das estatísticas
@@ -553,7 +553,7 @@ def stats_api():
 @admin_required
 def test_gemini():
     """
-    Testa conexão com Gemini API (CORRIGIDO)
+    Testa conexão com Gemini API
     """
     try:
         from services.gemini_service import GeminiService

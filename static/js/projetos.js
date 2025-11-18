@@ -1,169 +1,302 @@
 // =========================================
-// APBIA - JavaScript para Projetos
-// COM GERADOR BASEADO EM VENCEDORES
+// APBIA - JavaScript para Projetos (CORRIGIDO)
+// COM LOGS DETALHADOS PARA DEBUG
 // =========================================
 
-// Helpers
+console.log('🟢 projetos.js carregando...');
+
+// ===== VALIDAÇÃO DE DEPENDÊNCIAS =====
+function checkDependencies() {
+    const missing = [];
+    
+    if (typeof APBIA === 'undefined') {
+        missing.push('APBIA global object');
+    }
+    
+    if (!document.getElementById('loadingIA')) {
+        missing.push('loadingIA element');
+    }
+    
+    if (!document.getElementById('modalIdeias')) {
+        missing.push('modalIdeias element');
+    }
+    
+    if (missing.length > 0) {
+        console.error('❌ DEPENDÊNCIAS FALTANDO:', missing);
+        return false;
+    }
+    
+    console.log('✅ Todas as dependências OK');
+    return true;
+}
+
+// ===== HELPERS COM FALLBACK =====
 function showLoading(message) {
-    document.getElementById('loadingMessage').textContent = message;
-    document.getElementById('loadingIA').style.display = 'flex';
+    console.log('🔵 showLoading:', message);
+    const loadingEl = document.getElementById('loadingIA');
+    const messageEl = document.getElementById('loadingMessage');
+    
+    if (loadingEl) {
+        loadingEl.style.display = 'flex';
+        if (messageEl) {
+            messageEl.textContent = message;
+        }
+    } else {
+        console.error('❌ Elemento loadingIA não encontrado');
+        // Fallback: usa APBIA se disponível
+        if (typeof APBIA !== 'undefined' && APBIA.showLoadingOverlay) {
+            APBIA.showLoadingOverlay(message);
+        }
+    }
 }
 
 function hideLoading() {
-    document.getElementById('loadingIA').style.display = 'none';
-}
-
-// Contador de caracteres do resumo
-const resumoInput = document.getElementById('resumo');
-if (resumoInput) {
-    resumoInput.addEventListener('input', function() {
-        const count = this.value.length;
-        document.getElementById('resumo-count').textContent = `${count}/300`;
-        
-        if (count > 300) {
-            this.classList.add('is-invalid');
-        } else {
-            this.classList.remove('is-invalid');
+    console.log('🔵 hideLoading');
+    const loadingEl = document.getElementById('loadingIA');
+    
+    if (loadingEl) {
+        loadingEl.style.display = 'none';
+    } else {
+        // Fallback
+        if (typeof APBIA !== 'undefined' && APBIA.hideLoadingOverlay) {
+            APBIA.hideLoadingOverlay();
         }
-    });
+    }
 }
 
-// Toggle continuação de projeto
-const ehContinuacaoCheckbox = document.getElementById('eh_continuacao');
-if (ehContinuacaoCheckbox) {
-    ehContinuacaoCheckbox.addEventListener('change', function() {
-        const fields = document.getElementById('continuacao-fields');
-        fields.style.display = this.checked ? 'block' : 'none';
-    });
+function showNotification(message, type = 'info') {
+    console.log(`🔔 Notificação [${type}]:`, message);
+    
+    // Tenta usar APBIA global
+    if (typeof APBIA !== 'undefined' && APBIA.showNotification) {
+        APBIA.showNotification(message, type);
+    } else {
+        // Fallback: alert simples
+        alert(message);
+    }
 }
 
-// Adicionar objetivo específico
-const addObjetivoBtn = document.getElementById('addObjetivo');
-if (addObjetivoBtn) {
-    addObjetivoBtn.addEventListener('click', function() {
-        const container = document.getElementById('objetivos-especificos-container');
-        const count = container.children.length + 1;
-        
-        const div = document.createElement('div');
-        div.className = 'input-group mb-2';
-        div.innerHTML = `
-            <span class="input-group-text">${count}.</span>
-            <input type="text" class="form-control objetivo-especifico" 
-                   placeholder="Objetivo específico ${count}...">
-            <button type="button" class="btn btn-outline-danger remove-objetivo">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-        
-        container.appendChild(div);
-        
-        // Add remove handler
-        div.querySelector('.remove-objetivo').addEventListener('click', function() {
-            div.remove();
-            renumerarObjetivos();
-        });
-    });
-}
-
-function renumerarObjetivos() {
-    const objetivos = document.querySelectorAll('#objetivos-especificos-container .input-group');
-    objetivos.forEach((obj, index) => {
-        obj.querySelector('.input-group-text').textContent = `${index + 1}.`;
-    });
-}
-
-// Adicionar etapa no cronograma
-const addEtapaBtn = document.getElementById('addEtapa');
-if (addEtapaBtn) {
-    addEtapaBtn.addEventListener('click', function() {
-        const tbody = document.getElementById('cronogramaBody');
-        const tr = document.createElement('tr');
-        
-        tr.innerHTML = `
-            <td><input type="text" class="form-control form-control-sm" placeholder="Nova etapa"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td><input type="checkbox" class="form-check-input"></td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger remove-etapa">
-                    <i class="fas fa-times"></i>
-                </button>
-            </td>
-        `;
-        
-        tbody.appendChild(tr);
-        
-        tr.querySelector('.remove-etapa').addEventListener('click', function() {
-            tr.remove();
-        });
-    });
-}
-
-// Remove etapa (para etapas já existentes)
-document.querySelectorAll('.remove-etapa').forEach(btn => {
-    btn.addEventListener('click', function() {
-        this.closest('tr').remove();
-    });
+// ===== INICIALIZAÇÃO COM VALIDAÇÃO =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🟢 DOM carregado, inicializando...');
+    
+    // Valida dependências
+    if (!checkDependencies()) {
+        console.error('❌ Inicialização abortada - dependências faltando');
+        return;
+    }
+    
+    initProjetosHandlers();
 });
 
-// ✅ GERAR IDEIAS COM ANÁLISE DE VENCEDORES
-const btnGerarIdeias = document.getElementById('btnGerarIdeias');
-if (btnGerarIdeias) {
-    btnGerarIdeias.addEventListener('click', async function() {
-        // ✅ Aviso sobre Modo Bragantec automático
-        const confirmacao = confirm(
-            '🎯 MODO BRAGANTEC AUTOMÁTICO\n\n' +
-            'A IA vai analisar TODOS os projetos vencedores das edições anteriores da Bragantec para criar 4 ideias com alto potencial de vitória.\n\n' +
-            '⚠️ ATENÇÃO:\n' +
-            '• Processo pode levar 20-40 segundos\n' +
-            '• Consome ~100k-200k tokens (contexto histórico completo)\n' +
-            '• Gera ideias baseadas em padrões de projetos premiados\n\n' +
-            'Deseja continuar?'
-        );
-        
-        if (!confirmacao) return;
-        
-        showLoading('🧠 Analisando projetos vencedores das edições anteriores...');
-        
-        try {
-            const response = await fetch('/projetos/gerar-ideias', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            const data = await response.json();
-            
-            hideLoading();
-            
-            if (data.success) {
-                // ✅ Mostra metadados sobre a análise
-                if (data.metadata) {
-                    console.log('📊 Metadados da geração:', data.metadata);
-                    APBIA.showNotification(
-                        '✅ Ideias geradas com análise completa de projetos vencedores!',
-                        'success'
-                    );
-                }
-                
-                mostrarIdeias(data.ideias, data.metadata);
-            } else {
-                APBIA.showNotification('Erro ao gerar ideias: ' + (data.message || ''), 'error');
+function initProjetosHandlers() {
+    console.log('🔧 Inicializando handlers...');
+    
+    // Contador de caracteres do resumo
+    const resumoInput = document.getElementById('resumo');
+    if (resumoInput) {
+        console.log('✅ resumoInput encontrado');
+        resumoInput.addEventListener('input', function() {
+            const count = this.value.length;
+            const counterEl = document.getElementById('resumo-count');
+            if (counterEl) {
+                counterEl.textContent = `${count}/2000`;
             }
             
-        } catch (error) {
-            hideLoading();
-            APBIA.showNotification('Erro ao conectar com IA', 'error');
-            console.error('Erro:', error);
-        }
-    });
+            if (count > 2000) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    } else {
+        console.warn('⚠️ resumoInput não encontrado');
+    }
+    
+    // Toggle continuação
+    const ehContinuacaoCheckbox = document.getElementById('eh_continuacao');
+    if (ehContinuacaoCheckbox) {
+        console.log('✅ ehContinuacaoCheckbox encontrado');
+        ehContinuacaoCheckbox.addEventListener('change', function() {
+            const fields = document.getElementById('continuacao-fields');
+            if (fields) {
+                fields.style.display = this.checked ? 'block' : 'none';
+            }
+        });
+    }
+    
+    // Adicionar objetivo específico
+    const addObjetivoBtn = document.getElementById('addObjetivo');
+    if (addObjetivoBtn) {
+        console.log('✅ addObjetivoBtn encontrado');
+        addObjetivoBtn.addEventListener('click', addObjetivoEspecifico);
+    }
+    
+    // Adicionar etapa no cronograma
+    const addEtapaBtn = document.getElementById('addEtapa');
+    if (addEtapaBtn) {
+        console.log('✅ addEtapaBtn encontrado');
+        addEtapaBtn.addEventListener('click', addEtapaCronograma);
+    }
+    
+    // ===== GERAR IDEIAS (CRÍTICO) =====
+    const btnGerarIdeias = document.getElementById('btnGerarIdeias');
+    if (btnGerarIdeias) {
+        console.log('✅ btnGerarIdeias encontrado - ADICIONANDO LISTENER');
+        btnGerarIdeias.addEventListener('click', handleGerarIdeias);
+    } else {
+        console.error('❌ btnGerarIdeias NÃO ENCONTRADO');
+    }
+    
+    // ===== AUTOCOMPLETAR (CRÍTICO) =====
+    const btnsAutocompletar = document.querySelectorAll('.btn-ia-autocompletar');
+    console.log(`🔍 Encontrados ${btnsAutocompletar.length} botões de autocompletar`);
+    
+    if (btnsAutocompletar.length > 0) {
+        btnsAutocompletar.forEach((btn, index) => {
+            console.log(`✅ Adicionando listener ao botão ${index + 1}`);
+            btn.addEventListener('click', handleAutocompletar);
+        });
+    } else {
+        console.warn('⚠️ Nenhum botão .btn-ia-autocompletar encontrado');
+    }
+    
+    // Salvar projeto
+    const formProjeto = document.getElementById('formProjeto');
+    if (formProjeto) {
+        console.log('✅ formProjeto encontrado');
+        formProjeto.addEventListener('submit', handleSalvarProjeto);
+    }
+    
+    console.log('✅ Todos os handlers inicializados');
 }
 
+// ===== GERAR IDEIAS (FUNÇÃO PRINCIPAL) =====
+async function handleGerarIdeias() {
+    console.log('🚀 handleGerarIdeias CHAMADO');
+    
+    // Confirmação
+    const confirmacao = confirm(
+        '🎯 MODO BRAGANTEC AUTOMÁTICO\n\n' +
+        'A IA vai analisar TODOS os projetos vencedores das edições anteriores da Bragantec.\n\n' +
+        '⚠️ ATENÇÃO:\n' +
+        '• Processo pode levar 20-40 segundos\n' +
+        '• Consome ~100k-200k tokens\n\n' +
+        'Deseja continuar?'
+    );
+    
+    if (!confirmacao) {
+        console.log('❌ Usuário cancelou');
+        return;
+    }
+    
+    console.log('✅ Usuário confirmou, iniciando...');
+    showLoading('🧠 Analisando projetos vencedores...');
+    
+    try {
+        console.log('📤 Enviando requisição para /projetos/gerar-ideias');
+        
+        const response = await fetch('/projetos/gerar-ideias', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('📥 Resposta recebida:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📦 Dados recebidos:', data);
+        
+        hideLoading();
+        
+        if (data.success) {
+            console.log('✅ Sucesso! Mostrando ideias...');
+            mostrarIdeias(data.ideias, data.metadata);
+        } else {
+            console.error('❌ Erro no backend:', data.message);
+            showNotification('Erro ao gerar ideias: ' + (data.message || 'Erro desconhecido'), 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ ERRO na requisição:', error);
+        hideLoading();
+        showNotification('Erro ao conectar com IA: ' + error.message, 'error');
+    }
+}
+
+// ===== AUTOCOMPLETAR (FUNÇÃO PRINCIPAL) =====
+async function handleAutocompletar() {
+    console.log('🚀 handleAutocompletar CHAMADO');
+    
+    const campo = this.dataset.campo;
+    console.log('📝 Campo:', campo);
+    
+    if (!campo) {
+        console.error('❌ Campo não especificado');
+        showNotification('Erro: campo não especificado', 'error');
+        return;
+    }
+    
+    const confirmacao = confirm(`A IA vai gerar conteúdo para: ${campo}. Continuar?`);
+    
+    if (!confirmacao) {
+        console.log('❌ Usuário cancelou');
+        return;
+    }
+    
+    console.log('✅ Usuário confirmou');
+    showLoading(`Gerando ${campo}...`);
+    
+    try {
+        const projetoParcial = coletarDadosParciais();
+        console.log('📦 Dados parciais coletados:', projetoParcial);
+        
+        console.log('📤 Enviando requisição para /projetos/autocompletar');
+        
+        const response = await fetch('/projetos/autocompletar', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                campos: [campo],
+                projeto: projetoParcial
+            })
+        });
+        
+        console.log('📥 Resposta recebida:', response.status, response.statusText);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📦 Dados recebidos:', data);
+        
+        hideLoading();
+        
+        if (data.success) {
+            console.log('✅ Sucesso! Aplicando conteúdo...');
+            aplicarConteudoGerado(campo, data.conteudo);
+            showNotification('Conteúdo gerado! Revise e ajuste', 'success');
+        } else {
+            console.error('❌ Erro no backend:', data.message);
+            showNotification('Erro: ' + (data.message || 'Erro desconhecido'), 'error');
+        }
+        
+    } catch (error) {
+        console.error('❌ ERRO na requisição:', error);
+        hideLoading();
+        showNotification('Erro ao conectar com IA: ' + error.message, 'error');
+    }
+}
+
+// ===== MOSTRAR IDEIAS =====
 function mostrarIdeias(ideias, metadata) {
     // Parse se vier como string
     let ideiasText = ideias;
@@ -173,12 +306,12 @@ function mostrarIdeias(ideias, metadata) {
     try {
         ideiasObj = typeof ideias === 'string' ? JSON.parse(ideias) : ideias;
     } catch (e) {
-        console.log('Ideias não são JSON, mostrando como texto');
+        // Silenciosamente continua com texto
     }
     
     let html = '';
     
-    // ✅ Adiciona banner informativo sobre análise de vencedores
+    // Adiciona banner informativo sobre análise de vencedores
     if (metadata && metadata.analise_vencedores) {
         html += `
             <div class="alert alert-success mb-4">
@@ -203,7 +336,6 @@ function mostrarIdeias(ideias, metadata) {
             const resumo = ideia.resumo || ideia.descricao || 'Sem descrição';
             const palavrasChave = ideia.palavras_chave || ideia.keywords || '';
             
-            // ✅ NOVO: Exibe análise de vencedores
             const inspiracao = ideia.inspiracao_vencedores || '';
             const diferenciais = ideia.diferenciais_competitivos || ideia.diferenciais || '';
             const viabilidade = ideia.viabilidade_tecnica || '';
@@ -276,7 +408,7 @@ function mostrarIdeias(ideias, metadata) {
                 <h5><i class="fas fa-lightbulb"></i> Ideias Geradas:</h5>
                 <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">${ideiasText}</pre>
             </div>
-            <button class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('modalIdeias').style.display='none'">Fechar</button>
         `;
     }
     
@@ -289,87 +421,44 @@ function mostrarIdeias(ideias, metadata) {
                 const ideia = JSON.parse(this.dataset.ideia);
                 const categoria = this.dataset.categoria;
                 preencherComIdeia(ideia, categoria);
-                bootstrap.Modal.getInstance(document.getElementById('modalIdeias')).hide();
+                // Fecha o modal
+                document.getElementById('modalIdeias').style.display = 'none';
             } catch (e) {
-                console.error('Erro ao usar ideia:', e);
-                APBIA.showNotification('Erro ao aplicar ideia', 'error');
+                if (window.APBIA && window.APBIA.showNotification) {
+                    APBIA.showNotification('Erro ao aplicar ideia', 'error');
+                } else {
+                    alert('Erro ao aplicar ideia');
+                }
             }
         });
     });
     
     // Mostra modal
-    const modal = new bootstrap.Modal(document.getElementById('modalIdeias'));
-    modal.show();
+    document.getElementById('modalIdeias').style.display = 'flex';
 }
 
+// ===== PREENCHER COM IDEIA =====
 function preencherComIdeia(ideia, categoria) {
+    console.log('📝 Preenchendo formulário com ideia:', ideia);
+    
     const nomeInput = document.getElementById('nome');
     const categoriaSelect = document.getElementById('categoria');
     const resumoInput = document.getElementById('resumo');
     const palavrasChaveInput = document.getElementById('palavras_chave');
     
-    if (nomeInput) nomeInput.value = ideia.titulo || ideia.nome || '';
+    if (nomeInput) nomeInput.value = ideia.titulo || '';
     if (categoriaSelect) categoriaSelect.value = categoria || '';
     if (resumoInput) {
-        resumoInput.value = ideia.resumo || ideia.descricao || '';
-        // Trigger contador
+        resumoInput.value = ideia.resumo || '';
         resumoInput.dispatchEvent(new Event('input'));
     }
-    if (palavrasChaveInput) palavrasChaveInput.value = ideia.palavras_chave || ideia.keywords || '';
+    if (palavrasChaveInput) palavrasChaveInput.value = ideia.palavras_chave || '';
     
-    // ✅ Mostra notificação com info sobre análise de vencedores
-    let notificacaoMsg = '✅ Ideia aplicada! Esta ideia foi criada baseada em projetos vencedores.';
-    
-    if (ideia.inspiracao_vencedores) {
-        notificacaoMsg += '\n\n📊 ' + ideia.inspiracao_vencedores;
-    }
-    
-    APBIA.showNotification(notificacaoMsg, 'success');
-    
-    // Scroll para o topo do formulário
+    showNotification('✅ Ideia aplicada! Revise o conteúdo gerado.', 'success');
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// AUTOCOMPLETAR CAMPOS COM IA
-document.querySelectorAll('.btn-ia-autocompletar').forEach(btn => {
-    btn.addEventListener('click', async function() {
-        const campo = this.dataset.campo;
-        
-        if (!confirm(`A IA vai gerar conteúdo para: ${campo}. Continuar?`)) return;
-        
-        showLoading(`Gerando ${campo}...`);
-        
-        try {
-            const projetoParcial = coletarDadosParciais();
-            
-            const response = await fetch('/projetos/autocompletar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    campos: [campo],
-                    projeto: projetoParcial
-                })
-            });
-            
-            const data = await response.json();
-            
-            hideLoading();
-            
-            if (data.success) {
-                aplicarConteudoGerado(campo, data.conteudo);
-                APBIA.showNotification('Conteúdo gerado! Revise e ajuste', 'success');
-            } else {
-                APBIA.showNotification('Erro ao gerar conteúdo: ' + (data.message || ''), 'error');
-            }
-            
-        } catch (error) {
-            hideLoading();
-            APBIA.showNotification('Erro ao conectar com IA', 'error');
-            console.error('Erro:', error);
-        }
-    });
-});
-
+// ===== COLETAR DADOS PARCIAIS =====
 function coletarDadosParciais() {
     return {
         nome: document.getElementById('nome')?.value || '',
@@ -379,81 +468,149 @@ function coletarDadosParciais() {
     };
 }
 
+// ===== APLICAR CONTEÚDO GERADO =====
 function aplicarConteudoGerado(campo, conteudo) {
+    console.log('📝 Aplicando conteúdo ao campo:', campo);
+    console.log('📦 Conteúdo:', conteudo);
+    
     // Se conteúdo for string, usa diretamente
     if (typeof conteudo === 'string') {
         const elemento = document.getElementById(campo);
         if (elemento) {
             elemento.value = conteudo;
-            if (campo === 'resumo') {
-                elemento.dispatchEvent(new Event('input'));
-            }
         }
         return;
     }
     
-    // Se for objeto, tenta mapear
+    // Se for objeto, mapeia campos
     if (campo === 'resumo' && conteudo.resumo) {
-        document.getElementById('resumo').value = conteudo.resumo;
-        document.getElementById('resumo').dispatchEvent(new Event('input'));
+        const el = document.getElementById('resumo');
+        if (el) {
+            el.value = conteudo.resumo;
+            el.dispatchEvent(new Event('input'));
+        }
     } else if (campo === 'introducao' && conteudo.introducao) {
-        document.getElementById('introducao').value = conteudo.introducao;
-    } else if (campo === 'objetivos') {
-        if (conteudo.objetivo_geral) {
-            document.getElementById('objetivo_geral').value = conteudo.objetivo_geral;
-        }
+        const el = document.getElementById('introducao');
+        if (el) el.value = conteudo.introducao;
+    } else if (campo === 'objetivos' && conteudo.objetivo_geral) {
+        const el = document.getElementById('objetivo_geral');
+        if (el) el.value = conteudo.objetivo_geral;
     } else if (campo === 'metodologia' && conteudo.metodologia) {
-        document.getElementById('metodologia').value = conteudo.metodologia;
+        const el = document.getElementById('metodologia');
+        if (el) el.value = conteudo.metodologia;
     } else if (campo === 'resultados_esperados' && conteudo.resultados_esperados) {
-        document.getElementById('resultados_esperados').value = conteudo.resultados_esperados;
+        const el = document.getElementById('resultados_esperados');
+        if (el) el.value = conteudo.resultados_esperados;
     } else if (conteudo.texto) {
-        // Fallback: usa campo "texto" genérico
-        const elemento = document.getElementById(campo);
-        if (elemento) {
-            elemento.value = conteudo.texto;
-        }
+        // Fallback
+        const el = document.getElementById(campo);
+        if (el) el.value = conteudo.texto;
     }
 }
 
-// SALVAR PROJETO
-const formProjeto = document.getElementById('formProjeto');
-if (formProjeto) {
-    formProjeto.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const submitBtn = e.submitter;
-        const status = submitBtn?.dataset?.status || 'rascunho';
-        
-        const dados = coletarDadosCompletos(status);
-        
-        showLoading('Salvando projeto...');
-        
-        try {
-            const response = await fetch('/projetos/criar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(dados)
-            });
-            
-            const data = await response.json();
-            
-            hideLoading();
-            
-            if (data.success) {
-                APBIA.showNotification('Projeto salvo com sucesso!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/projetos';
-                }, 1500);
-            } else {
-                APBIA.showNotification('Erro: ' + (data.message || ''), 'error');
-            }
-            
-        } catch (error) {
-            hideLoading();
-            APBIA.showNotification('Erro ao salvar projeto', 'error');
-            console.error('Erro:', error);
-        }
+// ===== ADICIONAR OBJETIVO ESPECÍFICO =====
+function addObjetivoEspecifico() {
+    const container = document.getElementById('objetivos-especificos-container');
+    if (!container) return;
+    
+    const count = container.children.length + 1;
+    
+    const div = document.createElement('div');
+    div.className = 'objetivo-item';
+    div.innerHTML = `
+        <span>${count}.</span>
+        <input type="text" class="form-control objetivo-especifico" 
+               placeholder="Objetivo específico ${count}...">
+        <button type="button" class="btn-remover-objetivo">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    container.appendChild(div);
+    
+    div.querySelector('.btn-remover-objetivo').addEventListener('click', function() {
+        div.remove();
+        renumerarObjetivos();
     });
+}
+
+function renumerarObjetivos() {
+    const objetivos = document.querySelectorAll('.objetivo-item');
+    objetivos.forEach((obj, index) => {
+        obj.querySelector('span').textContent = `${index + 1}.`;
+    });
+}
+
+// ===== ADICIONAR ETAPA CRONOGRAMA =====
+function addEtapaCronograma() {
+    const tbody = document.getElementById('cronogramaBody');
+    if (!tbody) return;
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+        <td><input type="text" placeholder="Nova etapa"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td><input type="checkbox"></td>
+        <td>
+            <button type="button" class="btn-remover-etapa">
+                <i class="fas fa-times"></i>
+            </button>
+        </td>
+    `;
+    
+    tbody.appendChild(tr);
+    
+    tr.querySelector('.btn-remover-etapa').addEventListener('click', function() {
+        tr.remove();
+    });
+}
+
+// ===== SALVAR PROJETO =====
+async function handleSalvarProjeto(e) {
+    e.preventDefault();
+    
+    console.log('💾 Salvando projeto...');
+    
+    const submitBtn = e.submitter;
+    const status = submitBtn?.dataset?.status || 'rascunho';
+    
+    const dados = coletarDadosCompletos(status);
+    console.log('📦 Dados coletados:', dados);
+    
+    showLoading('Salvando projeto...');
+    
+    try {
+        const response = await fetch('/projetos/criar', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados)
+        });
+        
+        const data = await response.json();
+        
+        hideLoading();
+        
+        if (data.success) {
+            showNotification('Projeto salvo com sucesso!', 'success');
+            setTimeout(() => {
+                window.location.href = '/projetos';
+            }, 1500);
+        } else {
+            showNotification('Erro: ' + (data.message || ''), 'error');
+        }
+        
+    } catch (error) {
+        hideLoading();
+        showNotification('Erro ao salvar projeto: ' + error.message, 'error');
+        console.error('Erro:', error);
+    }
 }
 
 function coletarDadosCompletos(status) {
@@ -484,14 +641,10 @@ function coletarDadosCompletos(status) {
         });
         
         if (etapa) {
-            cronograma.push({ 
-                etapa: etapa, 
-                meses: mesesMarcados 
-            });
+            cronograma.push({ etapa, meses: mesesMarcados });
         }
     });
     
-    // Coleta continuação de projeto
     const ehContinuacao = document.getElementById('eh_continuacao')?.checked || false;
     
     return {
@@ -516,5 +669,4 @@ function coletarDadosCompletos(status) {
     };
 }
 
-// Log de inicialização
-console.log('✅ projetos.js carregado com sucesso - Modo Análise de Vencedores ativo');
+console.log('✅ projetos.js carregado com sucesso (COM DEBUG)');

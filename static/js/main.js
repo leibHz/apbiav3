@@ -122,6 +122,8 @@ function showNotification(message, type = 'info') {
     toast.id = toastId;
     toast.className = 'toast align-items-center text-white ' + bgClass;
     toast.setAttribute('role', 'alert');
+    toast.setAttribute('data-autohide', 'true');
+    toast.setAttribute('data-delay', '5000');
     toast.innerHTML = `
         <div class="d-flex">
             <div class="toast-body">
@@ -129,22 +131,36 @@ function showNotification(message, type = 'info') {
                 ${message}
             </div>
             <button type="button" class="btn-close btn-close-white me-2 m-auto" 
-                    data-bs-dismiss="toast"></button>
+                    onclick="this.closest('.toast').remove()"></button>
         </div>
     `;
     
     toastContainer.appendChild(toast);
     
-    const bsToast = new bootstrap.Toast(toast, {
-        autohide: true,
-        delay: 3000
-    });
-    bsToast.show();
+    // ✅ CORRIGIDO: Usa setTimeout ao invés de Bootstrap Toast
+    // Remove após 5 segundos
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateX(100%)';
+        toast.style.transition = 'all 0.3s ease';
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, 5000);
     
-    // Remove do DOM após esconder
-    toast.addEventListener('hidden.bs.toast', () => {
-        toast.remove();
-    });
+    // Mostra notificação no console também
+    if (window.console) {
+        const emoji = {
+            'success': '✅',
+            'error': '❌',
+            'warning': '⚠️',
+            'info': 'ℹ️'
+        }[type] || 'ℹ️';
+        console.info(`${emoji} Notificação [${type}]: ${message}`);
+    }
 }
 
 // Cria container de toasts se não existir

@@ -3,6 +3,7 @@ from flask_login import login_required, current_user
 from dao.dao import SupabaseDAO
 from services.gemini_service import GeminiService
 from datetime import datetime
+from utils.advanced_logger import logger
 import json
 
 project_bp = Blueprint('project', __name__, url_prefix='/projetos')
@@ -13,37 +14,57 @@ gemini = GeminiService()
 @login_required
 def index():
     """Lista todos os projetos do usuário"""
+    logger.info(f"📋 Listando projetos - Usuário: {current_user.nome_completo}")
     projetos = dao.listar_projetos_por_usuario(current_user.id)
+    logger.debug(f"✅ {len(projetos)} projetos encontrados")
     return render_template('projetos/index.html', projetos=projetos)
 
 @project_bp.route('/novo')
 @login_required
 def novo():
     """Página para criar novo projeto"""
+    logger.info(f"🆕 Acessando criação de projeto - Usuário: {current_user.nome_completo}")
     return render_template('projetos/criar.html')
 
 @project_bp.route('/editar/<int:projeto_id>')
 @login_required
 def editar(projeto_id):
     """Página para editar projeto"""
+    logger.info(f"✏️ Editando projeto {projeto_id} - Usuário: {current_user.nome_completo}")
+    
     projeto = dao.buscar_projeto_por_id(projeto_id)
     
     if not projeto:
+        logger.warning(f"❌ Projeto {projeto_id} não encontrado")
         return "Projeto não encontrado", 404
     
-    # Verifica se o usuário tem permissão
-    # TODO: Implementar verificação de permissão
+    # Implementar verificação de permissão depois
     
     return render_template('projetos/editar.html', projeto=projeto)
 
 @project_bp.route('/criar', methods=['POST'])
 @login_required
 def criar():
-    """Cria um novo projeto"""
+    """ Cria um novo projeto com validação de datas"""
+    logger.info(f"🆕 Iniciando criação de projeto - Usuário: {current_user.nome_completo}")
+    
     try:
         data = request.json
+        logger.debug(f"📦 Dados recebidos: {list(data.keys())}")
+        
+        # ✅ CORREÇÃO: Valida e converte datas vazias para None
+        projeto_anterior_inicio = data.get('projeto_anterior_inicio')
+        if projeto_anterior_inicio == '' or projeto_anterior_inicio is None:
+            projeto_anterior_inicio = None
+        
+        projeto_anterior_termino = data.get('projeto_anterior_termino')
+        if projeto_anterior_termino == '' or projeto_anterior_termino is None:
+            projeto_anterior_termino = None
+        
+        logger.debug(f"📅 Datas processadas - Início: {projeto_anterior_inicio}, Término: {projeto_anterior_termino}")
         
         # Cria projeto no banco
+        logger.info(f"💾 Criando projeto no banco: {data.get('nome')}")
         projeto = dao.criar_projeto_completo(
             nome=data.get('nome'),
             categoria=data.get('categoria'),
@@ -59,16 +80,19 @@ def criar():
             eh_continuacao=data.get('eh_continuacao', False),
             projeto_anterior_titulo=data.get('projeto_anterior_titulo'),
             projeto_anterior_resumo=data.get('projeto_anterior_resumo'),
-            projeto_anterior_inicio=data.get('projeto_anterior_inicio'),
-            projeto_anterior_termino=data.get('projeto_anterior_termino'),
+            projeto_anterior_inicio=projeto_anterior_inicio,
+            projeto_anterior_termino=projeto_anterior_termino,
             status=data.get('status', 'rascunho'),
             ano_edicao=data.get('ano_edicao', datetime.now().year),
             gerado_por_ia=data.get('gerado_por_ia', False),
             prompt_ia_usado=data.get('prompt_ia_usado')
         )
         
+        logger.info(f"✅ Projeto criado com sucesso - ID: {projeto.id}")
+        
         # Associa projeto ao participante
         dao.associar_participante_projeto(current_user.id, projeto.id)
+        logger.debug(f"🔗 Associação participante-projeto criada")
         
         return jsonify({
             'success': True,
@@ -77,6 +101,10 @@ def criar():
         })
         
     except Exception as e:
+        logger.error(f"❌ Erro ao criar projeto: {str(e)}")
+        import traceback
+        logger.error(f"Traceback completo:\n{traceback.format_exc()}")
+        
         return jsonify({
             'error': True,
             'message': f'Erro ao criar projeto: {str(e)}'
@@ -86,10 +114,15 @@ def criar():
 @login_required
 def atualizar(projeto_id):
     """Atualiza projeto existente"""
+    logger.info(f"🔄 Atualizando projeto {projeto_id} - Usuário: {current_user.nome_completo}")
+    
     try:
         data = request.json
+        logger.debug(f"📦 Campos a atualizar: {list(data.keys())}")
         
         projeto = dao.atualizar_projeto(projeto_id, **data)
+        
+        logger.info(f"✅ Projeto {projeto_id} atualizado com sucesso")
         
         return jsonify({
             'success': True,
@@ -98,6 +131,7 @@ def atualizar(projeto_id):
         })
         
     except Exception as e:
+        logger.error(f"❌ Erro ao atualizar projeto {projeto_id}: {str(e)}")
         return jsonify({
             'error': True,
             'message': f'Erro ao atualizar: {str(e)}'
@@ -107,13 +141,13 @@ def atualizar(projeto_id):
 @login_required
 def gerar_ideias():
     """
-    ✅ GERADOR DE IDEIAS COM MODO BRAGANTEC OBRIGATÓRIO
-    
     Analisa projetos vencedores das edições anteriores da Bragantec
-    para criar 4 novas ideias com ALTO POTENCIAL DE VITÓRIA
+    para criar 4 novas ideias com ALTO POTENCIAL DE VITÓRIA que vao deixar os outros no CHINELO kkkkk
     """
+    logger.info(f"💡 Gerando ideias com análise de vencedores - Usuário: {current_user.nome_completo}")
+    
     try:
-        # ✅ Prompt AVANÇADO que analisa projetos vencedores
+        # Prompt que analisa projetos
         prompt = """
         🎯 **MISSÃO CRÍTICA: CRIAR PROJETOS VENCEDORES PARA A BRAGANTEC 2025**
 
@@ -241,26 +275,28 @@ def gerar_ideias():
         **NÃO ADICIONE TEXTO EXPLICATIVO. RETORNE APENAS O JSON.**
         """
         
-        # ✅ MODO BRAGANTEC OBRIGATÓRIO - Usa conhecimento histórico completo
-        print("🎯 Gerando ideias com análise COMPLETA dos projetos vencedores anteriores...")
-        print("⚠️ Modo Bragantec FORÇADO (consome ~100k-200k tokens de input)")
+        logger.info("🤖 Chamando Gemini com Modo Bragantec OBRIGATÓRIO")
+        logger.debug("⚠️ Consumo estimado: ~100k-200k tokens de input")
         
         response = gemini.chat(
             prompt, 
             tipo_usuario='participante',
-            usar_contexto_bragantec=True,  # ✅ OBRIGATÓRIO - Acessa histórico completo
-            usar_pesquisa=False,  # Não precisa buscar na web, temos os arquivos
-            usar_code_execution=False,  # Não precisa executar código
+            usar_contexto_bragantec=True,  # OBRIGATÓRIO
+            usar_pesquisa=True,
+            usar_code_execution=False,
             user_id=current_user.id
         )
         
         if response.get('error'):
+            logger.error(f"❌ Erro na resposta do Gemini: {response.get('response')}")
             return jsonify({
                 'error': True,
                 'message': 'Erro ao gerar ideias com IA'
             }), 500
         
-        # ✅ Tenta parsear a resposta como JSON
+        logger.info("✅ Resposta recebida do Gemini")
+        
+        # Tenta parsear a resposta como JSON
         ideias_text = response['response']
         
         try:
@@ -273,7 +309,9 @@ def gerar_ideias():
             # Parse JSON
             ideias = json.loads(ideias_text)
             
-            # ✅ Valida estrutura e adiciona metadados
+            logger.debug("✅ JSON parseado com sucesso")
+            
+            # Valida estrutura e adiciona metadados
             categorias_esperadas = [
                 "Ciências da Natureza e Exatas",
                 "Informática",
@@ -292,11 +330,13 @@ def gerar_ideias():
                     if campo not in ideia:
                         raise ValueError(f"Campo '{campo}' não encontrado em '{categoria}'")
                 
-                # ✅ Adiciona metadado de que foi gerado com análise de vencedores
+                # Adiciona metadado de que foi gerado com análise de vencedores
                 ideia['gerado_com_analise_vencedores'] = True
                 ideia['ano_geracao'] = 2025
             
-            # ✅ Retorna ideias estruturadas COM metadados
+            logger.info("✅ Ideias validadas e enriquecidas com metadados")
+            
+            # Retorna ideias estruturadas COM metadados
             return jsonify({
                 'success': True,
                 'ideias': ideias,
@@ -310,10 +350,10 @@ def gerar_ideias():
             })
             
         except (json.JSONDecodeError, ValueError) as e:
-            # ✅ Fallback: Se não conseguir parsear, retorna texto bruto
-            print(f"⚠️ Erro ao parsear JSON: {e}")
-            print(f"📄 Resposta bruta: {ideias_text[:500]}")
+            logger.warning(f"⚠️ Erro ao parsear JSON: {e}")
+            logger.debug(f"📄 Resposta bruta (primeiros 500 chars): {ideias_text[:500]}")
             
+            # Fallback: Se não conseguir parsear, retorna texto bruto
             return jsonify({
                 'success': True,
                 'ideias': ideias_text,
@@ -322,9 +362,9 @@ def gerar_ideias():
             })
         
     except Exception as e:
+        logger.error(f"❌ Erro ao gerar ideias: {str(e)}")
         import traceback
-        print(f"❌ Erro ao gerar ideias: {e}")
-        print(traceback.format_exc())
+        logger.error(f"Traceback completo:\n{traceback.format_exc()}")
         
         return jsonify({
             'error': True,
@@ -335,24 +375,29 @@ def gerar_ideias():
 @login_required
 def autocompletar():
     """
-    ✅ CORRIGIDO: IA preenche campos do projeto automaticamente
+    IA preenche campos do projeto automaticamente
     Retorna JSON estruturado com campos específicos
     """
+    logger.info(f"🤖 Autocompletando campos - Usuário: {current_user.nome_completo}")
+    
     try:
         data = request.json
-        campos = data.get('campos', [])  # Lista de campos a preencher
-        projeto_parcial = data.get('projeto', {})  # Dados já preenchidos
+        campos = data.get('campos', [])
+        projeto_parcial = data.get('projeto', {})
         
         if not campos:
+            logger.warning("❌ Nenhum campo selecionado para autocompletar")
             return jsonify({'error': True, 'message': 'Nenhum campo selecionado'}), 400
         
-        # ✅ Prepara dados do projeto para contexto
+        logger.debug(f"📝 Campos solicitados: {campos}")
+        
+        # Prepara dados do projeto para contexto
         nome = projeto_parcial.get('nome', 'Não informado')
         categoria = projeto_parcial.get('categoria', 'Não informado')
         resumo = projeto_parcial.get('resumo', 'Não informado')
         palavras_chave = projeto_parcial.get('palavras_chave', 'Não informado')
         
-        # ✅ Monta prompt dinâmico baseado nos campos solicitados
+        # Monta prompt dinâmico
         campos_str = ', '.join(campos)
         
         prompt = f"""
@@ -396,6 +441,8 @@ def autocompletar():
         - **resultados_esperados**: Descreva as expectativas científicas, técnicas ou sociais do projeto quando finalizado. Quais conclusões espera obter? Qual o impacto potencial? (200-300 palavras)
         """
         
+        logger.info("🤖 Chamando Gemini para autocompletar")
+        
         # Chama Gemini
         response = gemini.chat(
             prompt, 
@@ -404,9 +451,12 @@ def autocompletar():
         )
         
         if response.get('error'):
+            logger.error(f"❌ Erro na resposta do Gemini: {response.get('response')}")
             return jsonify({'error': True, 'message': 'Erro ao autocompletar'}), 500
         
-        # ✅ Tenta parsear resposta como JSON
+        logger.info("✅ Resposta recebida do Gemini")
+        
+        # Tenta parsear resposta como JSON
         try:
             conteudo_text = response['response']
             
@@ -418,6 +468,8 @@ def autocompletar():
             
             conteudo = json.loads(conteudo_text)
             
+            logger.debug("✅ JSON parseado com sucesso")
+            
             return jsonify({
                 'success': True,
                 'conteudo': conteudo,
@@ -425,9 +477,9 @@ def autocompletar():
             })
             
         except json.JSONDecodeError:
-            # Fallback: retorna texto bruto
-            print(f"⚠️ Erro ao parsear JSON do autocompletar")
+            logger.warning("⚠️ Erro ao parsear JSON do autocompletar")
             
+            # Fallback: retorna texto bruto
             return jsonify({
                 'success': True,
                 'conteudo': {'texto': response['response']},
@@ -435,9 +487,9 @@ def autocompletar():
             })
         
     except Exception as e:
+        logger.error(f"❌ Erro ao autocompletar: {str(e)}")
         import traceback
-        print(f"❌ Erro ao autocompletar: {e}")
-        print(traceback.format_exc())
+        logger.error(f"Traceback completo:\n{traceback.format_exc()}")
         
         return jsonify({
             'error': True,
@@ -448,6 +500,8 @@ def autocompletar():
 @login_required
 def gerar_pdf(projeto_id):
     """Gera PDF do plano de pesquisa"""
+    logger.info(f"📄 Gerando PDF do projeto {projeto_id} - Usuário: {current_user.nome_completo}")
+    
     try:
         from services.pdf_service import BragantecPDFGenerator
         from flask import send_file
@@ -455,7 +509,10 @@ def gerar_pdf(projeto_id):
         projeto = dao.buscar_projeto_por_id(projeto_id)
         
         if not projeto:
+            logger.warning(f"❌ Projeto {projeto_id} não encontrado")
             return "Projeto não encontrado", 404
+        
+        logger.info(f"📝 Gerando PDF para: {projeto.nome}")
         
         # Gera PDF
         pdf_generator = BragantecPDFGenerator(projeto, current_user)
@@ -463,6 +520,8 @@ def gerar_pdf(projeto_id):
         
         # Nome do arquivo
         filename = f"Plano_Pesquisa_{projeto.nome.replace(' ', '_')}.pdf"
+        
+        logger.info(f"✅ PDF gerado com sucesso: {filename}")
         
         return send_file(
             pdf_buffer,
@@ -472,9 +531,9 @@ def gerar_pdf(projeto_id):
         )
         
     except Exception as e:
+        logger.error(f"❌ Erro ao gerar PDF: {str(e)}")
         import traceback
-        print(f"❌ Erro ao gerar PDF: {e}")
-        print(traceback.format_exc())
+        logger.error(f"Traceback completo:\n{traceback.format_exc()}")
         
         return jsonify({
             'error': True,
@@ -485,8 +544,11 @@ def gerar_pdf(projeto_id):
 @login_required
 def deletar(projeto_id):
     """Deleta um projeto"""
+    logger.info(f"🗑️ Deletando projeto {projeto_id} - Usuário: {current_user.nome_completo}")
+    
     try:
         dao.deletar_projeto(projeto_id)
+        logger.info(f"✅ Projeto {projeto_id} deletado com sucesso")
         
         return jsonify({
             'success': True,
@@ -494,6 +556,7 @@ def deletar(projeto_id):
         })
         
     except Exception as e:
+        logger.error(f"❌ Erro ao deletar projeto {projeto_id}: {str(e)}")
         return jsonify({
             'error': True,
             'message': f'Erro: {str(e)}'

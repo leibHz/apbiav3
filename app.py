@@ -133,7 +133,6 @@ def format_datetime_filter(date_value):
     return '-'
 
 if __name__ == '__main__':
-    # ✅ NOVO: Log de inicialização detalhado
     log_startup_info(app)
     
     logger.info("🌐 Iniciando servidor Flask...")
