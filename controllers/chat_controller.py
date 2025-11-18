@@ -123,6 +123,7 @@ def send_message():
         return jsonify({'error': True, 'message': 'Mensagem vazia'}), 400
 
     try:
+        tipo_usuario = None
         # Tipo de usuário
         if current_user.is_participante():
             tipo_usuario = 'participante'

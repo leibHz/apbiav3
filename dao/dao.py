@@ -1,11 +1,10 @@
 from supabase import create_client, Client
 from config import Config
-from models.models import Usuario, Projeto, Chat, ArquivoChat, FerramentaChat, TipoUsuario, TipoIA
+from models.models import Usuario, Projeto, Chat
 import bcrypt
-from utils.advanced_logger import logger, log_database_operation  # ✅ NOVO: Importa logger
-
+from utils.advanced_logger import logger, log_database_operation
 class SupabaseDAO:
-    """Data Access Object para Supabase com Debug Avançado"""
+    # Data Access Object para Supabase
     
     def __init__(self):
         logger.info("🗄️ Inicializando SupabaseDAO...")
@@ -15,15 +14,6 @@ class SupabaseDAO:
                 Config.SUPABASE_KEY
             )
             logger.info(f"✅ Conectado ao Supabase: {Config.SUPABASE_URL}")
-        except TypeError:
-            logger.warning("⚠️ Tentando fallback para versão antiga do Supabase...")
-            from supabase.client import ClientOptions
-            self.supabase = create_client(
-                Config.SUPABASE_URL,
-                Config.SUPABASE_KEY,
-                options=ClientOptions()
-            )
-            logger.info("✅ Conectado (modo compatibilidade)")
         except Exception as e:
             logger.critical(f"💥 ERRO ao conectar ao Supabase: {e}")
             raise

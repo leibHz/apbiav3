@@ -108,6 +108,8 @@ def validate_bp(bp):
     
     # Padrão: BP + 1-8 dígitos + letra opcional
     pattern = r'^BP\d{1,8}[A-Z]?$'
+    
+    return re.match(pattern, bp) is not None
 
 
 def truncate_text(text, max_length=100, suffix='...'):
