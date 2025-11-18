@@ -1,7 +1,14 @@
 adicionar usuarios nn funciona devido ao BP (regex)
 
-boostrap entrando em conflito, remover o boostrap é nessesario
+erro ao mandar msg pra ia
 
-navbar-brand em dois arquivos styles diferentes(ver isso dps)
+❌ Erro: Traceback (most recent call last):
+  File "C:\xampp\htdocs\APBIA\apbia\apbiav3\controllers\chat_controller.py", line 192, in send_message
+    tipo_usuario=tipo_usuario,
+                 ^^^^^^^^^^^^
+UnboundLocalError: cannot access local variable 'tipo_usuario' where it is not associated with a value
+
+2025-11-17 22:31:49 | INFO | APBIA | _log_with_context:117 | ❌ RESPONSE | endpoint=chat.send_message | status=500 | duration=957.82ms | method=POST | path=/chat/send | ip=127.0.0.1
+127.0.0.1 - - [17/Nov/2025 22:31:49] "POST /chat/send HTTP/1.1" 500 -
 
 alguns textos com a mesma cor do fundo (arrumar isso)
