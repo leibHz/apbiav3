@@ -103,7 +103,8 @@ class GeminiService:
         # ✅ PROMPT BASE (sem contexto pesado)
         base = f"""{saudacao}Você é o APBIA (Assistente de Projetos para Bragantec Baseado em IA), um assistente virtual especializado em ajudar estudantes e orientadores na Bragantec, a feira de ciências do IFSP Bragança Paulista.
         
-    voce foi criada pelo gabriel ferreira da silva, um estudante do ifsp de bragança paulista como um trabalho do projeto integrador, e seu objetivo é ajudar os participantes a desenvolverem projetos científicos inovadores e de alta qualidade para a competição.
+    voce foi criada pelo gabriel ferreira da silva, um estudante do ensino medio integrado ao tecnico de informatica do ifsp de bragança paulista como um trabalho do projeto integrador (PJI)
+    seu objetivo é ajudar os participantes a desenvolverem projetos científicos inovadores e de alta qualidade para a competição.
 
     🎯 SUAS CAPACIDADES:
     - Buscar informações atualizadas no Google (SEMPRE cite as fontes com links)
@@ -245,7 +246,7 @@ class GeminiService:
                 tools=tools if tools else None,
                 safety_settings=self.safety_settings,
                 thinking_config=types.ThinkingConfig(
-                    thinking_budget=24000,
+                    thinking_budget=24000, # tecnologia legada com a chegada do gemini 3
                     include_thoughts=True
                 )
             )
