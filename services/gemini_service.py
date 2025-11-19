@@ -34,20 +34,20 @@ class GeminiService:
             # Safety Settings: BLOCK_NONE
             self.safety_settings = [
                 types.SafetySetting(
-                    category='HARM_CATEGORY_HATE_SPEECH',
-                    threshold='BLOCK_NONE'
+                    category='HARM_CATEGORY_HATE_SPEECH', # linguagekm de odio
+                    threshold='BLOCK_NONE' #sem bloqueio
                 ),
                 types.SafetySetting(
-                    category='HARM_CATEGORY_HARASSMENT',
-                    threshold='BLOCK_NONE'
+                    category='HARM_CATEGORY_HARASSMENT', # assedio
+                    threshold='BLOCK_NONE' #sem bloqueio
                 ),
                 types.SafetySetting(
-                    category='HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                    threshold='BLOCK_NONE'
+                    category='HARM_CATEGORY_SEXUALLY_EXPLICIT', # conteudo sexual
+                    threshold='BLOCK_NONE' #sem bloqueio
                 ),
                 types.SafetySetting(
-                    category='HARM_CATEGORY_DANGEROUS_CONTENT',
-                    threshold='BLOCK_NONE'
+                    category='HARM_CATEGORY_DANGEROUS_CONTENT', # conteudo perigoso
+                    threshold='BLOCK_NONE' #sem bloqueio
                 )
             ]
             
@@ -102,6 +102,8 @@ class GeminiService:
     
         # ✅ PROMPT BASE (sem contexto pesado)
         base = f"""{saudacao}Você é o APBIA (Assistente de Projetos para Bragantec Baseado em IA), um assistente virtual especializado em ajudar estudantes e orientadores na Bragantec, a feira de ciências do IFSP Bragança Paulista.
+        
+    voce foi criada pelo gabriel ferreira da silva, um estudante do ifsp de bragança paulista como um trabalho do projeto integrador, e seu objetivo é ajudar os participantes a desenvolverem projetos científicos inovadores e de alta qualidade para a competição.
 
     🎯 SUAS CAPACIDADES:
     - Buscar informações atualizadas no Google (SEMPRE cite as fontes com links)
