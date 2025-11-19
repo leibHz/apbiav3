@@ -475,7 +475,7 @@ def serve_file(arquivo_id):
 @chat_bp.route('/load-history/<int:chat_id>', methods=['GET'])
 @login_required
 def load_history(chat_id):
-    """Carrega histórico COM ARQUIVOS"""
+    """✅ CORRIGIDO: Carrega histórico COM ARQUIVOS E NOTAS DO ORIENTADOR"""
     try:
         chat = dao.buscar_chat_por_id(chat_id)
         
@@ -485,9 +485,11 @@ def load_history(chat_id):
         mensagens = dao.listar_mensagens_por_chat(chat_id)
         arquivos = dao.listar_arquivos_por_chat(chat_id)
         
-        # Enriquece mensagens com arquivos
+        # ✅ NOVO: Enriquece mensagens com arquivos E NOTAS
         for msg in mensagens:
             msg_id = msg.get('id')
+            
+            # Adiciona arquivo se houver
             arquivo = next(
                 (arq for arq in arquivos if arq.get('mensagem_id') == msg_id),
                 None
@@ -501,15 +503,26 @@ def load_history(chat_id):
                     'tamanho': arquivo['tamanho_bytes'],
                     'url': f"/chat/file/{arquivo['id']}"
                 }
+            
+            # ✅ NOVO: Adiciona notas do orientador (se houver)
+            # Se a mensagem já tiver notas (do banco), mantém
+            # Caso contrário, busca as notas
+            if 'notas_orientador' not in msg or not msg.get('notas_orientador'):
+                notas = dao.listar_notas_por_mensagem(msg_id)
+                if notas:
+                    msg['notas'] = notas
         
+        # ✅ NOVO: Adiciona notas gerais do chat também
         return jsonify({
             'success': True,
             'mensagens': mensagens,
             'arquivos': arquivos,
-            'chat': chat.to_dict()
+            'chat': chat.to_dict(),
+            'notas_chat': chat.notas_orientador if hasattr(chat, 'notas_orientador') else None
         })
         
     except Exception as e:
+        logger.error(f"❌ Erro ao carregar histórico: {e}")
         return jsonify({
             'error': True,
             'message': f'Erro: {str(e)}'

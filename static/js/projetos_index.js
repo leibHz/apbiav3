@@ -100,5 +100,3 @@ document.querySelectorAll('.badge.bg-info').forEach(badge => {
     badge.setAttribute('title', 'Este projeto foi gerado com auxílio da IA');
     badge.style.cursor = 'help';
 });
-
-console.log('✅ projetos_index.js carregado com sucesso');

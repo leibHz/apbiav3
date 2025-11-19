@@ -1,7 +1,6 @@
-// Chat JavaScript - APBIA com Histórico Persistente, Google Search, Code Execution e MODO BRAGANTEC
 let currentChatId = null;
 let usarPesquisaGoogle = true; // Google Search ativado por padrão
-let usarContextoBragantec = false; // ✅ NOVO: Modo Bragantec desativado por padrão
+let usarContextoBragantec = false; // Modo Bragantec desativado por padrão
 
 // Inicialização
 document.addEventListener('DOMContentLoaded', function() {
@@ -168,7 +167,7 @@ async function handleSendMessage(e) {
             })
         });
         
-        // ✅ CORRIGIDO: Verifica se a resposta foi OK
+        // Verifica se a resposta foi OK
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -177,7 +176,6 @@ async function handleSendMessage(e) {
         
         showThinking(false);
         
-        // ✅ CORRIGIDO: Só mostra erro se realmente houver erro
         if (data.error) {
             showError(data.message || 'Erro ao processar mensagem');
             return;
@@ -210,11 +208,10 @@ async function handleSendMessage(e) {
                 data.code_results
             );
             
-            // ✅ CORRIGIDO: Só mostra aviso se for REALMENTE uma nova conversa
+            // Só mostra aviso se for REALMENTE uma nova conversa
             if (data.chat_id && !currentChatId) {
                 currentChatId = data.chat_id;
                 addChatToSidebar(data.chat_id, message);
-                // ✅ Aviso mais discreto
                 console.log('✅ Nova conversa criada:', data.chat_id);
             } else if (data.chat_id) {
                 // Atualiza ID se mudou
@@ -224,7 +221,7 @@ async function handleSendMessage(e) {
         
     } catch (error) {
         showThinking(false);
-        // ✅ CORRIGIDO: Mensagem de erro mais clara
+        // Mensagem de erro mais clara
         console.error('❌ Erro na requisição:', error);
         showError('Erro ao enviar mensagem. Verifique sua conexão e tente novamente.');
     }
@@ -435,7 +432,7 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     contentDiv.innerHTML = formatMessageContent(content);
     messageDiv.appendChild(contentDiv);
     
-    // ✅ NOVO: Badge de notas do orientador
+    // Badge de notas do orientador
     if (role === 'assistant' && notasOrientador && notasOrientador.length > 0) {
         const notasBadge = document.createElement('div');
         notasBadge.className = 'mt-2 p-2';
@@ -657,7 +654,7 @@ async function loadChat(chatId) {
         if (data.success) {
             clearChatMessages();
             
-            // ✅ NOVO: Agora passa as notas também
+            // Carrega mensagens COM notas do orientador
             data.mensagens.forEach(msg => {
                 addMessageToChat(
                     msg.role, 
@@ -666,16 +663,21 @@ async function loadChat(chatId) {
                     false,
                     null,
                     msg.arquivo,
-                    msg.notas || null  // ✅ Passa as notas do orientador
+                    msg.notas || null  // Passa as notas do orientador
                 );
             });
+            
+            // Exibe notas gerais do chat se houver
+            if (data.notas_chat && data.notas_chat.trim()) {
+                showChatNotes(data.notas_chat);
+            }
             
             document.querySelectorAll('.chat-item').forEach(item => {
                 item.classList.remove('active');
             });
             document.querySelector(`[data-chat-id="${chatId}"]`)?.classList.add('active');
             
-            console.log('✅ Histórico carregado');
+            console.log('✅ Histórico carregado com notas do orientador');
         } else {
             showError(data.message || 'Erro ao carregar histórico');
         }
@@ -685,6 +687,37 @@ async function loadChat(chatId) {
         showError('Erro ao carregar histórico');
         console.error('Erro:', error);
     }
+}
+
+function showChatNotes(notas) {
+
+    const messagesContainer = document.getElementById('chatMessages');
+    
+    const notesDiv = document.createElement('div');
+    notesDiv.className = 'chat-notes-banner';
+    notesDiv.style.cssText = `
+        background: rgba(255, 193, 7, 0.1);
+        border: 2px solid var(--warning);
+        border-radius: 12px;
+        padding: 1rem;
+        margin: 1rem 0;
+        animation: fadeIn 0.3s;
+    `;
+    
+    notesDiv.innerHTML = `
+        <div style="display: flex; align-items: flex-start; gap: 1rem;">
+            <i class="fas fa-sticky-note" style="color: var(--warning); font-size: 1.5rem; margin-top: 0.25rem;"></i>
+            <div style="flex: 1;">
+                <strong style="color: var(--warning); display: block; margin-bottom: 0.5rem;">
+                    📝 Notas do Orientador sobre esta conversa:
+                </strong>
+                <p style="margin: 0; color: var(--text-primary); white-space: pre-wrap;">${notas}</p>
+            </div>
+        </div>
+    `;
+    
+    // Insere no topo das mensagens
+    messagesContainer.insertBefore(notesDiv, messagesContainer.firstChild);
 }
 
 async function handleFileUpload(e) {
@@ -764,5 +797,3 @@ document.getElementById('chatInput')?.addEventListener('keydown', function(e) {
         document.getElementById('chatForm').dispatchEvent(new Event('submit'));
     }
 });
-
-console.log('✅ chat.js carregado - Avisos corrigidos');

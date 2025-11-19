@@ -5545,3 +5545,89 @@ main {
     margin-top: 1rem;
 }
 
+.btn-add-note {
+    background: var(--warning);
+    color: #000;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.2s;
+}
+
+.btn-add-note:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Modal para adicionar nota */
+.note-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+}
+
+.note-modal.active {
+    display: flex;
+}
+
+.note-modal-content {
+    background: var(--bg-card);
+    border-radius: 12px;
+    max-width: 600px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.note-modal-header {
+    background: var(--warning);
+    color: #000;
+    padding: 1.5rem;
+    border-radius: 12px 12px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.note-modal-body {
+    padding: 1.5rem;
+}
+
+.note-modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}
+
+/* Notas existentes */
+.existing-notes {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(255, 193, 7, 0.1);
+    border-left: 4px solid var(--warning);
+    border-radius: 8px;
+}
+
+.note-item {
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--bg-darker);
+    border-radius: 6px;
+}
