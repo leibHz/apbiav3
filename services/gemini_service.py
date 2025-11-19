@@ -26,7 +26,7 @@ class GeminiService:
         
         try:
             self.client = genai.Client(api_key=Config.GEMINI_API_KEY)
-            self.model_name = 'gemini-2.5-flash'
+            self.model_name = 'gemini-2.5-flash' #infelizmente o gemini 3 e pago
             
             # ✅ NOVO: Carrega contexto da Bragantec APENAS UMA VEZ
             self.context_files = self._load_context_files()

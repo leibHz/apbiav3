@@ -22,12 +22,10 @@ bcrypt==4.1.2
 supabase==2.24.0
 
 # ===================================
-# GOOGLE GEMINI - BIBLIOTECA CORRETA
+# GOOGLE GEMINI - 
 # ===================================
-# ✅ NOVA biblioteca (GA desde maio 2025)
-google-genai==1.11.0
+google-genai==1.51.0
 
-# ❌ REMOVER: google-generativeai (antiga, será descontinuada em 30/11/2025)
 
 # ===================================
 # PDF
