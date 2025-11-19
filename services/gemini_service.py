@@ -17,7 +17,7 @@ from services.gemini_stats import gemini_stats
 
 class GeminiService:
     """
-    Serviço Gemini 2.5 Flash com MODO BRAGANTEC opcional
+    Serviço Gemini 2.5 Flash
     """
     
     def __init__(self):
@@ -96,14 +96,6 @@ class GeminiService:
         return "\n".join(context_content) if context_content else ""
     
     def _get_system_instruction(self, tipo_usuario, usar_contexto_bragantec=False, apelido=None):
-        """
-        System instructions OTIMIZADAS com/sem contexto Bragantec E apelido
-    
-        Args:
-            tipo_usuario: 'participante', 'orientador'
-            usar_contexto_bragantec: Se True, adiciona conhecimento da Bragantec
-            apelido: Apelido do usuário (opcional)
-        """
     
         # ✅ SAUDAÇÃO PERSONALIZADA COM APELIDO
         saudacao = f"Olá, {apelido}! " if apelido else ""
@@ -192,20 +184,7 @@ class GeminiService:
     def chat(self, message, tipo_usuario='participante', history=None, 
          usar_pesquisa=True, usar_code_execution=True, analyze_url=None, 
          usar_contexto_bragantec=False, user_id=None, apelido=None):
-        """
-        Chat com MODO BRAGANTEC opcional
         
-        Args:
-        message: Mensagem do usuário
-        tipo_usuario: 'participante', 'orientador'
-        history: Histórico de conversas
-        usar_pesquisa: Habilita Google Search
-        usar_code_execution: Habilita execução de código
-        analyze_url: URL para análise
-        usar_contexto_bragantec: Se True, adiciona contexto da Bragantec
-        user_id: ID do usuário
-        apelido: Apelido do usuário (opcional) ✅ NOVO
-        """
         logger.info("🚀 Iniciando chat com Gemini")
         logger.debug(f"   Tipo usuário: {tipo_usuario}")
         logger.debug(f"   Google Search: {usar_pesquisa}")
@@ -407,79 +386,63 @@ class GeminiService:
                 'total_tokens': 0
             }
     
-    def upload_file(self, file_path):
-        """
-        Upload de arquivo multimodal
+    def upload_file(self, file_path, mime_type=None):
         
-        Ref: https://ai.google.dev/api/files
-        Suporta: imagens, vídeos, áudio, documentos
-        
-        Args:
-            file_path: Caminho do arquivo
-        
-        Returns:
-            File object ou None
-        """
         try:
             logger.info(f"📤 Upload: {file_path}")
-            
-            with open(file_path, 'rb') as f:
-                uploaded_file = self.client.files.upload(file=f)
-            
+
+            # Define MIME type 
+            if mime_type:
+                logger.info(f"📋 Usando MIME type fornecido: {mime_type}")
+
+                with open(file_path, 'rb') as f:
+                    uploaded_file = self.client.files.upload(
+                        file=f,
+                        config={
+                            'mime_type': mime_type,
+                            'display_name': os.path.basename(file_path)
+                        }
+                    )
+            else:
+                # Fallback: deixa API detectar
+                logger.info(f"🔍 Deixando API detectar MIME type")
+                with open(file_path, 'rb') as f:
+                    uploaded_file = self.client.files.upload(file=f)
+
             logger.info(f"✅ Upload concluído: {uploaded_file.display_name}")
             logger.info(f"   URI: {uploaded_file.uri}")
             logger.info(f"   MIME: {uploaded_file.mime_type}")
-            
+
             # Aguarda processamento (para vídeos)
             while uploaded_file.state.name == "PROCESSING":
                 logger.info("⏳ Processando...")
                 time.sleep(2)
                 uploaded_file = self.client.files.get(name=uploaded_file.name)
-            
+
             if uploaded_file.state.name == "FAILED":
                 raise ValueError(f"Falha no processamento: {uploaded_file.error}")
-            
+
             logger.info("✅ Arquivo pronto!")
             return uploaded_file
-            
+
         except Exception as e:
             logger.error(f"❌ Erro no upload: {e}")
             return None
-    
-    def chat_with_file(self, message, file_path, tipo_usuario='participante', user_id=None, keep_file_on_gemini=False):
-        """
-        ✅ ATUALIZADO: Chat com arquivo (multimodal) com opção de manter no Gemini
+
+
+    def chat_with_file(self, message, file_path, tipo_usuario='participante', user_id=None, keep_file_on_gemini=False, mime_type=None):
         
-        Refs:
-        - Imagem: https://ai.google.dev/gemini-api/docs/image-understanding
-        - Vídeo: https://ai.google.dev/gemini-api/docs/video-understanding
-        - Documentos: https://ai.google.dev/gemini-api/docs/document-processing
-        
-        Args:
-            message: Mensagem
-            file_path: Caminho do arquivo
-            tipo_usuario: Tipo do usuário
-            user_id: ID do usuário
-            keep_file_on_gemini: Se True, mantém arquivo no Gemini por 48h para re-uso
-        
-        Returns:
-            dict com:
-                - response: Resposta da IA
-                - thinking_process: Processo de pensamento
-                - file_type: Tipo do arquivo
-                - gemini_file_uri: URI do arquivo no Gemini (se keep_file_on_gemini=True)
-        """
         # Verifica limites
         can_proceed, error_msg = gemini_stats.check_limits(user_id)
         if not can_proceed:
             return {'response': f"⚠️ {error_msg}", 'error': True}
-        
+
         try:
-            # ✅ 1. Faz upload do arquivo para o Gemini
-            uploaded_file = self.upload_file(file_path)
+            # Upload com MIME type
+            uploaded_file = self.upload_file(file_path, mime_type=mime_type)
             if not uploaded_file:
                 return {'response': 'Erro ao fazer upload', 'error': True}
-            
+
             # Detecta tipo
             mime = uploaded_file.mime_type.lower()
             if 'image' in mime:
@@ -490,13 +453,14 @@ class GeminiService:
                 file_type = 'áudio'
             else:
                 file_type = 'documento'
-            
+
             logger.info(f"🔍 Tipo: {file_type} | URI: {uploaded_file.uri}")
-            
+
             # System instruction
             system_instruction = self._get_system_instruction(tipo_usuario)
+
             full_message = f"{system_instruction}\n\n{self.context_files}\n\n{message}"
-            
+
             # Config
             config = types.GenerateContentConfig(
                 temperature=0.7,
@@ -507,72 +471,61 @@ class GeminiService:
                     include_thoughts=True
                 )
             )
-            
-            # ✅ 2. Gera resposta
+
+            # Gera resposta
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=[full_message, uploaded_file],
                 config=config
             )
-            
+
             # Extrai dados
             thinking_process = None
             response_text = ""
-            
+
             for part in response.candidates[0].content.parts:
                 if part.thought:
                     thinking_process = part.text
                 elif part.text:
                     response_text += part.text
-            
+
             # Registra estatísticas
             if hasattr(response, 'usage_metadata'):
                 tokens_input = response.usage_metadata.prompt_token_count
                 tokens_output = response.usage_metadata.candidates_token_count
                 gemini_stats.record_request(user_id, tokens_input, tokens_output)
                 logger.info(f"📊 Tokens - Input: {tokens_input:,} | Output: {tokens_output:,}")
-            
-            # ✅ 3. Decide se mantém ou deleta arquivo no Gemini
+
+            # Decide se mantém ou deleta
             gemini_file_uri = None
-            
+
             if keep_file_on_gemini:
-                # ✅ Mantém arquivo por 48h para re-uso
                 gemini_file_uri = uploaded_file.uri
                 logger.info(f"💾 Arquivo mantido no Gemini por 48h: {uploaded_file.name}")
                 logger.info(f"   URI: {gemini_file_uri}")
                 logger.info(f"   Expira em: {uploaded_file.expiration_time}")
             else:
-                # ❌ Deleta arquivo imediatamente
                 self.client.files.delete(name=uploaded_file.name)
                 logger.info("🗑️ Arquivo deletado do Gemini")
-            
+
             return {
                 'response': response_text or response.text,
                 'thinking_process': thinking_process,
                 'file_type': file_type,
-                'gemini_file_uri': gemini_file_uri,  # ✅ NOVO: URI para re-uso
+                'gemini_file_uri': gemini_file_uri,
                 'gemini_file_name': uploaded_file.name if keep_file_on_gemini else None,
                 'gemini_expiration': str(uploaded_file.expiration_time) if keep_file_on_gemini else None
             }
-            
+
         except Exception as e:
             logger.error(f"❌ Erro: {e}")
             return {'response': f"Erro: {str(e)}", 'error': True}
     
-    def count_tokens(self, text):
-        """
-        ✅ CORRIGIDO: Conta tokens usando a API correta do Gemini
-
-        Ref: https://ai.google.dev/api/tokens
-
-        Args:
-            text: Texto
     
-        Returns:
-            int: Número de tokens
-        """
+    def count_tokens(self, text):
+
         try:
-            # ✅ CORREÇÃO: Usa count_tokens_request ao invés de generate_content
+            
         
             # Cria conteúdo para contar
             contents = [
@@ -582,7 +535,6 @@ class GeminiService:
                 )
             ]
         
-            # ✅ Método CORRETO para contar tokens
             result = self.client.models.count_tokens(
                 model=self.model_name,
                 contents=contents
@@ -600,7 +552,7 @@ class GeminiService:
             logger.info("💡 Usando fallback: 1 token ≈ 4 caracteres")
         
             # Fallback: estimativa aproximada
-            # Em português, geralmente 1 token ≈ 4 caracteres
+            # geralmente 1 token ≈ 4 caracteres
             estimated_tokens = max(1, len(text) // 4)
         
             return estimated_tokens

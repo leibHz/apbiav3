@@ -6,6 +6,7 @@ from config import Config
 from werkzeug.utils import secure_filename
 import os
 import uuid
+import mimetypes
 from datetime import datetime
 from utils.rate_limiter import rate_limiter
 from utils.advanced_logger import logger
@@ -55,8 +56,8 @@ def _save_chat_file_to_disk(file, user_id, chat_id):
         # Tamanho do arquivo
         file_size = os.path.getsize(full_path)
         
-        # MIME type
-        mime_type = file.content_type or 'application/octet-stream'
+        # ✅ CORREÇÃO: MIME type manual com fallback
+        mime_type = _detect_mime_type(original_filename, file.content_type)
         
         return {
             'filepath': relative_path,
@@ -64,6 +65,83 @@ def _save_chat_file_to_disk(file, user_id, chat_id):
             'mime_type': mime_type,
             'size': file_size
         }
+
+
+def _detect_mime_type(filename, content_type=None):
+    """
+    ✅ NOVO: Detecta MIME type de forma robusta
+    
+    Args:
+        filename: Nome do arquivo
+        content_type: Content-Type do request (opcional)
+    
+    Returns:
+        str: MIME type detectado
+    """
+    # 1. Tenta usar content_type do request
+    if content_type and content_type != 'application/octet-stream':
+        return content_type
+    
+    # 2. Tenta detectar pela extensão
+    mime_type, _ = mimetypes.guess_type(filename)
+    if mime_type:
+        return mime_type
+    
+    # 3. Fallback baseado em extensão
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    
+    fallback_types = {
+        # Imagens
+        'jpg': 'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'png': 'image/png',
+        'gif': 'image/gif',
+        'bmp': 'image/bmp',
+        'webp': 'image/webp',
+        'svg': 'image/svg+xml',
+        
+        # Documentos
+        'pdf': 'application/pdf',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'xls': 'application/vnd.ms-excel',
+        'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'ppt': 'application/vnd.ms-powerpoint',
+        'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'txt': 'text/plain',
+        
+        # Vídeos
+        'mp4': 'video/mp4',
+        'avi': 'video/x-msvideo',
+        'mov': 'video/quicktime',
+        'wmv': 'video/x-ms-wmv',
+        'flv': 'video/x-flv',
+        'webm': 'video/webm',
+        
+        # Áudio
+        'mp3': 'audio/mpeg',
+        'wav': 'audio/wav',
+        'ogg': 'audio/ogg',
+        'flac': 'audio/flac',
+        
+        # Código
+        'py': 'text/x-python',
+        'js': 'text/javascript',
+        'html': 'text/html',
+        'css': 'text/css',
+        'json': 'application/json',
+        'xml': 'application/xml',
+        
+        # Compactados
+        'zip': 'application/zip',
+        'rar': 'application/x-rar-compressed',
+        '7z': 'application/x-7z-compressed',
+        'tar': 'application/x-tar',
+        'gz': 'application/gzip',
+    }
+    
+    # 4. Retorna tipo baseado em extensão ou genérico
+    return fallback_types.get(ext, 'application/octet-stream')
 
 
 @chat_bp.route('/')
@@ -150,7 +228,7 @@ Resumo: {projeto.resumo or 'Não informado'}
 
         # ✅ Carrega histórico COM ARQUIVOS
         mensagens_db = dao.obter_ultimas_n_mensagens(chat_id, n=20)
-        arquivos_db = dao.listar_arquivos_por_chat(chat_id)  # ✅ NOVO
+        arquivos_db = dao.listar_arquivos_por_chat(chat_id)
 
         history = []
         
@@ -160,19 +238,6 @@ Resumo: {projeto.resumo or 'Não informado'}
                 'role': msg['role'],
                 'parts': [msg['conteudo']]
             })
-            
-            # ✅ Se mensagem tiver arquivo associado, adiciona ao histórico
-            # (A API do Gemini mantém arquivos por 48h, então podemos referenciar)
-            msg_id = msg.get('id')
-            arquivo_msg = next(
-                (arq for arq in arquivos_db if arq.get('mensagem_id') == msg_id),
-                None
-            )
-            
-            if arquivo_msg:
-                # ✅ Arquivo ainda disponível no Gemini? (48h)
-                # Por enquanto, apenas logamos. Futuramente, fazer re-upload se necessário
-                print(f"📎 Mensagem {msg_id} tem arquivo: {arquivo_msg['nome_arquivo']}")
 
         # Mensagem com contexto
         message_com_contexto = f"{contexto_projetos}\n\n{message}"
@@ -189,10 +254,10 @@ Resumo: {projeto.resumo or 'Não informado'}
             analyze_url=analyze_url,
             usar_contexto_bragantec=usar_contexto_bragantec,
             user_id=current_user.id,
-            apelido=apelido  # ✅ NOVO
+            apelido=apelido
         )
 
-        # ✅ NOVO: Extrai contagem de tokens se disponível
+        # Extrai contagem de tokens
         tokens_input = response.get('tokens_input', 0)
         tokens_output = response.get('tokens_output', 0)
 
@@ -200,10 +265,8 @@ Resumo: {projeto.resumo or 'Não informado'}
         if tokens_input or tokens_output:
             logger.info(f"📊 Tokens - Input: {tokens_input:,} | Output: {tokens_output:,}")
             
-            # ✅ Alerta se consumo muito alto
             if tokens_input > 100000:
                 logger.warning(f"⚠️ ALTO CONSUMO DE INPUT: {tokens_input:,} tokens!")
-                logger.warning(f"💡 Usuário {current_user.id} - Modo Bragantec: {usar_contexto_bragantec}")
 
         if response.get('error'):
             return jsonify({
@@ -222,7 +285,7 @@ Resumo: {projeto.resumo or 'Não informado'}
             thinking_process=response.get('thinking_process')
         )
 
-        # ✅ NOVO: Salva informações sobre ferramentas usadas
+        # Salva informações sobre ferramentas usadas
         if msg_assistant_id:
             ferramentas_usadas = {
                 'google_search': response.get('search_used', False),
@@ -232,7 +295,6 @@ Resumo: {projeto.resumo or 'Não informado'}
             }
             
             dao.salvar_ferramenta_usada(msg_assistant_id['id'], ferramentas_usadas)
-            logger.info(f"🔧 Ferramentas usadas: {ferramentas_usadas}")
 
         return jsonify({
             'success': True,
@@ -242,7 +304,6 @@ Resumo: {projeto.resumo or 'Não informado'}
             'search_used': response.get('search_used', False),
             'code_executed': response.get('code_executed', False),
             'code_results': response.get('code_results'),
-            # ✅ NOVO: Retorna contagem de tokens
             'tokens_input': tokens_input,
             'tokens_output': tokens_output,
             'total_tokens': tokens_input + tokens_output
@@ -261,7 +322,7 @@ Resumo: {projeto.resumo or 'Não informado'}
 @login_required
 def upload_file():
     """
-    ✅ CORRIGIDO: Upload de arquivo MULTIMODAL com salvamento persistente
+    ✅ CORRIGIDO: Upload com MIME type manual + mensagem customizável
     """
     if not Config.IA_STATUS:
         return jsonify({'error': True, 'message': 'IA offline'}), 503
@@ -270,13 +331,14 @@ def upload_file():
         return jsonify({'error': True, 'message': 'Nenhum arquivo'}), 400
     
     file = request.files['file']
+    # ✅ NOVO: Permite mensagem customizável
     message = request.form.get('message', 'Analise este arquivo')
     chat_id = request.form.get('chat_id')
     
     if file.filename == '':
         return jsonify({'error': True, 'message': 'Arquivo inválido'}), 400
     
-    # ✅ Validação de tamanho
+    # Validação de tamanho
     if hasattr(file, 'content_length') and file.content_length:
         if file.content_length > Config.MAX_CONTENT_LENGTH:
             return jsonify({
@@ -284,47 +346,44 @@ def upload_file():
                 'message': f'Arquivo muito grande. Máximo: {Config.MAX_CONTENT_LENGTH/(1024*1024):.0f}MB'
             }), 400
     
-    # ✅ Validação de tipo
-    from utils.helpers import allowed_file
-    if not allowed_file(file.filename):
-        return jsonify({
-            'error': True,
-            'message': 'Tipo de arquivo não permitido'
-        }), 400
-    
     try:
-        # ✅ 1. Salva arquivo TEMPORÁRIO para processar
+        # 1. Salva arquivo TEMPORÁRIO
         temp_filename = secure_filename(file.filename)
         temp_path = os.path.join(Config.UPLOAD_FOLDER, f"temp_{uuid.uuid4()}_{temp_filename}")
         file.save(temp_path)
         
+        # ✅ CORREÇÃO: Detecta MIME type ANTES de processar
+        mime_type = _detect_mime_type(temp_filename, file.content_type)
+        logger.info(f"📋 MIME type detectado: {mime_type}")
+        
         tipo_usuario = 'participante' if current_user.is_participante() else \
                        'orientador' if current_user.is_orientador() else None
         
-        # ✅ 2. Processa arquivo com Gemini
-        print(f"📁 Processando arquivo: {temp_filename}")
+        # 2. Processa arquivo com Gemini (passando MIME type)
+        logger.info(f"📁 Processando arquivo: {temp_filename}")
         
         response = gemini.chat_with_file(
-            message, 
+            message,  # ✅ Usa mensagem customizada
             temp_path, 
             tipo_usuario,
             user_id=current_user.id,
-            keep_file_on_gemini=True  # ✅ NOVO: Mantém arquivo no Gemini por 48h
+            keep_file_on_gemini=True,
+            mime_type=mime_type  # ✅ NOVO: Passa MIME type manualmente
         )
         
-        gemini_file_uri = response.get('gemini_file_uri')  # ✅ URI do arquivo no Gemini
+        gemini_file_uri = response.get('gemini_file_uri')
         
-        # ✅ 3. Salva arquivo PERMANENTEMENTE no disco
-        file.seek(0)  # Reset file pointer
+        # 3. Salva arquivo PERMANENTEMENTE
+        file.seek(0)
         file_info = _save_chat_file_to_disk(file, current_user.id, chat_id or 0)
         
-        # ✅ 4. Remove arquivo temporário
+        # 4. Remove arquivo temporário
         try:
             os.remove(temp_path)
         except:
             pass
         
-        # ✅ 5. Salva no banco de dados (tabela arquivos_chat)
+        # 5. Salva no banco
         if chat_id:
             arquivo_id = dao.criar_arquivo_chat(
                 chat_id=int(chat_id),
@@ -332,10 +391,10 @@ def upload_file():
                 url_arquivo=file_info['filepath'],
                 tipo_arquivo=file_info['mime_type'],
                 tamanho_bytes=file_info['size'],
-                gemini_file_uri=gemini_file_uri  # ✅ URI para re-uso
+                gemini_file_uri=gemini_file_uri
             )
             
-            # ✅ 6. Salva mensagens no histórico
+            # 6. Salva mensagens
             msg_user = dao.criar_mensagem(
                 chat_id, 
                 'user', 
@@ -349,7 +408,7 @@ def upload_file():
                 thinking_process=response.get('thinking_process')
             )
             
-            # ✅ 7. Associa arquivo à mensagem do usuário
+            # 7. Associa arquivo à mensagem
             dao.associar_arquivo_mensagem(arquivo_id, msg_user['id'])
         
         return jsonify({
@@ -367,9 +426,9 @@ def upload_file():
         
     except Exception as e:
         import traceback
-        print(f"❌ Erro: {traceback.format_exc()}")
+        logger.error(f"❌ Erro: {traceback.format_exc()}")
         
-        # Limpa arquivo temporário em caso de erro
+        # Limpa temporário
         if 'temp_path' in locals() and os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
@@ -385,21 +444,18 @@ def upload_file():
 @chat_bp.route('/file/<int:arquivo_id>')
 @login_required
 def serve_file(arquivo_id):
-    """
-    ✅ NOVO: Serve arquivo salvo do chat
-    """
+    """Serve arquivo salvo do chat"""
     try:
         arquivo = dao.buscar_arquivo_por_id(arquivo_id)
         
         if not arquivo:
             return jsonify({'error': True, 'message': 'Arquivo não encontrado'}), 404
         
-        # Verifica permissão (apenas dono do chat pode acessar)
+        # Verifica permissão
         chat = dao.buscar_chat_por_id(arquivo['chat_id'])
         if chat.usuario_id != current_user.id:
             return jsonify({'error': True, 'message': 'Acesso negado'}), 403
         
-        # Caminho completo do arquivo
         file_path = os.path.join(Config.UPLOAD_FOLDER, arquivo['url_arquivo'])
         
         if not os.path.exists(file_path):
@@ -419,26 +475,19 @@ def serve_file(arquivo_id):
 @chat_bp.route('/load-history/<int:chat_id>', methods=['GET'])
 @login_required
 def load_history(chat_id):
-    """
-    ✅ CORRIGIDO: Carrega histórico COM ARQUIVOS
-    """
+    """Carrega histórico COM ARQUIVOS"""
     try:
         chat = dao.buscar_chat_por_id(chat_id)
         
         if not chat or chat.usuario_id != current_user.id:
             return jsonify({'error': True, 'message': 'Chat não encontrado'}), 404
         
-        # ✅ Carrega mensagens
         mensagens = dao.listar_mensagens_por_chat(chat_id)
-        
-        # ✅ Carrega arquivos do chat
         arquivos = dao.listar_arquivos_por_chat(chat_id)
         
-        # ✅ Enriquece mensagens com informações de arquivos
+        # Enriquece mensagens com arquivos
         for msg in mensagens:
             msg_id = msg.get('id')
-            
-            # Procura arquivo associado a esta mensagem
             arquivo = next(
                 (arq for arq in arquivos if arq.get('mensagem_id') == msg_id),
                 None
@@ -495,83 +544,29 @@ def new_chat():
 @chat_bp.route('/delete-chat/<int:chat_id>', methods=['DELETE'])
 @login_required
 def delete_chat(chat_id):
-    """
-    ✅ CORRIGIDO: Deleta chat E seus arquivos
-    """
+    """Deleta chat E seus arquivos"""
     try:
         chat = dao.buscar_chat_por_id(chat_id)
         
         if not chat or chat.usuario_id != current_user.id:
             return jsonify({'error': True, 'message': 'Chat não encontrado'}), 404
         
-        # ✅ 1. Busca arquivos do chat
+        # 1. Busca arquivos
         arquivos = dao.listar_arquivos_por_chat(chat_id)
         
-        # ✅ 2. Deleta arquivos físicos
+        # 2. Deleta físicos
         for arquivo in arquivos:
             file_path = os.path.join(Config.UPLOAD_FOLDER, arquivo['url_arquivo'])
             if os.path.exists(file_path):
                 try:
                     os.remove(file_path)
-                    print(f"🗑️ Arquivo deletado: {file_path}")
                 except Exception as e:
-                    print(f"⚠️ Erro ao deletar arquivo: {e}")
+                    logger.warning(f"⚠️ Erro ao deletar arquivo: {e}")
         
-        # ✅ 3. Deleta chat do banco (CASCADE deleta mensagens e arquivos_chat)
+        # 3. Deleta chat (CASCADE)
         dao.deletar_chat(chat_id)
         
         return jsonify({'success': True})
-        
-    except Exception as e:
-        return jsonify({
-            'error': True,
-            'message': f'Erro: {str(e)}'
-        }), 500
-
-
-# Rotas de análise de URL e contagem de tokens mantidas iguais...
-@chat_bp.route('/analyze-url', methods=['POST'])
-@login_required
-def analyze_url():
-    """Analisa uma URL com URL Context"""
-    if not Config.IA_STATUS:
-        return jsonify({'error': True, 'message': 'IA offline'}), 503
-    
-    data = request.json
-    url = data.get('url')
-    message = data.get('message', 'Analise esta URL')
-    chat_id = data.get('chat_id')
-    
-    if not url:
-        return jsonify({'error': True, 'message': 'URL não fornecida'}), 400
-    
-    try:
-        tipo_usuario = 'participante' if current_user.is_participante() else \
-                       'orientador' if current_user.is_orientador() else None
-        
-        print(f"🌐 Analisando URL: {url}")
-        
-        response = gemini.chat(
-            message,
-            tipo_usuario=tipo_usuario,
-            analyze_url=url,
-            user_id=current_user.id
-        )
-        
-        if chat_id:
-            dao.criar_mensagem(chat_id, 'user', f'🔗 {message} (URL: {url})')
-            dao.criar_mensagem(
-                chat_id, 
-                'model', 
-                response['response'],
-                thinking_process=response.get('thinking_process')
-            )
-        
-        return jsonify({
-            'success': True,
-            'response': response['response'],
-            'thinking_process': response.get('thinking_process')
-        })
         
     except Exception as e:
         return jsonify({

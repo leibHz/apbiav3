@@ -504,7 +504,7 @@ class SupabaseDAO:
             list: Lista de mensagens
         """
         result = self.supabase.table('mensagens')\
-            .select('*')\
+            .select('*, notas_orientador(id, nota, data_criacao, orientador_id, usuarios(nome_completo))')\
             .eq('chat_id', chat_id)\
             .order('data_envio', desc=False)\
             .limit(limit)\
@@ -1233,3 +1233,35 @@ class SupabaseDAO:
         except Exception as e:
             logger.error(f"❌ Erro ao buscar projetos: {e}")
             return []
+
+    def atualizar_notas_chat(self, chat_id, notas):
+        """
+        Atualiza as notas do orientador em um chat
+
+        Args:
+            chat_id: ID do chat
+            notas: Texto das notas
+
+        Returns:
+            bool: True se sucesso
+        """
+        logger.info(f"📝 Atualizando notas do chat {chat_id}")
+
+        try:
+            result = self.supabase.table('chats')\
+                .update({'notas_orientador': notas})\
+                .eq('id', chat_id)\
+                .execute()
+
+            log_database_operation('UPDATE', 'chats', 
+                                 data={'id': chat_id, 'notas_orientador': notas[:50]},
+                                 result='Success')
+
+            return bool(result.data)
+
+        except Exception as e:
+            log_database_operation('UPDATE', 'chats',
+                                 data={'id': chat_id},
+                                 result=f'Error: {e}')
+            logger.error(f"❌ Erro ao atualizar notas do chat: {e}")
+            raise

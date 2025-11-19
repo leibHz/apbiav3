@@ -64,9 +64,6 @@ def visualizar_orientado(participante_id):
     # Busca projetos do orientado
     projetos = dao.listar_projetos_por_usuario(participante_id)
     
-    # Registra visualização
-    dao.registrar_visualizacao_orientador(current_user.id, None)
-    
     return render_template('orientador/visualizar_orientado.html',
                          orientado=orientado,
                          chats=chats,
@@ -126,7 +123,7 @@ def visualizar_chat(chat_id):
     # Busca dados do orientado
     orientado = dao.buscar_usuario_por_id(chat.usuario_id)
     
-    # Registra visualização
+    # ✅ CORREÇÃO: Agora registra visualização COM chat_id
     dao.registrar_visualizacao_orientador(current_user.id, chat_id)
     
     return render_template('orientador/visualizar_chat.html',
@@ -249,6 +246,49 @@ def deletar_nota(nota_id):
         
     except Exception as e:
         return jsonify({'error': True, 'message': str(e)}), 500
+
+
+@orientador_bp.route('/chat/<int:chat_id>/notas', methods=['POST'])
+@orientador_required
+def salvar_notas_chat(chat_id):
+    """
+    Salva notas do orientador para um chat específico
+    """
+    try:
+        data = request.json
+        notas = data.get('notas', '').strip()
+        
+        # Busca chat
+        chat = dao.buscar_chat_por_id(chat_id)
+        if not chat:
+            return jsonify({
+                'error': True,
+                'message': 'Chat não encontrado'
+            }), 404
+        
+        # Verifica se o chat pertence a um orientado
+        if not dao.verificar_orientador_participante(current_user.id, chat.usuario_id):
+            return jsonify({
+                'error': True,
+                'message': 'Acesso negado'
+            }), 403
+        
+        # Atualiza as notas do chat
+        dao.atualizar_notas_chat(chat_id, notas)
+        
+        logger.info(f"📝 Orientador {current_user.nome_completo} atualizou notas do chat {chat_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notas salvas com sucesso!'
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Erro ao salvar notas do chat: {e}")
+        return jsonify({
+            'error': True,
+            'message': f'Erro ao salvar notas: {str(e)}'
+        }), 500
 
 
 @orientador_bp.route('/relatorio/<int:participante_id>')

@@ -112,6 +112,3 @@ document.addEventListener('DOMContentLoaded', function() {
     // Destaca menu ativo
     highlightActiveMenuItem();
 });
-
-// Log de inicialização
-console.log('✅ base.js carregado');

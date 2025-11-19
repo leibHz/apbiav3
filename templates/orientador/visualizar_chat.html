@@ -57,6 +57,25 @@
                 <div class="message-content">
                     {{ msg.conteudo }}
                 </div>
+                
+                <!-- ✅ NOVO: Mostra notas existentes para cada mensagem -->
+                {% if msg.notas and msg.notas|length > 0 %}
+                <div style="margin-top: 1rem; padding: 1rem; background: rgba(255, 193, 7, 0.1); border-left: 4px solid var(--warning); border-radius: 8px;">
+                    <strong style="color: var(--warning);">
+                        <i class="fas fa-sticky-note"></i> Notas do Orientador:
+                    </strong>
+                    {% for nota in msg.notas %}
+                    <div style="margin-top: 0.5rem; padding: 0.5rem; background: var(--bg-darker); border-radius: 4px;">
+                        <p style="margin: 0;">{{ nota.nota }}</p>
+                        <small style="color: var(--text-muted);">
+                            Por: {{ nota.usuarios.nome_completo if nota.usuarios else 'Orientador' }} - 
+                            {{ nota.data_criacao }}
+                        </small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
                 <div class="timestamp">
                     {{ msg.timestamp.strftime('%H:%M') if msg.timestamp else '' }}
                 </div>
@@ -82,8 +101,15 @@
                       id="notasTextarea" 
                       name="notas"
                       placeholder="Adicione suas observações sobre esta conversa...">{{ chat.notas_orientador or '' }}</textarea>
+            
+            <!-- ✅ NOVO: Indicador de salvamento -->
+            <div id="saveIndicator" style="display: none; margin-top: 0.5rem; padding: 0.5rem; border-radius: 4px; text-align: center;">
+                <i class="fas fa-check-circle"></i>
+                <span id="saveMessage"></span>
+            </div>
+            
             <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
-                <button type="submit" class="btn btn-salvar">
+                <button type="submit" class="btn btn-salvar" id="btnSalvarNotas">
                     <i class="fas fa-save"></i> Salvar Notas
                 </button>
             </div>
@@ -100,19 +126,24 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Salvar notas
+// ✅ NOVO: Salvar notas COM feedback visual
 async function salvarNotas(event) {
     event.preventDefault();
     
     const notas = document.getElementById('notasTextarea').value;
     const chatId = {{ chat.id }};
+    const btnSalvar = document.getElementById('btnSalvarNotas');
+    const saveIndicator = document.getElementById('saveIndicator');
+    const saveMessage = document.getElementById('saveMessage');
     
     if (!window.APBIA) {
         alert('Erro: funções globais não carregadas');
         return;
     }
     
-    APBIA.showLoadingOverlay('Salvando notas...');
+    // ✅ Desabilita botão e mostra loading
+    btnSalvar.disabled = true;
+    btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
     
     try {
         const response = await fetch(`/orientador/chat/${chatId}/notas`, {
@@ -125,18 +156,55 @@ async function salvarNotas(event) {
         
         const data = await response.json();
         
-        APBIA.hideLoadingOverlay();
+        // ✅ Restaura botão
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar Notas';
         
         if (data.success) {
-            APBIA.showNotification('Notas salvas com sucesso!', 'success');
+            // ✅ Mostra indicador de sucesso
+            saveIndicator.style.display = 'block';
+            saveIndicator.style.background = 'rgba(76, 175, 80, 0.1)';
+            saveIndicator.style.border = '1px solid #4CAF50';
+            saveIndicator.style.color = '#4CAF50';
+            saveMessage.textContent = 'Notas salvas com sucesso!';
+            
+            APBIA.showNotification('✅ Notas salvas com sucesso!', 'success');
+            
+            // ✅ Esconde indicador após 3 segundos
+            setTimeout(() => {
+                saveIndicator.style.display = 'none';
+            }, 3000);
         } else {
-            APBIA.showNotification('Erro ao salvar notas: ' + (data.message || ''), 'error');
+            // ✅ Mostra erro
+            saveIndicator.style.display = 'block';
+            saveIndicator.style.background = 'rgba(244, 67, 54, 0.1)';
+            saveIndicator.style.border = '1px solid #F44336';
+            saveIndicator.style.color = '#F44336';
+            saveMessage.textContent = 'Erro ao salvar: ' + (data.message || '');
+            
+            APBIA.showNotification('❌ Erro ao salvar notas: ' + (data.message || ''), 'error');
         }
     } catch (error) {
-        APBIA.hideLoadingOverlay();
-        APBIA.showNotification('Erro ao salvar notas', 'error');
+        // ✅ Restaura botão em caso de erro
+        btnSalvar.disabled = false;
+        btnSalvar.innerHTML = '<i class="fas fa-save"></i> Salvar Notas';
+        
+        // ✅ Mostra erro
+        saveIndicator.style.display = 'block';
+        saveIndicator.style.background = 'rgba(244, 67, 54, 0.1)';
+        saveIndicator.style.border = '1px solid #F44336';
+        saveIndicator.style.color = '#F44336';
+        saveMessage.textContent = 'Erro de conexão';
+        
+        APBIA.showNotification('❌ Erro ao salvar notas', 'error');
         console.error('Erro:', error);
     }
 }
+
+// ✅ NOVO: Auto-save ao sair do campo (opcional)
+document.getElementById('notasTextarea').addEventListener('blur', function() {
+    // Descomente a linha abaixo se quiser auto-save
+    // document.getElementById('formNotas').dispatchEvent(new Event('submit'));
+});
 </script>
 {% endblock %}

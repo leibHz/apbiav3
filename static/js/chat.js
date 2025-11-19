@@ -54,7 +54,7 @@ function initializeChatHandlers() {
         });
     }
     
-    // ✅ NOVO: Toggle Modo Bragantec
+    // Toggle Modo Bragantec
     const bragantecToggle = document.getElementById('bragantecToggle');
     if (bragantecToggle) {
         bragantecToggle.checked = usarContextoBragantec;
@@ -81,7 +81,7 @@ function initializeChatHandlers() {
         });
     });
     
-    // ✅ CORRIGIDO: Botões de deletar chat
+    // Botões de deletar chat
     document.querySelectorAll('.btn-delete-chat').forEach(btn => {
         btn.addEventListener('click', function(e) {
             e.stopPropagation();
@@ -295,7 +295,7 @@ function addChatToSidebar(chatId, firstMessage) {
     });
 }
 
-function addMessageToChat(role, content, thinking = null, searchUsed = false, codeResults = null, arquivo = null) {
+function addMessageToChat(role, content, thinking = null, searchUsed = false, codeResults = null, arquivo = null, notasOrientador = null) {
     const messagesContainer = document.getElementById('chatMessages');
     
     // Remove mensagem de boas-vindas
@@ -434,6 +434,30 @@ function addMessageToChat(role, content, thinking = null, searchUsed = false, co
     contentDiv.className = 'message-content';
     contentDiv.innerHTML = formatMessageContent(content);
     messageDiv.appendChild(contentDiv);
+    
+    // ✅ NOVO: Badge de notas do orientador
+    if (role === 'assistant' && notasOrientador && notasOrientador.length > 0) {
+        const notasBadge = document.createElement('div');
+        notasBadge.className = 'mt-2 p-2';
+        notasBadge.style.background = 'rgba(255, 193, 7, 0.1)';
+        notasBadge.style.borderLeft = '4px solid #FFC107';
+        notasBadge.style.borderRadius = '8px';
+        
+        let notasHtml = '<strong style="color: #FFC107;"><i class="fas fa-sticky-note"></i> Notas do Orientador:</strong><br>';
+        notasOrientador.forEach(nota => {
+            notasHtml += `
+                <div style="margin-top: 0.5rem; padding: 0.5rem; background: rgba(0,0,0,0.1); border-radius: 4px;">
+                    <p style="margin: 0; color: var(--text-primary);">${nota.nota}</p>
+                    <small style="color: var(--text-muted);">
+                        ${nota.orientador_nome || 'Orientador'} - ${nota.data_criacao}
+                    </small>
+                </div>
+            `;
+        });
+        
+        notasBadge.innerHTML = notasHtml;
+        messageDiv.appendChild(notasBadge);
+    }
     
     // Badge de Google Search
     if (role === 'assistant' && searchUsed) {
@@ -633,6 +657,7 @@ async function loadChat(chatId) {
         if (data.success) {
             clearChatMessages();
             
+            // ✅ NOVO: Agora passa as notas também
             data.mensagens.forEach(msg => {
                 addMessageToChat(
                     msg.role, 
@@ -640,7 +665,8 @@ async function loadChat(chatId) {
                     msg.thinking_process,
                     false,
                     null,
-                    msg.arquivo
+                    msg.arquivo,
+                    msg.notas || null  // ✅ Passa as notas do orientador
                 );
             });
             
