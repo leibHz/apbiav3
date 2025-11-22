@@ -318,8 +318,85 @@ def gerar_relatorio(participante_id):
         'total_notas_orientador': dao.contar_notas_por_orientado(participante_id, current_user.id)
     }
     
+    # Busca observações do orientador (se houver)
+    try:
+        obs_result = dao.supabase.table('observacoes_orientador')\
+            .select('observacoes')\
+            .eq('orientador_id', current_user.id)\
+            .eq('participante_id', participante_id)\
+            .execute()
+        
+        observacoes = obs_result.data[0]['observacoes'] if obs_result.data else ''
+    except:
+        observacoes = ''
+    
     return render_template('orientador/relatorio.html',
                          orientado=orientado,
                          chats=chats,
                          projetos=projetos,
-                         stats=stats)
+                         stats=stats,
+                         observacoes=observacoes,
+                         data_geracao=datetime.now())
+
+
+@orientador_bp.route('/salvar-observacoes', methods=['POST'])
+@orientador_required
+def salvar_observacoes():
+    """
+    Salva observações do orientador sobre um orientado
+    """
+    try:
+        data = request.json
+        participante_id = data.get('participante_id')
+        observacoes = data.get('observacoes', '').strip()
+        
+        if not participante_id:
+            return jsonify({
+                'error': True,
+                'message': 'Participante não especificado'
+            }), 400
+        
+        # Verifica se é orientado
+        if not dao.verificar_orientador_participante(current_user.id, participante_id):
+            return jsonify({
+                'error': True,
+                'message': 'Acesso negado'
+            }), 403
+        
+        # Verifica se já existe registro
+        result = dao.supabase.table('observacoes_orientador')\
+            .select('*')\
+            .eq('orientador_id', current_user.id)\
+            .eq('participante_id', participante_id)\
+            .execute()
+        
+        if result.data:
+            # Atualiza
+            dao.supabase.table('observacoes_orientador')\
+                .update({'observacoes': observacoes})\
+                .eq('orientador_id', current_user.id)\
+                .eq('participante_id', participante_id)\
+                .execute()
+        else:
+            # Cria novo
+            dao.supabase.table('observacoes_orientador')\
+                .insert({
+                    'orientador_id': current_user.id,
+                    'participante_id': participante_id,
+                    'observacoes': observacoes
+                })\
+                .execute()
+        
+        logger.info(f"📝 Observações salvas: Orientador {current_user.id} -> Participante {participante_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Observações salvas com sucesso!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao salvar observações: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500

@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_login import login_user, logout_user, login_required, current_user
 from dao.dao import SupabaseDAO
+from utils.session_manager import get_session_manager
+from utils.advanced_logger import logger
 
 auth_bp = Blueprint('auth', __name__)
 dao = SupabaseDAO()
@@ -44,11 +46,16 @@ def login():
             flash('Senha incorreta', 'error')
             return render_template('login.html')
         
+        # ✅ NOVO: Cria sessão única
+        session_manager = get_session_manager()
+        session_manager.create_session(usuario.id)
+        
         # Faz login
         login_user(usuario)
         session['user_type'] = usuario.tipo_usuario_id
         session['user_name'] = usuario.nome_completo
         
+        logger.info(f"✅ Login bem-sucedido: {usuario.nome_completo} (Sessão única criada)")
         flash(f'Bem-vindo(a), {usuario.nome_completo}!', 'success')
         
         # Redireciona baseado no tipo de usuário
@@ -64,6 +71,11 @@ def login():
 @login_required
 def logout():
     """Logout do usuário"""
+    if current_user.is_authenticated:
+        session_manager = get_session_manager()
+        session_manager.invalidate_session(current_user.id)
+        logger.info(f"🔓 Logout: {current_user.nome_completo}")
+    
     logout_user()
     session.clear()
     flash('Você saiu da sua conta', 'info')

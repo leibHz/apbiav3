@@ -855,3 +855,125 @@ def deletar_tipo_ia(tipo_id):
             'error': True,
             'message': str(e)
         }), 500
+        
+# ===== ADICIONAR NO FINAL DO controllers/admin_controller.py =====
+
+@admin_bp.route('/participantes-projetos')
+@admin_required
+def participantes_projetos():
+    """
+    Página para gerenciar participantes dos projetos
+    """
+    try:
+        # Lista todos os projetos
+        projetos = dao.listar_todos_projetos()
+        
+        # Lista todos os participantes
+        usuarios = dao.listar_usuarios()
+        participantes = [u for u in usuarios if u.is_participante()]
+        
+        # Para cada projeto, busca seus participantes
+        projetos_com_participantes = []
+        for projeto in projetos:
+            participantes_do_projeto = dao.listar_participantes_por_projeto(projeto.id)
+            projetos_com_participantes.append({
+                'projeto': projeto,
+                'participantes': participantes_do_projeto
+            })
+        
+        return render_template('admin/participantes_projetos.html',
+                             projetos=projetos,
+                             participantes=participantes,
+                             projetos_com_participantes=projetos_com_participantes)
+        
+    except Exception as e:
+        logger.error(f"Erro ao carregar participantes_projetos: {e}")
+        flash('Erro ao carregar dados', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.route('/adicionar-participante-projeto', methods=['POST'])
+@admin_required
+def adicionar_participante_projeto():
+    """
+    Adiciona participante a um projeto
+    """
+    try:
+        data = request.json
+        projeto_id = data.get('projeto_id')
+        participante_id = data.get('participante_id')
+        
+        if not projeto_id or not participante_id:
+            return jsonify({
+                'error': True,
+                'message': 'Projeto e participante são obrigatórios'
+            }), 400
+        
+        # Verifica se já existe
+        result = dao.supabase.table('participantes_projetos')\
+            .select('*')\
+            .eq('projeto_id', projeto_id)\
+            .eq('participante_id', participante_id)\
+            .execute()
+        
+        if result.data:
+            return jsonify({
+                'error': True,
+                'message': 'Participante já está neste projeto'
+            }), 400
+        
+        # Adiciona
+        dao.associar_participante_projeto(participante_id, projeto_id)
+        
+        logger.info(f"✅ Participante {participante_id} adicionado ao projeto {projeto_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Participante adicionado ao projeto!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao adicionar participante: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/remover-participante-projeto', methods=['DELETE'])
+@admin_required
+def remover_participante_projeto():
+    """
+    Remove participante de um projeto
+    """
+    try:
+        data = request.json
+        projeto_id = data.get('projeto_id')
+        participante_id = data.get('participante_id')
+        
+        if not projeto_id or not participante_id:
+            return jsonify({
+                'error': True,
+                'message': 'Dados inválidos'
+            }), 400
+        
+        # Remove
+        dao.supabase.table('participantes_projetos')\
+            .delete()\
+            .eq('projeto_id', projeto_id)\
+            .eq('participante_id', participante_id)\
+            .execute()
+        
+        logger.info(f"🗑️ Participante {participante_id} removido do projeto {projeto_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Participante removido!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao remover participante: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500

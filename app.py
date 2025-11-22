@@ -1,10 +1,10 @@
-from flask import Flask, render_template
-from flask_login import LoginManager
+from flask import Flask, render_template, session, redirect, url_for, flash, request
+from flask_login import LoginManager, current_user
 from config import Config
 from dao.dao import SupabaseDAO
 
-# ✅ NOVO: Importa sistema de debug
 from utils.advanced_logger import logger, setup_request_logging, log_startup_info
+from utils.session_manager import get_session_manager
 
 # Importa blueprints
 from controllers.auth_controller import auth_bp
@@ -58,6 +58,30 @@ logger.debug("✅ project_bp registrado em /projetos")
 
 app.register_blueprint(orientador_bp, url_prefix='/orientador')
 logger.debug("✅ orientador_bp registrado em /orientador")
+
+@app.before_request
+def check_session_validity():
+    """Verifica validade da sessão antes de cada request"""
+    
+    # Ignora rotas públicas
+    public_endpoints = ['auth.login', 'auth.logout', 'static', 'index']
+    
+    if request.endpoint in public_endpoints:
+        return None
+    
+    # Verifica se usuário está autenticado
+    if current_user.is_authenticated:
+        session_manager = get_session_manager()
+        
+        # Valida sessão
+        if not session_manager.validate_session(current_user.id):
+            from flask_login import logout_user
+            logout_user()
+            session.clear()
+            flash('⚠️ Sua conta foi acessada de outro dispositivo. Faça login novamente.', 'warning')
+            return redirect(url_for('auth.login'))
+    
+    return None
 
 # ✅ CORRIGIDO: Rota principal agora funciona
 @app.route('/')
