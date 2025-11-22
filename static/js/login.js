@@ -81,5 +81,3 @@ function validateLoginForm(e) {
     
     return true;
 }
-
-console.log('✅ login.js carregado com sucesso');

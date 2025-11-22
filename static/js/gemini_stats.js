@@ -145,5 +145,3 @@ document.addEventListener('DOMContentLoaded', function() {
     refreshStats();
     setInterval(refreshStats, 10000);
 });
-
-console.log('✅ gemini_stats.js carregado');

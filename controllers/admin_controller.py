@@ -704,3 +704,154 @@ def gemini_stats_api():
             'error': True,
             'message': str(e)
         }), 500
+        
+@admin_bp.route('/tipos-ia')
+@admin_required
+def tipos_ia():
+    """
+    Página de gerenciamento de Tipos de IA
+    """
+    try:
+        tipos = dao.listar_tipos_ia()
+        
+        # Conta quantos chats usam cada tipo
+        stats = {}
+        for tipo in tipos:
+            result = dao.supabase.table('chats')\
+                .select('id', count='exact')\
+                .eq('tipo_ia_id', tipo.id)\
+                .execute()
+            
+            stats[tipo.id] = result.count if hasattr(result, 'count') else len(result.data)
+        
+        return render_template('admin/tipos_ia.html',
+                             tipos=tipos,
+                             stats=stats)
+        
+    except Exception as e:
+        logger.error(f"Erro ao carregar tipos de IA: {e}")
+        flash('Erro ao carregar dados', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+
+@admin_bp.route('/tipos-ia/criar', methods=['POST'])
+@admin_required
+def criar_tipo_ia():
+    """
+    Cria novo tipo de IA
+    """
+    try:
+        data = request.json
+        nome = data.get('nome', '').strip()
+        
+        if not nome:
+            return jsonify({
+                'error': True,
+                'message': 'Nome é obrigatório'
+            }), 400
+        
+        # Verifica se já existe
+        tipos_existentes = dao.listar_tipos_ia()
+        if any(t.nome.lower() == nome.lower() for t in tipos_existentes):
+            return jsonify({
+                'error': True,
+                'message': 'Já existe um tipo de IA com este nome'
+            }), 400
+        
+        # Cria
+        result = dao.supabase.table('tipos_ia')\
+            .insert({'nome': nome})\
+            .execute()
+        
+        logger.info(f"✅ Tipo de IA criado: {nome}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Tipo de IA criado com sucesso!',
+            'tipo': result.data[0] if result.data else None
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao criar tipo de IA: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/tipos-ia/editar/<int:tipo_id>', methods=['PUT'])
+@admin_required
+def editar_tipo_ia(tipo_id):
+    """
+    Edita tipo de IA existente
+    """
+    try:
+        data = request.json
+        nome = data.get('nome', '').strip()
+        
+        if not nome:
+            return jsonify({
+                'error': True,
+                'message': 'Nome é obrigatório'
+            }), 400
+        
+        result = dao.supabase.table('tipos_ia')\
+            .update({'nome': nome})\
+            .eq('id', tipo_id)\
+            .execute()
+        
+        logger.info(f"✅ Tipo de IA atualizado: ID {tipo_id} -> {nome}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Tipo de IA atualizado!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao editar tipo de IA: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500
+
+
+@admin_bp.route('/tipos-ia/deletar/<int:tipo_id>', methods=['DELETE'])
+@admin_required
+def deletar_tipo_ia(tipo_id):
+    """
+    Deleta tipo de IA (se não tiver chats usando)
+    """
+    try:
+        # Verifica se tem chats usando este tipo
+        chats_usando = dao.supabase.table('chats')\
+            .select('id', count='exact')\
+            .eq('tipo_ia_id', tipo_id)\
+            .execute()
+        
+        count = chats_usando.count if hasattr(chats_usando, 'count') else len(chats_usando.data)
+        
+        if count > 0:
+            return jsonify({
+                'error': True,
+                'message': f'Não é possível deletar. Existem {count} chats usando este tipo de IA.'
+            }), 400
+        
+        # Deleta
+        result = dao.supabase.table('tipos_ia')\
+            .delete()\
+            .eq('id', tipo_id)\
+            .execute()
+        
+        logger.info(f"🗑️ Tipo de IA deletado: ID {tipo_id}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Tipo de IA deletado!'
+        })
+        
+    except Exception as e:
+        logger.error(f"Erro ao deletar tipo de IA: {e}")
+        return jsonify({
+            'error': True,
+            'message': str(e)
+        }), 500

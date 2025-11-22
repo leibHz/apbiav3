@@ -176,5 +176,3 @@ function debounceSearch(e) {
         filterTable(searchTerm, document.getElementById('filterTipo').value);
     }, 300);
 }
-
-console.log('✅ admin_usuarios.js carregado');

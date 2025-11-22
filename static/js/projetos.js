@@ -668,5 +668,3 @@ function coletarDadosCompletos(status) {
         status: status
     };
 }
-
-console.log('✅ projetos.js carregado com sucesso (COM DEBUG)');

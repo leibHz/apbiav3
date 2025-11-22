@@ -1,3 +1,9 @@
-ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira. preciso que vc arrume o sistema de notas, o orientador pode adicionar notas as mensagens de seus orientados, no momento, o orientador so pode adicionar notas ao chat em si e nn a uma mensagem especifica, e tambem as notas do chat nn estao aparecendo pro participante/orientado, pode arrumar isso por favor claude?
+adicionar uma verificação pra que dois usuarios nn possam acessar a mesma conta ao mesmo tempo
 
-eu modifiqueoi umas coisas ja, porem ainda falta terminar a implementação, mas metade do caminho ja foi acredito eu
+adiministrador pode adicionar participantes aos projetos,
+
+terminar a pagina templates\projetos\editar.html (editar os projetos assim como seu status e etc)
+
+terminar a pagina templates\orientador\relatorio.html (exportar um relatorio sobre o estudante com seu projeto seu nome e outros detalhes)
+
+arrumar sistema de notas que nn esta funcionando (fazer isso separadamente)

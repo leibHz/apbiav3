@@ -4,6 +4,8 @@ from models.models import Usuario, Projeto, Chat
 import bcrypt
 from utils.advanced_logger import logger, log_database_operation
 from utils.helpers import validate_bp, format_bp
+from models.models import TipoIA
+from datetime import datetime
 class SupabaseDAO:
     # Data Access Object para Supabase
     
@@ -1265,3 +1267,41 @@ class SupabaseDAO:
                                  result=f'Error: {e}')
             logger.error(f"❌ Erro ao atualizar notas do chat: {e}")
             raise
+        
+    def listar_tipos_ia(self):
+        """Lista todos os tipos de IA"""
+    
+        try:
+            result = self.supabase.table('tipos_ia').select('*').execute()
+        
+            if result.data:
+                return [TipoIA(id=row['id'], nome=row['nome']) for row in result.data]
+        
+            # Fallback: tipos hardcoded se tabela vazia
+            return [
+                TipoIA(id=1, nome='Geral'),
+                TipoIA(id=2, nome='Participante'),
+                TipoIA(id=3, nome='Orientador')
+            ]
+
+        except Exception as e:
+            logger.warning(f"⚠️ Erro ao buscar tipos de IA: {e}")
+            return [
+                TipoIA(id=1, nome='Geral'),
+                TipoIA(id=2, nome='Participante'),
+                TipoIA(id=3, nome='Orientador')
+            ]
+
+    def buscar_tipo_ia_por_id(self, tipo_id):
+        """Busca tipo de IA por ID"""
+        tipos = self.listar_tipos_ia()
+        return next((t for t in tipos if t.id == tipo_id), None)
+    
+    def buscar_tipo_ia_por_nome(self, nome):
+        """Busca tipo de IA por nome (retorna ID)"""
+        result = self.supabase.table('tipos_ia')\
+            .select('id')\
+            .eq('nome', nome)\
+            .execute()
+        
+        return result.data[0]['id'] if result.data else None

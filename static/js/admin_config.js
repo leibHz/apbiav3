@@ -174,5 +174,3 @@ document.addEventListener('DOMContentLoaded', function() {
     // Atualiza automaticamente a cada 30 segundos
     setInterval(loadStats, 30000);
 });
-
-console.log('✅ admin_config.js carregado (CORRIGIDO)');

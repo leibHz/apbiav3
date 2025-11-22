@@ -235,5 +235,3 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
-
-console.log('✅ admin_orientacoes.js carregado com sucesso');

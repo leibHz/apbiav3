@@ -60,6 +60,3 @@ document.getElementById('saveUserBtn')?.addEventListener('click', async function
         alert('Erro ao criar usuário');
     }
 });
-
-// Log de inicialização
-console.log('✅ admin_dashboard.js carregado');

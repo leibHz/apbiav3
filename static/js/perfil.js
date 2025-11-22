@@ -167,5 +167,3 @@ function setButtonLoading(button, loading) {
         button.innerHTML = button.dataset.originalText || button.innerHTML;
     }
 }
-
-console.log('✅ perfil.js carregado com sucesso');
