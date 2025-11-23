@@ -15,7 +15,7 @@ chat_bp = Blueprint('chat', __name__)
 dao = SupabaseDAO()
 gemini = GeminiService()
 
-# ✅ Diretório para arquivos permanentes
+# Diretório para arquivos permanentes
 CHAT_FILES_DIR = os.path.join(Config.UPLOAD_FOLDER, 'chat_files')
 os.makedirs(CHAT_FILES_DIR, exist_ok=True)
 
@@ -56,7 +56,7 @@ def _save_chat_file_to_disk(file, user_id, chat_id):
         # Tamanho do arquivo
         file_size = os.path.getsize(full_path)
         
-        # ✅ CORREÇÃO: MIME type manual com fallback
+        # MIME type manual com fallback
         mime_type = _detect_mime_type(original_filename, file.content_type)
         
         return {
@@ -331,7 +331,6 @@ def upload_file():
         return jsonify({'error': True, 'message': 'Nenhum arquivo'}), 400
     
     file = request.files['file']
-    # ✅ NOVO: Permite mensagem customizável
     message = request.form.get('message', 'Analise este arquivo')
     chat_id = request.form.get('chat_id')
     
@@ -352,23 +351,22 @@ def upload_file():
         temp_path = os.path.join(Config.UPLOAD_FOLDER, f"temp_{uuid.uuid4()}_{temp_filename}")
         file.save(temp_path)
         
-        # ✅ CORREÇÃO: Detecta MIME type ANTES de processar
         mime_type = _detect_mime_type(temp_filename, file.content_type)
         logger.info(f"📋 MIME type detectado: {mime_type}")
         
         tipo_usuario = 'participante' if current_user.is_participante() else \
                        'orientador' if current_user.is_orientador() else None
         
-        # 2. Processa arquivo com Gemini (passando MIME type)
+        # Processa arquivo com Gemini 
         logger.info(f"📁 Processando arquivo: {temp_filename}")
         
         response = gemini.chat_with_file(
-            message,  # ✅ Usa mensagem customizada
+            message, 
             temp_path, 
             tipo_usuario,
             user_id=current_user.id,
             keep_file_on_gemini=True,
-            mime_type=mime_type  # ✅ NOVO: Passa MIME type manualmente
+            mime_type=mime_type 
         )
         
         gemini_file_uri = response.get('gemini_file_uri')
