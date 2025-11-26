@@ -128,7 +128,6 @@ document.getElementById('btnTestGemini')?.addEventListener('click', async functi
 
         if (data.success) {
             APBIA.showNotification('✅ ' + data.message, 'success');
-            console.log('Resposta Gemini:', data.response);
         } else {
             APBIA.showNotification('❌ Erro: ' + data.message, 'error');
         }
@@ -167,7 +166,7 @@ document.getElementById('refreshStats')?.addEventListener('click', function() {
     loadStats();
 });
 
-// ✅ Carrega estatísticas ao iniciar
+// Carrega estatísticas ao iniciar
 document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     

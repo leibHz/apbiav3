@@ -85,3 +85,6 @@ Desktop.ini
 # Backups
 *.bak
 *.backup
+
+#cursor
+.cursorignore

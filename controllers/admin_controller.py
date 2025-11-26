@@ -634,8 +634,11 @@ def gemini_stats_api():
     try:
         from services.gemini_stats import gemini_stats
         
-        # Pega estatísticas globais
+        logger.info("📊 Buscando estatísticas do Gemini...")
+        
+        # Pega estatísticas globais (agora com campos agregados)
         global_stats = gemini_stats.get_global_stats()
+        logger.debug(f"✅ Global stats: requests_minute={global_stats.get('requests_minute', 0)}, requests_today={global_stats.get('requests_today', 0)}")
         
         # Pega informações de limites
         limits_info = gemini_stats.get_limits_info()
@@ -643,23 +646,25 @@ def gemini_stats_api():
         # Calcula uso atual vs limites
         rpm_current = global_stats.get('requests_minute', 0)
         rpm_limit = limits_info['limits']['rpm']
-        rpm_percent = int((rpm_current / rpm_limit) * 100)
+        rpm_percent = int((rpm_current / rpm_limit) * 100) if rpm_limit > 0 else 0
         rpm_remaining = max(0, rpm_limit - rpm_current)
         
         tpm_current = global_stats.get('tokens_minute', 0)
         tpm_limit = limits_info['limits']['tpm']
-        tpm_percent = int((tpm_current / tpm_limit) * 100)
+        tpm_percent = int((tpm_current / tpm_limit) * 100) if tpm_limit > 0 else 0
         tpm_remaining = max(0, tpm_limit - tpm_current)
         
         rpd_current = global_stats.get('requests_today', 0)
         rpd_limit = limits_info['limits']['rpd']
-        rpd_percent = int((rpd_current / rpd_limit) * 100)
+        rpd_percent = int((rpd_current / rpd_limit) * 100) if rpd_limit > 0 else 0
         rpd_remaining = max(0, rpd_limit - rpd_current)
         
         search_current = global_stats.get('searches_today', 0)
         search_limit = limits_info['limits']['google_search_rpd']
-        search_percent = int((search_current / search_limit) * 100)
+        search_percent = int((search_current / search_limit) * 100) if search_limit > 0 else 0
         search_remaining = max(0, search_limit - search_current)
+        
+        logger.info(f"✅ Estatísticas calculadas - RPM: {rpm_current}/{rpm_limit}, RPD: {rpd_current}/{rpd_limit}")
         
         return jsonify({
             'success': True,

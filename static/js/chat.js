@@ -212,7 +212,6 @@ async function handleSendMessage(e) {
             if (data.chat_id && !currentChatId) {
                 currentChatId = data.chat_id;
                 addChatToSidebar(data.chat_id, message);
-                console.log('✅ Nova conversa criada:', data.chat_id);
             } else if (data.chat_id) {
                 // Atualiza ID se mudou
                 currentChatId = data.chat_id;
@@ -587,7 +586,6 @@ async function createNewChat() {
             currentChatId = data.chat.id;
             clearChatMessages();
             addChatToSidebar(data.chat.id, titulo);
-            console.log('✅ Nova conversa criada:', data.chat.id);
         } else {
             showError(data.message || 'Erro ao criar chat');
         }
@@ -677,7 +675,6 @@ async function loadChat(chatId) {
             });
             document.querySelector(`[data-chat-id="${chatId}"]`)?.classList.add('active');
             
-            console.log('✅ Histórico carregado com notas do orientador');
         } else {
             showError(data.message || 'Erro ao carregar histórico');
         }

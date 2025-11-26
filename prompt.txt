@@ -1,144 +1,74 @@
-ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira.
+ola, preciso planejar uma apresentação pro meu projeto o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetivo é ajudar os estudantes que vão participar da feira.
 
 
-ola claude, bboa noite, tenho um projeto, o nome dele é apbia, (assistente de projetos pra bragantec baseado em IA), se nãoconhece a bragantec, pesquisa, tu vai gostar O projeto é uma IA dá bragantec, uma feira de ciências do IFSP de Bragança Paulista, ele usa uma IA treinada pra melhor cohecimento da bragantec, seu treinamento é os arquivos txt que ela usatra de contexto ja que ela é multimodal, os txt são cadernos de resumos da bragantec das edições anteriores, ele usa a sua API gemini, usando a supabase pra armazenar o banco de dados seu objetoivo é ajudar os estudantes que vão participar da feira. preciso que vcverifique quatro coisas coisas: 1. caso o o usuario faça login na mesma conta em dois dispositivos diferentes, é pro sistema verificar isso e deconectar a sessao anterior, alem de que apos 1 hora de inatividade, tbm deve desconctar, isso em TEMPO REAL sem precisar recarregar a pagina 2. a IA tem conhecimento do status do projeto? um usuario pode ter varios projetos, a IA deve ter conhecimento de todos eles mas so focar nos projetos que estao no status "em andamento", e só falar dos outros projetos com diferentes status caso o usuario requisistar 3.  verifique se o usuario, se adicionado a um projeto via painel adiministrativo, consegue editar o projeto, e suas ediçoes afetam nn so ele mais todas as pessoas que participam do mesmo projeto, verifique tbm se a pessoa consegue ve o projeto em que foi adicionada e qm é o criador original dela 4. esse nn é pra verificar e sim fazer, termine o sistema de notas, pois no momento as notas nn aparecem pro participante e nn é possivel adicionar elas por mensagem individualmente (embora pareça um botão pras isso e tudo e salvo no banco, mas nn funfa) bonus: separe o scrpit inline que tiver no html em arquivos separados pode fazer tudo isso por favor? vou te enviar o repositorio completo do apbia e o schema SQL do banco de dados na supabase
+pesquise sobre a bragantec pra ter um contexto melhor
 
-houve uma ideia descartada, que vc remova TODO o boostrap presente no codigo, acha que pode fazer isso por favor?
+pra fazer essa apresentação, preciso de varios dados, preciso que faça as seguintes coisas
 
-então,  quero remover ele pois acho que o css puro dara mais liberdade, o prazo é de 1 semana, e o mobile é o menor dos problemas sinceramente
+analise TODO o meu codigo e verifique se ele esta de acordo com o padrao MVC
+por que ele esta de acordo com o padrao MVC
+prove que ele esta de acordo com o MVC
+e por que o view esta como template
 
-eu quero que vc remova o boostrap, mais seja gradualmente pra nn exceder seu limite de tokens, tipo, faça os arquivos menores primeiro, dois arquvios por mensagem,
+preciso tambem que analise TODAS AS CLASSES PYTHON e explique cada uma delas detalhadamente e oq cada uma faz, com exemplos
+procure tambem por todas as BLUEPRINTS e explique tambem cada uma delas detalhadamente e oq cada uma faz, com exemplos
 
-eu nn falei isso antes mas é pra re-estilaizar ele pra ficar o mais proximo de como tava ta? as cores vc pode ver no css mas basicamente é um "modo escuro com a cor principal sendo verde neon e branco, pode fazer isso por favor claude?
+me fale tambem oq é/são as blueprints e por que ela só é usada unicamente no controller e  nao em outros lugares tambem e por que não usar classes nela
 
-lembre-se de manter o padrão que ja esta, com o jinja 2 e etc, basicamente nn é pra mudar NADA do html, mude apenas a ESTILIZAÇÂO dele, entendeu?
+oq é o sistema de logging customizado do apbia, como ele funciona e por que dele existir 
 
-o sql do banco de dados caso precise
--- WARNING: This schema is for context only and is not meant to be run.
--- Table order and constraints may not be valid for execution.
+oq é o jinja2 e por que ele é usado
 
-CREATE TABLE public.arquivos_chat (
-  id integer NOT NULL DEFAULT nextval('arquivos_chat_id_seq'::regclass),
-  chat_id integer NOT NULL,
-  nome_arquivo character varying NOT NULL,
-  url_arquivo character varying NOT NULL,
-  tipo_arquivo character varying,
-  tamanho_bytes bigint,
-  data_upload timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  mensagem_id bigint,
-  gemini_file_uri text,
-  gemini_file_name text,
-  gemini_expiration timestamp without time zone,
-  CONSTRAINT arquivos_chat_pkey PRIMARY KEY (id),
-  CONSTRAINT arquivos_chat_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id),
-  CONSTRAINT arquivos_chat_mensagem_id_fkey FOREIGN KEY (mensagem_id) REFERENCES public.mensagens(id)
-);
-CREATE TABLE public.chats (
-  id integer NOT NULL DEFAULT nextval('chats_id_seq'::regclass),
-  usuario_id integer NOT NULL,
-  tipo_ia_id integer NOT NULL,
-  titulo character varying NOT NULL,
-  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT chats_pkey PRIMARY KEY (id),
-  CONSTRAINT chats_usuario_id_fkey FOREIGN KEY (usuario_id) REFERENCES public.usuarios(id),
-  CONSTRAINT chats_tipo_ia_id_fkey FOREIGN KEY (tipo_ia_id) REFERENCES public.tipos_ia(id)
-);
-CREATE TABLE public.ferramentas_chat (
-  id integer NOT NULL DEFAULT nextval('ferramentas_chat_id_seq'::regclass),
-  chat_id integer NOT NULL,
-  nome_ferramenta character varying NOT NULL,
-  CONSTRAINT ferramentas_chat_pkey PRIMARY KEY (id),
-  CONSTRAINT ferramentas_chat_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
-);
-CREATE TABLE public.mensagens (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  chat_id bigint NOT NULL,
-  role character varying NOT NULL CHECK (role::text = ANY (ARRAY['user'::character varying, 'model'::character varying]::text[])),
-  conteudo text NOT NULL,
-  thinking_process text,
-  data_envio timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  ferramenta_usada character varying,
-  CONSTRAINT mensagens_pkey PRIMARY KEY (id),
-  CONSTRAINT mensagens_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
-);
-CREATE TABLE public.notas_orientador (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  mensagem_id bigint NOT NULL,
-  orientador_id integer NOT NULL,
-  nota text NOT NULL,
-  data_criacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  data_atualizacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT notas_orientador_pkey PRIMARY KEY (id),
-  CONSTRAINT notas_orientador_mensagem_id_fkey FOREIGN KEY (mensagem_id) REFERENCES public.mensagens(id),
-  CONSTRAINT notas_orientador_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id)
-);
-CREATE TABLE public.orientadores_projetos (
-  orientador_id integer NOT NULL,
-  projeto_id integer NOT NULL,
-  CONSTRAINT orientadores_projetos_pkey PRIMARY KEY (orientador_id, projeto_id),
-  CONSTRAINT orientadores_projetos_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id)
-);
-CREATE TABLE public.participantes_projetos (
-  participante_id integer NOT NULL,
-  projeto_id integer NOT NULL,
-  CONSTRAINT participantes_projetos_pkey PRIMARY KEY (participante_id, projeto_id),
-  CONSTRAINT participantes_projetos_participante_id_fkey FOREIGN KEY (participante_id) REFERENCES public.usuarios(id)
-);
-CREATE TABLE public.projetos (
-  id integer NOT NULL DEFAULT nextval('projetos_id_seq'::regclass),
-  nome character varying NOT NULL,
-  categoria character varying NOT NULL,
-  resumo text,
-  palavras_chave text,
-  introducao text,
-  objetivo_geral text,
-  objetivos_especificos ARRAY,
-  metodologia text,
-  cronograma jsonb,
-  resultados_esperados text,
-  referencias_bibliograficas text,
-  eh_continuacao boolean DEFAULT false,
-  projeto_anterior_titulo character varying,
-  projeto_anterior_resumo text,
-  projeto_anterior_inicio date,
-  projeto_anterior_termino date,
-  status character varying DEFAULT 'rascunho'::character varying,
-  ano_edicao integer NOT NULL DEFAULT 2025,
-  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  data_atualizacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  gerado_por_ia boolean DEFAULT false,
-  prompt_ia_usado text,
-  CONSTRAINT projetos_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.tipos_ia (
-  id integer NOT NULL DEFAULT nextval('tipos_ia_id_seq'::regclass),
-  nome character varying NOT NULL UNIQUE,
-  CONSTRAINT tipos_ia_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.tipos_usuario (
-  id integer NOT NULL DEFAULT nextval('tipos_usuario_id_seq'::regclass),
-  nome character varying NOT NULL UNIQUE,
-  CONSTRAINT tipos_usuario_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.usuarios (
-  id integer NOT NULL DEFAULT nextval('usuarios_id_seq'::regclass),
-  nome_completo character varying NOT NULL,
-  email character varying NOT NULL UNIQUE,
-  senha_hash character varying,
-  tipo_usuario_id integer NOT NULL,
-  numero_inscricao character varying UNIQUE,
-  data_criacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  data_atualizacao timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
-  apelido character varying,
-  CONSTRAINT usuarios_pkey PRIMARY KEY (id),
-  CONSTRAINT usuarios_tipo_usuario_id_fkey FOREIGN KEY (tipo_usuario_id) REFERENCES public.tipos_usuario(id)
-);
-CREATE TABLE public.visualizacoes_orientador (
-  id bigint GENERATED ALWAYS AS IDENTITY NOT NULL,
-  orientador_id integer NOT NULL,
-  chat_id integer NOT NULL,
-  data_visualizacao timestamp with time zone DEFAULT CURRENT_TIMESTAMP,
-  CONSTRAINT visualizacoes_orientador_pkey PRIMARY KEY (id),
-  CONSTRAINT visualizacoes_orientador_orientador_id_fkey FOREIGN KEY (orientador_id) REFERENCES public.usuarios(id),
-  CONSTRAINT visualizacoes_orientador_chat_id_fkey FOREIGN KEY (chat_id) REFERENCES public.chats(id)
-);
+explique todos os pacotes usados no requirements.txt, oq cada um faz e pra que eles servem
+
+explique TODOS OS IMPORTS PRESENTES EM CADA ARQUIVO CITADO ABAIXO, EXPLIQUE COM DETALHES PRA QUE CADA UM SERVE 
+controllers\admin_controller.py
+COLOQUE AS COISA AQUI
+
+expplique com detalhes TODO o dao.py, todas as suas funçoes metodos e cite exemplos no cxodigo e casos de uso, e como cada uma é usada
+o arquivo python para analisar é dao\dao.py
+
+explique com detalhes TODO o models.py, todas as suas funçoes  e metodos, cite exemplos no codigo e caso de uso, e como cada uma é usada
+o arwuivo python pra analisar dos models é models\models.py
+
+lembre-se de esplicar todas as suas funçoes DEF e METODOS, NN PODE FALTAR NEMHUM
+NAO EXISTE PARTE MAIS IMPORTANTE TODAS SAAO IMPORTANTES NN PULE NADA
+
+
+
+explique com detalhes TODOS os controllers com todas as suas funçoes e metodos, cite exemplos no codigo, caso de uso e como cada uma é usada
+
+explique com detalhes TODOS os templates, todos os comandos jinja2 usados, cada parte/sessao dos arquivos html, com casos de uso e exemplos, isso envolve TODOS OS ARQUIVOS HTMLS PRESENTES NO CODIGO
+os arquivos html que vc deve ESTRITAMENTE ANALISAR sao:
+templates\admin\configuracoes.html
+templates\admin\dashboard.html
+templates\admin\gemini_stats.html
+templates\admin\orientacoes.html
+templates\admin\participantes_projetos.html
+templates\admin\tipos_ia.html
+templates\admin\usuarios.html
+templates\errors\403.html
+templates\errors\404.html
+templates\errors\500.html
+templates\orientador\dashboard.html
+templates\orientador\relatorio.html
+templates\orientador\visualizar_chat.html
+templates\orientador\visualizar_orientado.html
+templates\projetos\criar.html
+templates\projetos\editar.html
+templates\projetos\index.html
+templates\base.html
+templates\chat.html
+templates\index.html
+templates\login.html
+templates\perfil.html
+
+REPITO NAO EXISTE ARQUIVO MAIS IMPORTANTE TODOS DEVEM SER ANALISADOS IGUALMENTE
+
+analise o diagrama de classes que enviei a imagem e o banco de dados disponivel em schema.sql e explique classe por classe, tabela por tabela, atributo por atributo, detalhadamente, com exemplos
+
+explique oq é o flask e por que ele foi usado
+
+junte todas as informaçoes e planeje um texto de apresentação, nn se importe com o tamanho, pode ser o maior possivel, quando for nessesarias imagem do codigo, como para exemplos ou para outras coisas, deixar isso claro no texto pra eu poder colocar
+
+pode fazer tudo isso por favor, faça o mais detalhado possivel, nem que demore horas pra pensar, depois de pronto, revise o prompt e a apresentação para ter certeza de que esta tudo certo

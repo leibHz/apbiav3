@@ -69,21 +69,26 @@ def check_session_validity():
     if request.endpoint in public_endpoints:
         return None
     
+    # ✅ Ignora endpoints de polling/API que não devem atualizar atividade
+    polling_endpoints = ['auth.check_session', 'admin.gemini_stats_api', 'admin.stats_api']
+    if request.endpoint in polling_endpoints:
+        return None
+    
     # Verifica se usuário está autenticado
     if current_user.is_authenticated:
         session_manager = get_session_manager()
         
-        # Valida sessão
+        # Valida sessão (atualiza atividade para requisições normais)
         if not session_manager.validate_session(current_user.id):
             from flask_login import logout_user
             logout_user()
             session.clear()
-            flash('⚠️ Sua conta foi acessada de outro dispositivo. Faça login novamente.', 'warning')
+            flash('⚠️ Sua conta foi acessada de outro dispositivo ou ficou inativa por muito tempo. Faça login novamente.', 'warning')
             return redirect(url_for('auth.login'))
     
     return None
 
-# ✅ CORRIGIDO: Rota principal agora funciona
+# rota principal
 @app.route('/')
 def index():
     """Página inicial"""
@@ -163,11 +168,8 @@ if __name__ == '__main__':
     logger.info(f"🔗 Acesse: http://localhost:5000")
     logger.info(f"🔗 Acesse (rede local): http://0.0.0.0:5000")
     
-    if Config.DEBUG:
-        logger.warning("⚠️ MODO DEBUG ATIVADO - NÃO USE EM PRODUÇÃO!")
-    
     try:
-        app.run(debug=Config.DEBUG, host='0.0.0.0', port=5000)
+        app.run(debug=False, host='0.0.0.0', port=5000)
     except KeyboardInterrupt:
         logger.info("⏹️ Servidor encerrado pelo usuário")
     except Exception as e:

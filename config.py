@@ -9,7 +9,6 @@ class Config:
     
     # Flask
     SECRET_KEY = os.getenv('SECRET_KEY')
-    DEBUG = os.getenv('DEBUG', 'False') == 'True'
     
     # Supabase
     SUPABASE_URL = os.getenv('SUPABASE_URL')

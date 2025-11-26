@@ -1,9 +1,7 @@
 // =========================================
-// APBIA - JavaScript para Projetos (CORRIGIDO)
-// COM LOGS DETALHADOS PARA DEBUG
+// APBIA - JavaScript para Projetos
 // =========================================
 
-console.log('🟢 projetos.js carregando...');
 
 // ===== VALIDAÇÃO DE DEPENDÊNCIAS =====
 function checkDependencies() {
@@ -17,22 +15,16 @@ function checkDependencies() {
         missing.push('loadingIA element');
     }
     
-    if (!document.getElementById('modalIdeias')) {
-        missing.push('modalIdeias element');
-    }
-    
     if (missing.length > 0) {
         console.error('❌ DEPENDÊNCIAS FALTANDO:', missing);
         return false;
     }
     
-    console.log('✅ Todas as dependências OK');
     return true;
 }
 
 // ===== HELPERS COM FALLBACK =====
 function showLoading(message) {
-    console.log('🔵 showLoading:', message);
     const loadingEl = document.getElementById('loadingIA');
     const messageEl = document.getElementById('loadingMessage');
     
@@ -51,7 +43,6 @@ function showLoading(message) {
 }
 
 function hideLoading() {
-    console.log('🔵 hideLoading');
     const loadingEl = document.getElementById('loadingIA');
     
     if (loadingEl) {
@@ -65,7 +56,6 @@ function hideLoading() {
 }
 
 function showNotification(message, type = 'info') {
-    console.log(`🔔 Notificação [${type}]:`, message);
     
     // Tenta usar APBIA global
     if (typeof APBIA !== 'undefined' && APBIA.showNotification) {
@@ -78,7 +68,6 @@ function showNotification(message, type = 'info') {
 
 // ===== INICIALIZAÇÃO COM VALIDAÇÃO =====
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🟢 DOM carregado, inicializando...');
     
     // Valida dependências
     if (!checkDependencies()) {
@@ -90,12 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initProjetosHandlers() {
-    console.log('🔧 Inicializando handlers...');
     
     // Contador de caracteres do resumo
     const resumoInput = document.getElementById('resumo');
     if (resumoInput) {
-        console.log('✅ resumoInput encontrado');
         resumoInput.addEventListener('input', function() {
             const count = this.value.length;
             const counterEl = document.getElementById('resumo-count');
@@ -116,7 +103,6 @@ function initProjetosHandlers() {
     // Toggle continuação
     const ehContinuacaoCheckbox = document.getElementById('eh_continuacao');
     if (ehContinuacaoCheckbox) {
-        console.log('✅ ehContinuacaoCheckbox encontrado');
         ehContinuacaoCheckbox.addEventListener('change', function() {
             const fields = document.getElementById('continuacao-fields');
             if (fields) {
@@ -128,21 +114,18 @@ function initProjetosHandlers() {
     // Adicionar objetivo específico
     const addObjetivoBtn = document.getElementById('addObjetivo');
     if (addObjetivoBtn) {
-        console.log('✅ addObjetivoBtn encontrado');
         addObjetivoBtn.addEventListener('click', addObjetivoEspecifico);
     }
     
     // Adicionar etapa no cronograma
     const addEtapaBtn = document.getElementById('addEtapa');
     if (addEtapaBtn) {
-        console.log('✅ addEtapaBtn encontrado');
         addEtapaBtn.addEventListener('click', addEtapaCronograma);
     }
     
     // ===== GERAR IDEIAS (CRÍTICO) =====
     const btnGerarIdeias = document.getElementById('btnGerarIdeias');
     if (btnGerarIdeias) {
-        console.log('✅ btnGerarIdeias encontrado - ADICIONANDO LISTENER');
         btnGerarIdeias.addEventListener('click', handleGerarIdeias);
     } else {
         console.error('❌ btnGerarIdeias NÃO ENCONTRADO');
@@ -150,11 +133,9 @@ function initProjetosHandlers() {
     
     // ===== AUTOCOMPLETAR (CRÍTICO) =====
     const btnsAutocompletar = document.querySelectorAll('.btn-ia-autocompletar');
-    console.log(`🔍 Encontrados ${btnsAutocompletar.length} botões de autocompletar`);
     
     if (btnsAutocompletar.length > 0) {
         btnsAutocompletar.forEach((btn, index) => {
-            console.log(`✅ Adicionando listener ao botão ${index + 1}`);
             btn.addEventListener('click', handleAutocompletar);
         });
     } else {
@@ -163,17 +144,14 @@ function initProjetosHandlers() {
     
     // Salvar projeto
     const formProjeto = document.getElementById('formProjeto');
-    if (formProjeto) {
-        console.log('✅ formProjeto encontrado');
+    if (formProjeto && !document.getElementById('projeto_id')) {
         formProjeto.addEventListener('submit', handleSalvarProjeto);
     }
     
-    console.log('✅ Todos os handlers inicializados');
 }
 
 // ===== GERAR IDEIAS (FUNÇÃO PRINCIPAL) =====
 async function handleGerarIdeias() {
-    console.log('🚀 handleGerarIdeias CHAMADO');
     
     // Confirmação
     const confirmacao = confirm(
@@ -186,15 +164,12 @@ async function handleGerarIdeias() {
     );
     
     if (!confirmacao) {
-        console.log('❌ Usuário cancelou');
         return;
     }
     
-    console.log('✅ Usuário confirmou, iniciando...');
     showLoading('🧠 Analisando projetos vencedores...');
     
     try {
-        console.log('📤 Enviando requisição para /projetos/gerar-ideias');
         
         const response = await fetch('/projetos/gerar-ideias', {
             method: 'POST',
@@ -203,19 +178,16 @@ async function handleGerarIdeias() {
             }
         });
         
-        console.log('📥 Resposta recebida:', response.status, response.statusText);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('📦 Dados recebidos:', data);
         
         hideLoading();
         
         if (data.success) {
-            console.log('✅ Sucesso! Mostrando ideias...');
             mostrarIdeias(data.ideias, data.metadata);
         } else {
             console.error('❌ Erro no backend:', data.message);
@@ -231,10 +203,8 @@ async function handleGerarIdeias() {
 
 // ===== AUTOCOMPLETAR (FUNÇÃO PRINCIPAL) =====
 async function handleAutocompletar() {
-    console.log('🚀 handleAutocompletar CHAMADO');
     
     const campo = this.dataset.campo;
-    console.log('📝 Campo:', campo);
     
     if (!campo) {
         console.error('❌ Campo não especificado');
@@ -245,18 +215,14 @@ async function handleAutocompletar() {
     const confirmacao = confirm(`A IA vai gerar conteúdo para: ${campo}. Continuar?`);
     
     if (!confirmacao) {
-        console.log('❌ Usuário cancelou');
         return;
     }
     
-    console.log('✅ Usuário confirmou');
     showLoading(`Gerando ${campo}...`);
     
     try {
         const projetoParcial = coletarDadosParciais();
-        console.log('📦 Dados parciais coletados:', projetoParcial);
         
-        console.log('📤 Enviando requisição para /projetos/autocompletar');
         
         const response = await fetch('/projetos/autocompletar', {
             method: 'POST',
@@ -269,19 +235,16 @@ async function handleAutocompletar() {
             })
         });
         
-        console.log('📥 Resposta recebida:', response.status, response.statusText);
         
         if (!response.ok) {
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
         
         const data = await response.json();
-        console.log('📦 Dados recebidos:', data);
         
         hideLoading();
         
         if (data.success) {
-            console.log('✅ Sucesso! Aplicando conteúdo...');
             aplicarConteudoGerado(campo, data.conteudo);
             showNotification('Conteúdo gerado! Revise e ajuste', 'success');
         } else {
@@ -439,7 +402,6 @@ function mostrarIdeias(ideias, metadata) {
 
 // ===== PREENCHER COM IDEIA =====
 function preencherComIdeia(ideia, categoria) {
-    console.log('📝 Preenchendo formulário com ideia:', ideia);
     
     const nomeInput = document.getElementById('nome');
     const categoriaSelect = document.getElementById('categoria');
@@ -470,8 +432,6 @@ function coletarDadosParciais() {
 
 // ===== APLICAR CONTEÚDO GERADO =====
 function aplicarConteudoGerado(campo, conteudo) {
-    console.log('📝 Aplicando conteúdo ao campo:', campo);
-    console.log('📦 Conteúdo:', conteudo);
     
     // Se conteúdo for string, usa diretamente
     if (typeof conteudo === 'string') {
@@ -575,14 +535,11 @@ function addEtapaCronograma() {
 // ===== SALVAR PROJETO =====
 async function handleSalvarProjeto(e) {
     e.preventDefault();
-    
-    console.log('💾 Salvando projeto...');
-    
+        
     const submitBtn = e.submitter;
     const status = submitBtn?.dataset?.status || 'rascunho';
     
     const dados = coletarDadosCompletos(status);
-    console.log('📦 Dados coletados:', dados);
     
     showLoading('Salvando projeto...');
     
@@ -647,6 +604,10 @@ function coletarDadosCompletos(status) {
     
     const ehContinuacao = document.getElementById('eh_continuacao')?.checked || false;
     
+    // ✅ CORREÇÃO: Converte strings vazias para null em campos de data
+    const projeto_anterior_inicio = document.getElementById('projeto_anterior_inicio')?.value || null;
+    const projeto_anterior_termino = document.getElementById('projeto_anterior_termino')?.value || null;
+    
     return {
         nome: document.getElementById('nome')?.value || '',
         categoria: document.getElementById('categoria')?.value || '',
@@ -663,8 +624,8 @@ function coletarDadosCompletos(status) {
         eh_continuacao: ehContinuacao,
         projeto_anterior_titulo: document.getElementById('projeto_anterior_titulo')?.value || '',
         projeto_anterior_resumo: document.getElementById('projeto_anterior_resumo')?.value || '',
-        projeto_anterior_inicio: document.getElementById('projeto_anterior_inicio')?.value || '',
-        projeto_anterior_termino: document.getElementById('projeto_anterior_termino')?.value || '',
+        projeto_anterior_inicio: projeto_anterior_inicio,  // ✅ Usa null ao invés de ''
+        projeto_anterior_termino: projeto_anterior_termino,  // ✅ Usa null ao invés de ''
         status: status
     };
 }

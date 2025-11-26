@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from dao.dao import SupabaseDAO
 from utils.session_manager import get_session_manager
@@ -70,7 +70,7 @@ def login():
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    """Logout do usuário"""
+    """Logout do usuário COM LIMPEZA DE CACHE"""
     if current_user.is_authenticated:
         session_manager = get_session_manager()
         session_manager.invalidate_session(current_user.id)
@@ -78,9 +78,52 @@ def logout():
     
     logout_user()
     session.clear()
-    flash('Você saiu da sua conta', 'info')
-    return redirect(url_for('index'))
+    
+    response = make_response(redirect(url_for('index')))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, post-check=0, pre-check=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
+    flash('Você saiu da sua conta. Cache limpo.', 'info')
+    return response
 
+@auth_bp.route('/check-session', methods=['GET'])
+@login_required
+def check_session():
+    """
+    ✅ NOVO: Endpoint para verificação de sessão em tempo real
+    Chamado pelo session_monitor.js a cada 30 segundos
+    """
+    try:
+        if not current_user.is_authenticated:
+            logger.warning("⚠️ /check-session: Usuário não autenticado")
+            return jsonify({
+                'valid': False,
+                'reason': 'not_authenticated'
+            }), 401
+        
+        session_manager = get_session_manager()
+        is_valid = session_manager.validate_session(current_user.id, update_activity=False)
+        
+        if not is_valid:
+            logger.warning(f"⚠️ /check-session: Sessão inválida - User {current_user.id}")
+            return jsonify({
+                'valid': False,
+                'reason': 'session_expired'
+            }), 200
+        
+        # Sessão válida
+        return jsonify({
+            'valid': True,
+            'user_id': current_user.id
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"❌ Erro em /check-session: {e}")
+        return jsonify({
+            'valid': False,
+            'reason': 'error'
+        }), 500
 
 @auth_bp.route('/verificar-bp', methods=['POST'])
 def verificar_bp():

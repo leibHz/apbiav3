@@ -483,8 +483,11 @@ def load_history(chat_id):
         mensagens = dao.listar_mensagens_por_chat(chat_id)
         arquivos = dao.listar_arquivos_por_chat(chat_id)
         
-        # ✅ NOVO: Enriquece mensagens com arquivos E NOTAS
+        # Enriquece mensagens com arquivos E NOTAS
         for msg in mensagens:
+            notas = dao.listar_notas_por_mensagem(msg['id'])
+            msg['notas'] = notas if notas else []
+            
             msg_id = msg.get('id')
             
             # Adiciona arquivo se houver
@@ -501,14 +504,6 @@ def load_history(chat_id):
                     'tamanho': arquivo['tamanho_bytes'],
                     'url': f"/chat/file/{arquivo['id']}"
                 }
-            
-            # ✅ NOVO: Adiciona notas do orientador (se houver)
-            # Se a mensagem já tiver notas (do banco), mantém
-            # Caso contrário, busca as notas
-            if 'notas_orientador' not in msg or not msg.get('notas_orientador'):
-                notas = dao.listar_notas_por_mensagem(msg_id)
-                if notas:
-                    msg['notas'] = notas
         
         # ✅ NOVO: Adiciona notas gerais do chat também
         return jsonify({

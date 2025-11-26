@@ -4,7 +4,7 @@
 // =============================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ admin_tipos_ia.js carregado');
+    // em breve faço algo aqui se precisar
 });
 
 /**

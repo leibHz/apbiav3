@@ -330,7 +330,6 @@ def log_startup_info(app):
     logger.info("="*70)
     logger.info("🚀 APBIA INICIANDO")
     logger.info("="*70)
-    logger.info(f"Modo Debug: {app.config['DEBUG']}")
     logger.info(f"IA Status: {app.config.get('IA_STATUS', 'Unknown')}")
     logger.info(f"Modelo: {app.config.get('GEMINI_MODEL', 'Unknown')}")
     logger.info(f"Blueprints registrados: {list(app.blueprints.keys())}")

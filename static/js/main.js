@@ -9,9 +9,6 @@ function initializeApp() {
     // Auto-dismiss alerts após 5 segundos
     autoHideAlerts();
     
-    // Tooltips do Bootstrap
-    initializeTooltips();
-    
     // Confirmação de ações destrutivas
     confirmDestructiveActions();
     
@@ -27,19 +24,11 @@ function autoHideAlerts() {
     const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
     alerts.forEach(alert => {
         setTimeout(() => {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
+            alert.style.opacity = '0';
+            alert.style.transform = 'translateY(-20px)';
+            alert.style.transition = 'all 0.3s ease';
+            setTimeout(() => alert.remove(), 300);
         }, 5000);
-    });
-}
-
-// Inicializa tooltips do Bootstrap
-function initializeTooltips() {
-    const tooltipTriggerList = [].slice.call(
-        document.querySelectorAll('[data-bs-toggle="tooltip"]')
-    );
-    tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 }
 

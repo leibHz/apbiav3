@@ -245,35 +245,89 @@ class GeminiStats:
             dict: Estatísticas globais
         """
         with self.lock:
-            # Calcula totais das últimas 24h do histórico
             now = datetime.now()
-            cutoff = now - timedelta(hours=24)
-            
+        
+            # ✅ NOVO: Calcula estatísticas agregadas de TODOS os usuários
+        
+            # Limpa dados antigos primeiro
+            cutoff_minute = now - timedelta(minutes=1)
+            cutoff_day = now - timedelta(days=1)
+        
+            # Conta requisições no último minuto (TODOS os usuários)
+            requests_minute_global = 0
+            tokens_minute_global = 0
+        
+            for user_id in self.requests_minute:
+                # Limpa dados antigos
+                self.requests_minute[user_id] = [
+                    (ts, tokens) for ts, tokens in self.requests_minute[user_id]
+                    if ts > cutoff_minute
+                ]
+                # Soma
+                requests_minute_global += len(self.requests_minute[user_id])
+                tokens_minute_global += sum(tokens for _, tokens in self.requests_minute[user_id])
+        
+            # Conta requisições hoje (TODOS os usuários)
+            requests_today_global = 0
+            tokens_today_global = 0
+        
+            for user_id in self.requests_day:
+                # Limpa dados antigos
+                self.requests_day[user_id] = [
+                    (ts, tokens) for ts, tokens in self.requests_day[user_id]
+                    if ts > cutoff_day
+                ]
+                # Soma
+                requests_today_global += len(self.requests_day[user_id])
+                tokens_today_global += sum(tokens for _, tokens in self.requests_day[user_id])
+        
+            # Conta buscas hoje (TODOS os usuários)
+            searches_today_global = 0
+        
+            for user_id in self.searches_day:
+                # Limpa dados antigos
+                self.searches_day[user_id] = [
+                    ts for ts in self.searches_day[user_id] if ts > cutoff_day
+                ]
+                # Soma
+                searches_today_global += len(self.searches_day[user_id])
+        
+            # Calcula totais das últimas 24h do histórico
+            cutoff_24h = now - timedelta(hours=24)
+        
             recent_history = [
                 h for h in self.history
-                if datetime.fromisoformat(h['timestamp']) > cutoff
+                if datetime.fromisoformat(h['timestamp']) > cutoff_24h
             ]
-            
+        
             requests_24h = len(recent_history)
             tokens_24h = sum(h['total_tokens'] for h in recent_history)
-            
+        
             # Usuários únicos
             unique_users = len(set(h['user_id'] for h in recent_history if h['user_id']))
-            
+        
             # Média de tokens por request
             avg_tokens = int(tokens_24h / requests_24h) if requests_24h > 0 else 0
-            
+        
             return {
+                # ✅ NOVOS CAMPOS GLOBAIS (agregados)
+                'requests_minute': requests_minute_global,
+                'tokens_minute': tokens_minute_global,
+                'requests_today': requests_today_global,
+                'tokens_today': tokens_today_global,
+                'searches_today': searches_today_global,
+            
+                # Campos existentes (24h)
                 'total_requests': self.total_requests,
                 'total_tokens_input': self.total_tokens_input,
                 'total_tokens_output': self.total_tokens_output,
                 'total_searches': self.total_searches,
-                
+            
                 'requests_24h': requests_24h,
                 'tokens_24h': tokens_24h,
                 'unique_users_24h': unique_users,
                 'avg_tokens_per_request': avg_tokens,
-                
+            
                 'history': recent_history[-50:]  # Últimas 50 requisições
             }
     

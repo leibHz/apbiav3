@@ -18,6 +18,11 @@
             <span class="badge badge-{{ 'secondary' if projeto.status == 'rascunho' else 'primary' if projeto.status == 'em_andamento' else 'success' }}" style="font-size: 1rem; padding: 0.5rem 1rem;">
                 Status: {{ projeto.status|replace('_', ' ')|title }}
             </span>
+            {% if projeto.gerado_por_ia %}
+                <span class="badge badge-info" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-robot"></i> Gerado por IA
+                </span>
+            {% endif %}
         </div>
     </div>
     

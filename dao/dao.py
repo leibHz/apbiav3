@@ -133,6 +133,13 @@ class SupabaseDAO:
         # Remove campos None para não sobrescrever
         data = {k: v for k, v in kwargs.items() if v is not None}
         
+        # ✅ CORREÇÃO: Converte strings vazias para None em campos de data
+        if 'projeto_anterior_inicio' in data and data['projeto_anterior_inicio'] == '':
+            data['projeto_anterior_inicio'] = None
+        
+        if 'projeto_anterior_termino' in data and data['projeto_anterior_termino'] == '':
+            data['projeto_anterior_termino'] = None
+    
         if data:
             result = self.supabase.table('projetos').update(data).eq('id', projeto_id).execute()
             return self._row_to_projeto(result.data[0]) if result.data else None
@@ -1036,6 +1043,39 @@ class SupabaseDAO:
         except Exception as e:
             logger.error(f"❌ Erro ao buscar participantes: {e}")
             return []
+
+    def buscar_criador_projeto(self, projeto_id):
+        """Busca criador do projeto (primeiro participante)"""
+        try:
+            result = self.supabase.table('participantes_projetos')\
+                .select('participante_id')\
+                .eq('projeto_id', projeto_id)\
+                .order('data_associacao', desc=False)\
+                .limit(1)\
+                .execute()
+            return result.data[0]['participante_id'] if result.data else None
+        except:
+            return None
+
+    def verificar_acesso_projeto(self, usuario_id, projeto_id):
+        """Verifica se usuário tem acesso ao projeto"""
+        try:
+            # É participante?
+            result = self.supabase.table('participantes_projetos')\
+                .select('id')\
+                .eq('projeto_id', projeto_id)\
+                .eq('participante_id', usuario_id)\
+                .execute()
+            if result.data:
+                return True
+            # É orientador?
+            parts = self.listar_participantes_por_projeto(projeto_id)
+            for p in parts:
+                if self.verificar_orientador_participante(usuario_id, p.id):
+                    return True
+            return False
+        except:
+            return False
 
 
     def verificar_orientacao_existe(self, orientador_id, projeto_id):

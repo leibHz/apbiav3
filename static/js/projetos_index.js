@@ -51,7 +51,7 @@ async function handleDeletarProjeto() {
     }
     
     const projetoId = this.dataset.projetoId;
-    const card = this.closest('.col-md-6');
+    const card = this.closest('.projeto-card');
     
     APBIA.showLoadingOverlay('Deletando projeto...');
     

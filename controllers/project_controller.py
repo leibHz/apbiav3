@@ -120,6 +120,19 @@ def atualizar(projeto_id):
         data = request.json
         logger.debug(f"📦 Campos a atualizar: {list(data.keys())}")
         
+        # Valida e converte datas vazias para None
+        if 'projeto_anterior_inicio' in data:
+            projeto_anterior_inicio = data.get('projeto_anterior_inicio')
+            if projeto_anterior_inicio == '' or projeto_anterior_inicio is None:
+                data['projeto_anterior_inicio'] = None
+        
+        if 'projeto_anterior_termino' in data:
+            projeto_anterior_termino = data.get('projeto_anterior_termino')
+            if projeto_anterior_termino == '' or projeto_anterior_termino is None:
+                data['projeto_anterior_termino'] = None
+        
+        logger.debug(f"📅 Datas processadas - Início: {data.get('projeto_anterior_inicio')}, Término: {data.get('projeto_anterior_termino')}")
+        
         projeto = dao.atualizar_projeto(projeto_id, **data)
         
         logger.info(f"✅ Projeto {projeto_id} atualizado com sucesso")
